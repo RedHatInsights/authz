@@ -1,7 +1,10 @@
-package main
+package helloworldService
 
 import (
 	"flag"
+	"fmt"
+	"net/http"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
@@ -28,4 +31,13 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
 	}
+
+	//TODO Remove later - Helloworld
+	http.HandleFunc("/", HelloServer)
+	http.ListenAndServe(":8080", nil)
+}
+
+// TODO - Remove later
+func HelloServer(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
 }
