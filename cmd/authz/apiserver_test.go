@@ -1,5 +1,5 @@
 // run test: go test -v
-package helloworldService
+package main
 
 import (
 	"net/http"

@@ -1,4 +1,4 @@
-package helloworldService
+package main
 
 import (
 	"flag"
