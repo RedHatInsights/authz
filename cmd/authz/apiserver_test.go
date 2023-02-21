@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/authzed/authzed-go/proto/authzed/api/v1"
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 )
 
 func TestHelloworldService(t *testing.T) {
