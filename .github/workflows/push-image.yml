@@ -6,7 +6,8 @@ on:
     branches:
       - 'main'
 
-  push-to-registry:
+jobs:
+  publish-to-quay:
     env:
       HAS_QUAY_CREDS: ${{ secrets.QUAY_USERNAME != '' && secrets.QUAY_TOKEN }}
       if: env.HAS_QUAY_CREDS == 'true'
