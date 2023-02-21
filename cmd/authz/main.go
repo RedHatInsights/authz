@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
+
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 func main() {
