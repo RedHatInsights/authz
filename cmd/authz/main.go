@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
-
-	"github.com/authzed/authzed-go/proto/authzed/api/v1"
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"net/http"
 )
 
 func main() {
 	// This is needed to make `glog` believe that the flags have already been parsed, otherwise
-	// every log messages is prefixed by an error message stating the the flags haven't been
+	// every log messages is prefixed by an error message stating the flags haven't been
 	// parsed.
 	_ = flag.CommandLine.Parse([]string{})
 
@@ -37,14 +36,18 @@ func main() {
 	//TODO Remove later - Helloworld
 	http.HandleFunc("/", HelloServer)
 	http.HandleFunc("/CheckPermission", CheckPermission)
-	http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe(":8080", nil)
 }
 
-// TODO - Remove later
+// HelloServer TODO - Remove later
 func HelloServer(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
+	_, err := fmt.Fprintf(w, "Hello, %s!", r.URL.Path[1:])
+	if err != nil {
+		return
+	}
 }
 
+// CheckPermission Dummy endpoint, will change
 func CheckPermission(w http.ResponseWriter, r *http.Request) {
 	var cpr v1.CheckPermissionRequest
 
