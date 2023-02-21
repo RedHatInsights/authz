@@ -2,12 +2,14 @@ name: Push Image
 
 # Only trigger when the build/test workflow succeeded
 on:
-  workflow_run:
-    workflows: [ "CI Build and Test" ]
-    types:
-      - completed
+  push:
+    branches:
+      - 'main'
 
   push-to-registry:
+    env:
+      HAS_QUAY_CREDS: ${{ secrets.QUAY_USERNAME != '' && secrets.QUAY_TOKEN }}
+      if: env.HAS_QUAY_CREDS == 'true'
     runs-on: ubuntu-latest
     steps:
       -
