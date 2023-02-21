@@ -1,6 +1,5 @@
 name: Push Image
 
-# Only trigger when the build/test workflow succeeded
 on:
   push:
     branches:
@@ -8,9 +7,7 @@ on:
 
 jobs:
   publish-to-quay:
-    env:
-      HAS_QUAY_CREDS: ${{ secrets.QUAY_USERNAME != '' && secrets.QUAY_TOKEN }}
-      if: env.HAS_QUAY_CREDS == 'true'
+    if: github.repository == 'RedHatInsights/authz'
     runs-on: ubuntu-latest
     steps:
       -
