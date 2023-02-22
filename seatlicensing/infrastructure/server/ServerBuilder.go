@@ -4,21 +4,24 @@ import (
 	"authz/seatlicensing/domain/contracts"
 )
 
-type ServerBuilder struct {
+// SrvBuilder is the builder containing the config for building technical implementations of the server
+type SrvBuilder struct {
 	framework string
 }
 
-func NewBuilder() *ServerBuilder {
-	return &ServerBuilder{}
+// NewBuilder returns a new SrvBuilder instance
+func NewBuilder() *SrvBuilder {
+	return &SrvBuilder{}
 }
 
 // WithFramework sets the actual technical impl
-func (s *ServerBuilder) WithFramework(fw string) *ServerBuilder {
+func (s *SrvBuilder) WithFramework(fw string) *SrvBuilder {
 	s.framework = fw
 	return s
 }
 
-func (s *ServerBuilder) Build() (contracts.Server, error) {
+// Build builds an implementation based on the given param
+func (s *SrvBuilder) Build() (contracts.Server, error) {
 	switch s.framework {
 	case "gin":
 		return new(GinServer), nil
