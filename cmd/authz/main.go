@@ -37,7 +37,7 @@ func main() {
 	//TODO Remove later - Helloworld
 	http.HandleFunc("/", HelloServer)
 	http.HandleFunc("/CheckPermission", CheckPermission)
-	_ = http.ListenAndServe(":3000", nil)
+	_ = http.ListenAndServe(":3000", nil) // 8080 might be a problem in openshift, so changing this
 }
 
 // HelloServer TODO - Remove later
