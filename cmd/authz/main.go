@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/golang/glog"
@@ -37,7 +38,17 @@ func main() {
 	//TODO Remove later - Helloworld
 	http.HandleFunc("/", HelloServer)
 	http.HandleFunc("/CheckPermission", CheckPermission)
-	_ = http.ListenAndServe(":3000", nil) // 8080 might be a problem in openshift, so changing this
+
+	if _, err := os.Stat("/etc/tls/tls.crt"); err == nil {
+		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exisits start server in HTTPS mode
+			glog.Info("TLS cert and Key found  - Starting server in secure HTTPs mode")
+
+			_ = http.ListenAndServeTLS(":8443", "/etc/tls/tls.crt", "/etc/tls/tls.key", nil)
+		}
+	} else { // For all cases of error - we start a plain HTTP server
+		glog.Info("TLS cert or Key not found  - Starting server in unsercure plain HTTP mode")
+		_ = http.ListenAndServe(":8080", nil)
+	}
 }
 
 // HelloServer TODO - Remove later
