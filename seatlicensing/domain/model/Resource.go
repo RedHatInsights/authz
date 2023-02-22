@@ -1,6 +1,7 @@
 package model
 
+// Resource -
 type Resource struct {
 	Type string
-	Id   string
+	ID   string
 }
