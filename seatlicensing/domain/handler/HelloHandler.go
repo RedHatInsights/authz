@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"net/http"
+	"net/http" //this is a violation! see api/README.md
 )
 
 // GetHello returns a "Hello" with word from path

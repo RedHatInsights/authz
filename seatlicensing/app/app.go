@@ -34,7 +34,7 @@ func getServer() contracts.Server {
 	return srv
 }
 
-// Run configures and runs the actual app.
+// Run configures and runs the actual app. DEMO! switch the server from "echo" to "gin". see what happens.
 func Run() {
 	cfg := getConfig()
 	fmt.Println(cfg.GetAll())
