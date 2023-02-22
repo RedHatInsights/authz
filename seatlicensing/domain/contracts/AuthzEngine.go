@@ -1,8 +1,7 @@
 package contracts
 
-import "authz/app"
+import "authz/seatlicensing/domain/model"
 
-//TODO: Add these from wills draft.
 type AuthzEngine interface {
-	CheckAccess(principal app.Principal, operation string, resource app.Resource) (bool, error)
+	CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error)
 }
