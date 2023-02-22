@@ -1,0 +1,4 @@
+# Infrastructure/server package
+The package containing multiple technical implementations of a serving/routing framework hosting our service. currently gin-gonic and echo are included. The actual handlers can be written in "pure go" as they are wrapped specific to the actual framework (was easier with gin, btw).
+
+Also contains a small builder that builds based on a key the actual framework and returns the **interface** implementation from domain/contracts/Server.go, so this can be used inside the domain and elsewhere if needed, without tight coupling to the technical implementation. Currently, only "Serve" is used for demo purposes.
