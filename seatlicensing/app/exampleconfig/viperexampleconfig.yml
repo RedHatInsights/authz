@@ -1,0 +1,8 @@
+example:
+  stringVal: "bla"
+  boolVal: true
+  list:
+    - "one"
+    - "two"
+    - 20
+    - 1.13
