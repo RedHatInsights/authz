@@ -24,7 +24,7 @@ func TestHelloworldService(t *testing.T) {
 	}
 
 	// check HTTP response body
-	want := "Hello, AuthZ! This change was also deployed by CI/CD!"
+	want := "Hello, AuthZ! We have CI/CD!"
 	if w.Body.String() != want {
 		t.Errorf("Response body error: got %v, want %v", w.Body.String(), want)
 	}

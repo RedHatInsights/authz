@@ -53,7 +53,7 @@ func main() {
 
 // HelloServer TODO - Remove later
 func HelloServer(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintf(w, "Hello, %s! This change was also deployed by CI/CD!", r.URL.Path[1:])
+	_, err := fmt.Fprintf(w, "Hello, %s! We have CI/CD!", r.URL.Path[1:])
 	if err != nil {
 		return
 	}
