@@ -1,5 +1,6 @@
 package model
 
+// Principal -
 type Principal struct {
-	Id string
+	ID string
 }
