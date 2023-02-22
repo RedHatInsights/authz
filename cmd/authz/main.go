@@ -37,7 +37,7 @@ func main() {
 	//TODO Remove later - Helloworld
 	http.HandleFunc("/", HelloServer)
 	http.HandleFunc("/CheckPermission", CheckPermission)
-	_ = http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe(":3000", nil)
 }
 
 // HelloServer TODO - Remove later
