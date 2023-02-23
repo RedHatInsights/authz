@@ -10,6 +10,7 @@ jobs:
   run-tests:
     uses: ./.github/workflows/build-test.yml
   publish-to-quay:
+    needs: run-tests
     if: github.repository == 'RedHatInsights/authz'
     runs-on: ubuntu-latest
     steps:
