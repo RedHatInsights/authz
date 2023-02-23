@@ -29,4 +29,7 @@ jobs:
         with:
           platforms: linux/amd64
           push: true
-          tags: quay.io/ciam_authz/authz:latest
+          tags: | 
+            quay.io/ciam_authz/authz:latest,
+            quay.io/ciam_authz/authz:${{ github.run_id }}-${{ github.run_attempt }}
+
