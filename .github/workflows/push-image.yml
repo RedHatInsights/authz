@@ -36,4 +36,4 @@ jobs:
           push: true
           tags: | 
             quay.io/ciam_authz/authz:latest,
-            quay.io/ciam_authz/authz:${{ steps.vars.outputs.short_sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+            quay.io/ciam_authz/authz:gh-${{ github.run_id }}-${{ github.run_attempt }}-${{ steps.vars.outputs.short_sha }}
