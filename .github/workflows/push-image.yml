@@ -6,6 +6,9 @@ on:
       - 'main'
 
 jobs:
+  # make sure tests run first and only publish when they succeed
+  run-tests:
+    uses: ./.github/workflows/build-test.yml
   publish-to-quay:
     if: github.repository == 'RedHatInsights/authz'
     runs-on: ubuntu-latest

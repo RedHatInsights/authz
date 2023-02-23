@@ -1,7 +1,7 @@
 name: CI Build and Test
 
 on:
-  push:
+  workflow_call:
     branches: ['main']
   pull_request:
     branches: ['main']
