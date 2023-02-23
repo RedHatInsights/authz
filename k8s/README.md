@@ -1,11 +1,15 @@
 # Deploying the service on a locl kind cluster
 
+Except for the prerequisites, these steps are repeatable in the Makefile in the root of the repository.
+
 ## Step 0: Prerequisites
 Install kind, e.g. via [homebrew](https://formulae.brew.sh/formula/kind).
 
 Install [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/)
 
 ## Step 1: kind setup
+
+> From root, you can run `make kind-create` to create the cluster and apply the ingress controller.
 
 run `kind create cluster --name=authz --config=kind.yml`
 
@@ -17,6 +21,9 @@ Notable things in `kind.yml`:
 * `node-labels`: only allow the ingress controller to run on a specific node matching the label selector
 
 ## Step 2: Use the nginx ingress controller
+
+> From root, you can run `make kind-create` to create the cluster and apply the ingress controller.
+
 The current nginx ingress controller manifest for kind can be found [here at the ingress-nginx repo](https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml).
 
 It contains kind-specific patches to forward the host ports to the ingress controller.
@@ -37,6 +44,9 @@ ingress-nginx-controller-58c49c4db-7g8qf   1/1     Running     0          38s
 ```
 
 ## Step 3: Deploy the app
+
+> From root, you can run `make kind-deploy` to do this.
+
 run 
 
 `kubectl apply -f authz.yml`
