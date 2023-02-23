@@ -10,8 +10,17 @@ jobs:
     if: github.repository == 'RedHatInsights/authz'
     runs-on: ubuntu-latest
     steps:
-      -
-        name: Set up QEMU
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set short git commit SHA
+        id: vars
+        run: |
+          calculatedSha=$(git rev-parse --short=7 ${{ github.sha }})
+          echo "::set-output name=short_sha::$calculatedSha"
+
+      - name: Confirm git commit SHA output
+        run: echo ${{ steps.vars.outputs.short_sha }}
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       -
         name: Set up Docker Buildx
@@ -29,4 +38,7 @@ jobs:
         with:
           platforms: linux/amd64
           push: true
-          tags: quay.io/ciam_authz/authz:latest
+          tags: |
+            quay.io/ciam_authz/authz:latest,
+            quay.io/ciam_authz/authz:${{ steps.vars.outputs.short_sha }}
+
