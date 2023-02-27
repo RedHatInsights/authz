@@ -6,15 +6,19 @@ import (
 	"authz/app/controllers"
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"sync"
 )
 
 type Web struct {
 	services Services
 }
 
-func (web Web) Host() {
+func (web Web) Host(wait *sync.WaitGroup) {
 	http.HandleFunc("/CheckPermission", web.checkPermission)
 	http.ListenAndServe(":8080", nil)
+
+	wait.Done()
 }
 
 func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
@@ -39,14 +43,16 @@ func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
 
 	action := controllers.NewAccess(web.services.Store)
 
-	_, err = action.Check(req)
+	result, err := action.Check(req)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
-	//TODO: How to output decision? Does bringing Echo back make sense?
+	w.Header().Add("Content-Type", "text/plain")
+	w.WriteHeader(200)
+	w.Write([]byte(strconv.FormatBool(result)))
 }
 
 func NewWeb(services Services) Web {

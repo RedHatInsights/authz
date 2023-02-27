@@ -16,7 +16,7 @@ func NewAccess(store dependencies.AuthzStore) Access {
 }
 
 func (a Access) Check(req contracts.CheckRequest) (bool, error) {
-	authzed, err := a.store.CheckAccess(req.Requestor, "check", app.Resource{Type: "placeholder", Id: "resource"})
+	authzed, err := a.store.CheckAccess(req.Requestor, "call", app.Resource{Type: "endpoint", Id: "checkaccess"})
 	if err != nil {
 		return false, err
 	}
