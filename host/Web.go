@@ -13,6 +13,7 @@ import (
 	"github.com/golang/glog"
 )
 
+//Web is delivery adapter for HTTP
 type Web struct {
 	services Services
 }
@@ -48,11 +49,11 @@ func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
 
 	req := contracts.CheckRequest{
 		Request: contracts.Request{
-			Requestor: app.Principal{Id: requestor},
+			Requestor: app.Principal{ID: requestor},
 		},
-		Subject:   app.Principal{Id: webReq.Subject},
+		Subject:   app.Principal{ID: webReq.Subject},
 		Operation: webReq.Operation,
-		Resource:  app.Resource{Type: webReq.ResourceType, Id: webReq.ResourceId},
+		Resource:  app.Resource{Type: webReq.ResourceType, ID: webReq.ResourceID},
 	} //TODO: clean up mapping from web contract to inner models. Meat of the method follows.
 
 	action := controllers.NewAccess(web.services.Store)
@@ -82,5 +83,5 @@ type CheckWebRequest struct {
 	Subject      string
 	Operation    string
 	ResourceType string
-	ResourceId   string
+	ResourceID   string
 }

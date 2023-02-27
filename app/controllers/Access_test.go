@@ -58,14 +58,14 @@ func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
 	}
 }
 
-func objFromRequest(requestorId string, subjectId string, operation string, resourceType string, resourceId string) contracts.CheckRequest {
+func objFromRequest(requestorID string, subjectID string, operation string, resourceType string, resourceID string) contracts.CheckRequest {
 	return contracts.CheckRequest{
 		Request: contracts.Request{
-			Requestor: app.Principal{Id: requestorId},
+			Requestor: app.Principal{ID: requestorID},
 		},
-		Subject:   app.Principal{Id: subjectId},
+		Subject:   app.Principal{ID: subjectID},
 		Operation: operation,
-		Resource:  app.Resource{Type: resourceType, Id: resourceId},
+		Resource:  app.Resource{Type: resourceType, ID: resourceID},
 	}
 }
 
