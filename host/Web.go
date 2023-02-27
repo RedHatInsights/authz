@@ -20,7 +20,7 @@ type Web struct {
 
 //Host blocks processing web requests until it ends, at which point it signals the indicated WaitGroup
 func (web Web) Host(wait *sync.WaitGroup) {
-	http.HandleFunc("/CheckPermission", web.checkPermission)
+	http.HandleFunc("/v1/permissions/check", web.checkPermission)
 
 	if _, err := os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exisits start server in HTTPS mode
