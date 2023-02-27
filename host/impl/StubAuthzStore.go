@@ -12,7 +12,7 @@ type StubAuthzStore struct {
 func (s StubAuthzStore) CheckAccess(principal app.Principal, operation string, resource app.Resource) (bool, error) {
 	if authz, ok := s.Data[principal.ID]; ok {
 		return authz, nil
-	} else {
-		return false, nil
 	}
+
+	return false, nil
 }

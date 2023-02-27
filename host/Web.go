@@ -18,6 +18,7 @@ type Web struct {
 	services Services
 }
 
+//Host blocks processing web requests until it ends, at which point it signals the indicated WaitGroup
 func (web Web) Host(wait *sync.WaitGroup) {
 	http.HandleFunc("/CheckPermission", web.checkPermission)
 
@@ -75,10 +76,12 @@ func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//NewWeb Constructs a new instance of the Web delivery adapter
 func NewWeb(services Services) Web {
 	return Web{services: services}
 }
 
+//CheckWebRequest represents the body of a web request for the Check endpoint
 type CheckWebRequest struct {
 	Subject      string
 	Operation    string
