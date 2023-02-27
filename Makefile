@@ -12,7 +12,7 @@ DOCKER_CONFIG="${PWD}/.docker"
 
 .PHONY: binary
 binary:
-	$(GO) build ./cmd/authz/
+	$(GO) build .
 
 .PHONY: kind-create
 kind-create:
@@ -30,3 +30,5 @@ kind-deploy:
 .PHONY: kind-delete
 kind-delete:
 	@kind delete cluster --name=authz
+	$(GO) build .
+.PHONY: binary
