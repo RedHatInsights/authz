@@ -20,6 +20,9 @@ type Web struct {
 
 // Host blocks processing web requests until it ends, at which point it signals the indicated WaitGroup
 func (web Web) Host(wait *sync.WaitGroup) {
+	fs := http.FileServer(http.Dir("./api/swagger-ui"))
+	http.Handle("/swaggerui/", http.StripPrefix("/swaggerui/", fs))
+
 	http.HandleFunc("/v1/permissions/check", web.checkPermission)
 
 	if _, err := os.Stat("/etc/tls/tls.crt"); err == nil {
