@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: CIAM Authz  OpenAPI 3.0
+  description: |-
+
+    This is the CIAM-AuthZ service based on the OpenAPI 3.0 specification. 
+
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: ciam-authz@redhat.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.11
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+    # Internal route for now
+  - url: ***REMOVED*** 
+tags:
+  - name: AuthZ
+    description: Everything about your AuthZ
+    externalDocs:
+      description: CIAM AuthZ 
+      url: http://<TODO>
+  - name: user
+    description: Operations about user
+paths:
+  /v1/permissions/check:
+    post:
+      tags:
+        - AuthZ
+        - check
+      summary: Checks the permission and returs allowed (true) or not allowed (false)
+      description: CheckPermission end point is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
+      operationId: CheckPermission
+      requestBody:
+        description: Create a new pet in the store
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckRequest'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/CheckRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: ''#/components/schemas/CheckRequest'
+        required: true
+      responses:
+        '200':
+          description: successful operation - Subject has the requested permission on the object
+        '403':
+          description: access denied - Forbidden - Subject doesnt have the requested permission on the object
+        '400':
+          description: bad request - e.g. request made without operation or for a non-existing objectid.
+
+components:
+  schemas:
+    CheckRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          example: unique-userID-1,unique-userID-2      
+        operation:
+          type: string
+          example: read,write
+        resourcetype:
+          type: string
+          example: sequence,kafka,file
+        resourceid:
+          type: string
+          example: unique-resourceid-1,unique-resourceid-2 
+      xml:
+        name: checkrequest
+    CheckResponse:
+      type: object
+      properties:
+        result:
+          type: boolean
+          example: true,false      
+        description:
+          type: string
+          example: Additional information regarding the response (if any)
+      xml:
+        name: checkresponse
