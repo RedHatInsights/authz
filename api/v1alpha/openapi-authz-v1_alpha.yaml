@@ -17,7 +17,7 @@ externalDocs:
   url: http://swagger.io
 servers:
     # Internal route for now
-  - url: ***REMOVED*** 
+  - url: https://redhat.com 
 tags:
   - name: AuthZ
     description: Everything about your AuthZ
