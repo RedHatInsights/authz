@@ -7,17 +7,17 @@ import (
 	"errors"
 )
 
-//Access is an domain service for abstract access management (ex: querying whether access has been granted.)
+// Access is an domain service for abstract access management (ex: querying whether access has been granted.)
 type Access struct {
 	store dependencies.AuthzStore
 }
 
-//NewAccess constructs a new instance of the Access domain service
+// NewAccess constructs a new instance of the Access domain service
 func NewAccess(store dependencies.AuthzStore) Access {
 	return Access{store}
 }
 
-//Check processes a CheckRequest and returns true or false if successful, otherwise error
+// Check processes a CheckRequest and returns true or false if successful, otherwise error
 func (a Access) Check(req contracts.CheckRequest) (bool, error) {
 	authzed, err := a.store.CheckAccess(req.Requestor, "call", app.Resource{Type: "endpoint", ID: "checkaccess"})
 	if err != nil {

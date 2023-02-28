@@ -2,7 +2,7 @@ package contracts
 
 import "authz/app"
 
-//A CheckRequest contains the parameters to request whether a subject can perform an operation on a resource
+// A CheckRequest contains the parameters to request whether a subject can perform an operation on a resource
 type CheckRequest struct {
 	//The common request parameters
 	Request
