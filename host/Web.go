@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/golang/glog"
@@ -67,9 +66,20 @@ func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Add("Content-Type", "text/plain")
+	response := CheckWebResponse{
+		Result: result,
+	}
+	data, err := json.Marshal(response)
+
+	if err != nil {
+		glog.Errorf("Error processing request: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(200)
-	_, err = w.Write([]byte(strconv.FormatBool(result)))
+	_, err = w.Write(data)
 
 	if err != nil {
 		glog.Errorf("Error sending response: %s", err)
@@ -87,4 +97,10 @@ type CheckWebRequest struct {
 	Operation    string
 	ResourceType string
 	ResourceID   string
+}
+
+// CheckWebResponse represents the body of a response for the Check endpoint
+type CheckWebResponse struct {
+	Result      bool   `json:"result"`
+	Description string `json:"description"`
 }
