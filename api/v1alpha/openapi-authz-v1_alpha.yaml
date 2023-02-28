@@ -17,7 +17,7 @@ externalDocs:
   url: http://swagger.io
 servers:
     # Internal route for now
-  - url: https://ciam-authz-hw-ciam-authz--runtime-int.apps.int.spoke.preprod.us-east-1.aws.paas.redhat.com/ 
+  - url: https://redhat.com 
 tags:
   - name: AuthZ
     description: Everything about your AuthZ
