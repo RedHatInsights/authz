@@ -18,6 +18,10 @@ externalDocs:
 servers:
     # Internal route for now
   - url: https://redhat.com
+  - url: http://localhost:8000
+    description: localhost
+  - url: /
+    description: current domain
 tags:
   - name: AuthZ
     description: Everything about your AuthZ
