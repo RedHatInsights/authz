@@ -1,0 +1,65 @@
+swagger: "2.0"
+info:
+  title: v1/core.proto
+  version: version not set
+tags:
+  - name: CheckPermission
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /api/v1/permissions/check:
+    post:
+      operationId: CheckPermission_CheckPermission
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CheckPermissionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: subject
+          in: query
+          required: false
+          type: string
+        - name: operation
+          in: query
+          required: false
+          type: string
+        - name: resourceType
+          in: query
+          required: false
+          type: string
+        - name: resourceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - CheckPermission
+definitions:
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
+  v1CheckPermissionResponse:
+    type: object
+    title: empty but open for extension
