@@ -29,6 +29,6 @@ additional_properties="generateInterfaces=true,enumClassPrefix=true"
 
 OPENAPI_FILENAME="api/v1alpha/openapi-authz-v1_alpha.yaml"
 PACKAGE_NAME="api"
-OUTPUT_PATH="api/v1alpha/client"
+OUTPUT_PATH="api/v1alpha/public"
 
 generate_sdk $OPENAPI_FILENAME $OUTPUT_PATH $PACKAGE_NAME

@@ -4,3 +4,9 @@
 **/.travis.yml
 **/api
 **/.openapi-generator-ignore
+
+
+api/public/README.md
+api/public/docs/**.md
+api/public/**all_of.go
+api/public/go.mod
