@@ -39,9 +39,9 @@ vendor
 # Ignore temporary *.swp files
 *.swp
 
-<<<<<<< HEAD
 # Ignore generated self-signed TLS files from makefile.
 tls/**
-=======
+
+# Ignore IDE files
 .idea
->>>>>>> c3e3638 (adding swagger docker ui and openapi generation script)
+.vscode
