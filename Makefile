@@ -9,6 +9,8 @@ endif
 
 DOCKER ?= docker
 DOCKER_CONFIG="${PWD}/.docker"
+SHELL = bash
+
 
 .PHONY: binary
 binary:
@@ -41,4 +43,30 @@ tls-cert:
                -addext "subjectAltName=DNS:example.com,DNS:www.example.net,IP:10.0.0.1"
 	@echo "Success! find your cert files in the tls/ folder"
 
+binary:
+	$(GO) build .
+.PHONY: binary
 
+generate:
+	./scripts/generate.sh
+.PHONY: generate
+
+# validate the openapi schema
+openapi/validate: openapi-generator
+	$(OPENAPI_GENERATOR) validate -i api/v1alpha/openapi-authz-v1_alpha.yaml
+.PHONY: openapi/validate
+
+# Run Swagger and host the api docs
+run/docs:
+	$(DOCKER) run -u $(shell id -u) --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
+		{ url: \"/openapi/v1alpha/openapi-authz-v1_alpha.yaml\", name: \"Authz API\"}]"\
+		  -v $(PWD)/api/:/usr/share/nginx/html/openapi:Z swaggerapi/swagger-ui
+	@echo "Please open http://localhost:8082/"
+.PHONY: run/docs
+
+
+# Remove Swagger container
+run/docs/teardown:
+	$(DOCKER) container stop swagger_ui_docs
+	$(DOCKER) container rm swagger_ui_docs
+.PHONY: run/docs/teardown
