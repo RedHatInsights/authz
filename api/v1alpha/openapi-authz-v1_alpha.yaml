@@ -17,7 +17,15 @@ externalDocs:
   url: http://swagger.io
 servers:
     # Internal route for now
-  - url: https://redhat.com 
+  - url: https://redhat.com
+tags:
+  - name: AuthZ
+    description: Everything about your AuthZ
+    externalDocs:
+      description: CIAM AuthZ 
+      url: http://<TODO>
+  - name: user
+    description: Operations about user  
 paths:
   /v1/permissions/check:
     post:
