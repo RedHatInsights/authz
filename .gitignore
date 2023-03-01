@@ -39,3 +39,5 @@ vendor
 # Ignore temporary *.swp files
 *.swp
 
+# Ignore generated self-signed TLS files from makefile.
+tls/**
