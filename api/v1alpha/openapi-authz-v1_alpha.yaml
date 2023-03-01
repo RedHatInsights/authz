@@ -54,6 +54,10 @@ paths:
       responses:
         '200':
           description: successful operation - Subject has the requested permission on the object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckResponse'
         '403':
           description: access denied - Forbidden - Subject doesnt have the requested permission on the object
         '400':
