@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+// Additional imports go here
+
+package api.v1;
+
+option go_package = "github.com/RedHatInsights/authz/proto/gen/go/core/v1;core";
+
+// Service & message definitions go here
+
+message CheckPermissionRequest {
+  string subject = 1;
+  string operation = 2;
+  string resource_type = 3;
+  string resource_id = 4;
+}
+
+message CheckPermissionResponse {
+    // empty but open for extension
+}
+
+service CheckPermission {
+    rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse) {}
+}
