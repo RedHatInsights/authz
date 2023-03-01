@@ -22,3 +22,10 @@ plugins:
     out: gen
     opt:
       - grpc_api_configuration=v1/gw_mapping.yaml
+      - output_format=yaml
+    # # protoc-gen-openapiv2 needs to be installed, generate swagger config files based on proto files
+  - name: openapiv2
+    out: gen
+    opt:
+      - grpc_api_configuration=v1/gw_mapping.yaml
+      - output_format=json
