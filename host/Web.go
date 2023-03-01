@@ -1,15 +1,15 @@
 package host
 
 import (
-	"authz/app"
-	"authz/app/contracts"
-	"authz/app/controllers"
-	"encoding/json"
+	"context"
 	"net/http"
 	"os"
 	"sync"
 
+	core "authz/api/gen/v1"
+
 	"github.com/golang/glog"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
 // Web is delivery adapter for HTTP
@@ -17,90 +17,39 @@ type Web struct {
 	services Services
 }
 
-// Host blocks processing web requests until it ends, at which point it signals the indicated WaitGroup
-func (web Web) Host(wait *sync.WaitGroup) {
-	http.HandleFunc("/v1/permissions/check", web.checkPermission)
+// Host exposes an HTTP endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
+func (web Web) Host(wait *sync.WaitGroup, handler core.CheckPermissionServer) {
+	defer wait.Done()
 
-	if _, err := os.Stat("/etc/tls/tls.crt"); err == nil {
-		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exisits start server in HTTPS mode
+	mux := runtime.NewServeMux()
+	var err error
+
+	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, handler); err != nil {
+		glog.Errorf("Error registering wrapped serivce: %s", handler)
+		return
+	}
+
+	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
+		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Info("TLS cert and Key found  - Starting server in secure HTTPs mode")
 
-			_ = http.ListenAndServeTLS(":8443", "/etc/tls/tls.crt", "/etc/tls/tls.key", nil)
+			err = http.ListenAndServeTLS(":8443", "/etc/tls/tls.crt", "/etc/tls/tls.key", mux)
+			if err != nil {
+				glog.Errorf("Error hosting TLS service: %s", err)
+				return
+			}
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Info("TLS cert or Key not found  - Starting server in unsercure plain HTTP mode")
-		_ = http.ListenAndServe(":8080", nil)
-	}
-
-	wait.Done()
-}
-
-func (web Web) checkPermission(w http.ResponseWriter, r *http.Request) {
-	var webReq CheckWebRequest
-
-	err := json.NewDecoder(r.Body).Decode(&webReq)
-	if err != nil {
-		glog.Errorf("Error decoding payload: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	requestor := r.Header["Authorization"][0]
-
-	req := contracts.CheckRequest{
-		Request: contracts.Request{
-			Requestor: app.Principal{ID: requestor},
-		},
-		Subject:   app.Principal{ID: webReq.Subject},
-		Operation: webReq.Operation,
-		Resource:  app.Resource{Type: webReq.ResourceType, ID: webReq.ResourceID},
-	} //TODO: clean up mapping from web contract to inner models. Meat of the method follows.
-
-	action := controllers.NewAccess(web.services.Store)
-
-	result, err := action.Check(req)
-
-	if err != nil {
-		glog.Errorf("Error processing request: %s", err)
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
-	response := CheckWebResponse{
-		Result: result,
-	}
-	data, err := json.Marshal(response)
-
-	if err != nil {
-		glog.Errorf("Error processing request: %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err = w.Write(data)
-
-	if err != nil {
-		glog.Errorf("Error sending response: %s", err)
+		err = http.ListenAndServe(":8080", mux)
+		if err != nil {
+			glog.Errorf("Error hosting insecure service: %s", err)
+			return
+		}
 	}
 }
 
 // NewWeb Constructs a new instance of the Web delivery adapter
 func NewWeb(services Services) Web {
 	return Web{services: services}
-}
-
-// CheckWebRequest represents the body of a web request for the Check endpoint
-type CheckWebRequest struct {
-	Subject      string
-	Operation    string
-	ResourceType string
-	ResourceID   string
-}
-
-// CheckWebResponse represents the body of a response for the Check endpoint
-type CheckWebResponse struct {
-	Result      bool   `json:"result"`
-	Description string `json:"description"`
 }

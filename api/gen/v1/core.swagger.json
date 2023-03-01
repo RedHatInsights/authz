@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/permissions/check": {
+    "/v1/permissions/check": {
       "post": {
         "operationId": "CheckPermission_CheckPermission",
         "responses": {
@@ -35,28 +35,12 @@
         },
         "parameters": [
           {
-            "name": "subject",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "operation",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "resourceType",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "resourceId",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CheckPermissionRequest"
+            }
           }
         ],
         "tags": [
@@ -94,9 +78,33 @@
         }
       }
     },
+    "v1CheckPermissionRequest": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "resourcetype": {
+          "type": "string"
+        },
+        "resourceid": {
+          "type": "string"
+        }
+      }
+    },
     "v1CheckPermissionResponse": {
       "type": "object",
-      "title": "empty but open for extension"
+      "properties": {
+        "result": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
     }
   }
 }
