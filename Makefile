@@ -43,10 +43,6 @@ tls-cert:
                -addext "subjectAltName=DNS:example.com,DNS:www.example.net,IP:10.0.0.1"
 	@echo "Success! find your cert files in the tls/ folder"
 
-binary:
-	$(GO) build .
-.PHONY: binary
-
 generate:
 	./scripts/generate.sh
 .PHONY: generate
