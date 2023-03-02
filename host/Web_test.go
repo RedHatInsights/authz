@@ -31,14 +31,14 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	resp := runRequest(post("/v1/permissions/check", "system",
 		`{"subject": "okay", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
-	assertJsonResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
+	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	resp := runRequest(post("/v1/permissions/check", "system",
 		`{"subject": "bad", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
-	assertJsonResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
+	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
 func post(uri string, token string, body string) *http.Request {
@@ -64,7 +64,7 @@ func runRequest(req *http.Request) *http.Response {
 	return rec.Result()
 }
 
-func assertJsonResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
+func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
 	if assert.NotNil(t, resp) {
 		assert.Equal(t, statusCode, resp.StatusCode)
 
