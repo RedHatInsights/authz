@@ -5,4 +5,5 @@ config_version: 3
 http:
   rules:
     - selector: api.v1.CheckPermission.CheckPermission
-      post: /api/v1/permissions/check
+      post: /v1/permissions/check
+      body: "*"

@@ -58,8 +58,8 @@ openapi/validate: openapi-generator
 
 # Run Swagger and host the api docs
 run/docs:
-	$(DOCKER) run -u $(shell id -u) --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
-		{ url: \"/openapi/v1alpha/openapi-authz-v1_alpha.yaml\", name: \"Authz API\"}]"\
+	$(DOCKER) run --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
+		{ url: \"/openapi/gen/v1/core.swagger.yaml\", name: \"Authz API\"}]"\
 		  -v $(PWD)/api/:/usr/share/nginx/html/openapi:Z swaggerapi/swagger-ui
 	@echo "Please open http://localhost:8082/"
 .PHONY: run/docs
