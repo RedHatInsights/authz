@@ -1,5 +1,7 @@
 GO := go
 GOFMT := gofmt
+PROTOC_INSTALLED := $(shell which protoc)
+BUF_INSTALLED := $(shell which buf)
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell $(GO) env GOBIN))
 GOBIN=$(shell $(GO) env GOPATH)/bin
@@ -10,7 +12,6 @@ endif
 DOCKER ?= docker
 DOCKER_CONFIG="${PWD}/.docker"
 SHELL = bash
-
 
 .PHONY: binary
 binary:
@@ -66,3 +67,16 @@ run/docs/teardown:
 	$(DOCKER) container stop swagger_ui_docs
 	$(DOCKER) container rm swagger_ui_docs
 .PHONY: run/docs/teardown
+
+# Generate grpc gateway code from proto
+proto-gen-local:
+	@echo "checking if protoc and buf are installed..."
+ifndef PROTOC_INSTALLED
+	$(error "protoc is not installed, please install it using e.g. 'brew install protobuf'")
+endif
+ifndef BUF_INSTALLED
+	$(error "Buf is not installed, please install it using e.g. 'brew install buf'")
+endif
+	@echo "generating grpc gateway code from .proto"
+	@cd api && buf generate
+.PHONY: proto-gen-local
