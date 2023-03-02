@@ -18,7 +18,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	resp := runRequest(post("/v1/permissions/check", "other system",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
-	assert.Equal(t, 500, resp.StatusCode) //TODO: this should return 403
+	assert.Equal(t, 403, resp.StatusCode)
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
@@ -26,7 +26,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	resp := runRequest(post("/v1/permissions/check", "",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
-	assert.Equal(t, 500, resp.StatusCode) //TODO: this should return 401
+	assert.Equal(t, 401, resp.StatusCode)
 }
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {

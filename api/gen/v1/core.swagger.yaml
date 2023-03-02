@@ -1,9 +1,25 @@
 swagger: "2.0"
 info:
-  title: v1/core.proto
-  version: version not set
+  title: CIAM Authz
+  description: This is the CIAM-AuthZ service based on the OpenAPI 2.0 specification.
+  version: 1.0.11
+  contact:
+    email: ciam-authz@redhat.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
 tags:
   - name: CheckPermission
+  - name: AuthZ
+    description: Everything about your AuthZ
+    externalDocs:
+      description: CIAM AuthZ
+      url: http://<TODO>
+  - name: user
+    description: Operations about user
+schemes:
+  - http
+  - https
 consumes:
   - application/json
 produces:
@@ -11,12 +27,27 @@ produces:
 paths:
   /v1/permissions/check:
     post:
+      summary: Checks the permission and returs allowed (true) or not allowed (false)
+      description: CheckPermission end point is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
       operationId: CheckPermission_CheckPermission
       responses:
         "200":
           description: A successful response.
           schema:
             $ref: '#/definitions/v1CheckPermissionResponse'
+          examples:
+            application/json:
+              description: ""
+              result: true
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
         default:
           description: An unexpected error response.
           schema:
