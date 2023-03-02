@@ -6,6 +6,7 @@ type Principal struct {
 	ID string
 }
 
+// HasIdentity returns true if this principal represents an identity or false if this principal is anonymous.
 func (p *Principal) HasIdentity() bool {
 	return p.ID != ""
 }
