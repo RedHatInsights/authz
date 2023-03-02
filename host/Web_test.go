@@ -14,6 +14,7 @@ import (
 )
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
+	t.Parallel()
 	resp := runRequest(post("/v1/permissions/check", "other system",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
@@ -21,6 +22,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
+	t.Parallel()
 	resp := runRequest(post("/v1/permissions/check", "",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
@@ -28,6 +30,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
+	t.Parallel()
 	resp := runRequest(post("/v1/permissions/check", "system",
 		`{"subject": "okay", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
@@ -35,6 +38,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
+	t.Parallel()
 	resp := runRequest(post("/v1/permissions/check", "system",
 		`{"subject": "bad", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
@@ -57,7 +61,7 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 
 // runRequest connects a mock HTTP front-end to a mock Store back-end using the generated proxy code and real gRPC implementation to test that integration
 func runRequest(req *http.Request) *http.Response {
-	mux, _ := createMultiplexer(NewGRpc(Services{Store: mockAuthzStore()}))
+	mux, _ := createMultiplexer(NewGrpcServer(Services{Store: mockAuthzStore()}))
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 

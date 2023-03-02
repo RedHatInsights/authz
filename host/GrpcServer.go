@@ -17,13 +17,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// GRpc represents a GRpc host service
-type GRpc struct {
+// GrpcServer represents a GrpcServer host service
+type GrpcServer struct {
 	services Services
 }
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
-func (r *GRpc) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
+func (r *GrpcServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
 
 	if token, ok := getBearerTokenFromContext(ctx, []string{"grpcgateway-authorization", "bearer-token"}); ok { //'bearer-token' is a guess at the metadata key for a token in a gRPC request
 
@@ -50,13 +50,13 @@ func (r *GRpc) CheckPermission(ctx context.Context, rpcReq *core.CheckPermission
 	return nil, errors.New("Missing identity") //401?
 }
 
-// NewGRpc instantiates a new GRpc host service
-func NewGRpc(services Services) *GRpc {
-	return &GRpc{services: services}
+// NewGrpcServer instantiates a new GRpc host service
+func NewGrpcServer(services Services) *GrpcServer {
+	return &GrpcServer{services: services}
 }
 
 // Host exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (r *GRpc) Host(wait *sync.WaitGroup) {
+func (r *GrpcServer) Host(wait *sync.WaitGroup) {
 	defer wait.Done()
 
 	ls, err := net.Listen("tcp", ":8081")
