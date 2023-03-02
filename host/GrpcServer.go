@@ -27,11 +27,9 @@ type GrpcServer struct {
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (r *GrpcServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
 
-	token := getBearerTokenFromContext(ctx)
-
 	req := contracts.CheckRequest{
 		Request: contracts.Request{
-			Requestor: app.Principal{ID: token},
+			Requestor: getRequestorIdentityFromContext(ctx),
 		},
 		Subject:   app.Principal{ID: rpcReq.Subject},
 		Operation: rpcReq.Operation,
@@ -100,15 +98,15 @@ func convertDomainErrorToGrpc(err error) error {
 	}
 }
 
-func getBearerTokenFromContext(ctx context.Context) string {
+func getRequestorIdentityFromContext(ctx context.Context) app.Principal {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if metadata, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := metadata.Get(name)
 			if len(headers) > 0 {
-				return headers[0]
+				return app.NewPrincipal(headers[0])
 			}
 		}
 	}
 
-	return ""
+	return app.NewAnonymousPrincipal()
 }

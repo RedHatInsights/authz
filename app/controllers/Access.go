@@ -18,7 +18,7 @@ func NewAccess(store dependencies.AuthzStore) Access {
 
 // Check processes a CheckRequest and returns true or false if successful, otherwise error
 func (a Access) Check(req contracts.CheckRequest) (bool, error) {
-	if !req.Requestor.HasIdentity() {
+	if req.Requestor.IsAnonymous() {
 		return false, app.ErrNotAuthenticated
 	}
 

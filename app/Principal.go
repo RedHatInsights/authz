@@ -6,7 +6,17 @@ type Principal struct {
 	ID string
 }
 
-// HasIdentity returns true if this principal represents an identity or false if this principal is anonymous.
-func (p *Principal) HasIdentity() bool {
-	return p.ID != ""
+// IsAnonymous returns true if this Principal has no identity information and returns false if this Principal represents a specific identity
+func (p Principal) IsAnonymous() bool {
+	return p.ID == ""
+}
+
+// NewPrincipal constructs a new principal with the given identifier.
+func NewPrincipal(id string) Principal {
+	return Principal{ID: id}
+}
+
+// NewAnonymousPrincipal constructs a new principal without an identity.
+func NewAnonymousPrincipal() Principal {
+	return Principal{ID: ""}
 }
