@@ -33,9 +33,11 @@ func main() {
 
 	wait := sync.WaitGroup{}
 	web := host.NewWeb(services)
+	gRPC := host.NewGrpcServer(services)
 
-	wait.Add(1)
-	go web.Host(&wait)
+	wait.Add(2)
+	go web.Host(&wait, gRPC)
+	go gRPC.Host(&wait)
 
 	wait.Wait()
 }

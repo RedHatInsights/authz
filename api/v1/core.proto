@@ -11,12 +11,13 @@ option go_package = "github.com/RedHatInsights/authz/proto/gen/go/core/v1;core";
 message CheckPermissionRequest {
   string subject = 1;
   string operation = 2;
-  string resource_type = 3;
-  string resource_id = 4;
+  string resourcetype = 3;
+  string resourceid = 4;
 }
 
 message CheckPermissionResponse {
-    // empty but open for extension
+    bool result = 1;
+    string description = 2;
 }
 
 service CheckPermission {
