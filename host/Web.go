@@ -21,11 +21,9 @@ type Web struct {
 func (web Web) Host(wait *sync.WaitGroup, handler core.CheckPermissionServer) {
 	defer wait.Done()
 
-	mux := runtime.NewServeMux()
-	var err error
-
-	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, handler); err != nil {
-		glog.Errorf("Error registering wrapped serivce: %s", handler)
+	mux, err := createMultiplexer(handler)
+	if err != nil {
+		glog.Errorf("Error creating multiplexer: %s", err)
 		return
 	}
 
@@ -42,6 +40,7 @@ func (web Web) Host(wait *sync.WaitGroup, handler core.CheckPermissionServer) {
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Info("TLS cert or Key not found  - Starting server in unsercure plain HTTP mode")
 		err = http.ListenAndServe(":8080", mux)
+
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
 			return
@@ -52,4 +51,14 @@ func (web Web) Host(wait *sync.WaitGroup, handler core.CheckPermissionServer) {
 // NewWeb Constructs a new instance of the Web delivery adapter
 func NewWeb(services Services) Web {
 	return Web{services: services}
+}
+
+func createMultiplexer(handler core.CheckPermissionServer) (*runtime.ServeMux, error) {
+	mux := runtime.NewServeMux()
+
+	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, handler); err != nil {
+		return nil, err
+	}
+
+	return mux, nil
 }
