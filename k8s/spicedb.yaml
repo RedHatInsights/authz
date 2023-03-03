@@ -9,7 +9,7 @@
 #
 # To apply this configuration execute the following:
 # kubectl -n $YOUR_NAMESPACE create secret generic spicedb --from-literal=SPICEDB_GRPC_PRESHARED_KEY=$YOUR_SECRET
-# kubectl -n $YOUR_NAMESPACE apply -f basic.yaml
+# kubectl -n $YOUR_NAMESPACE apply -f spicedb.yaml
 ---
 apiVersion: "v1"
 kind: "Service"
