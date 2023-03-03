@@ -78,11 +78,11 @@ run/docs/teardown:
 buf-gen:
 #check if protoc is installed
 ifndef PROTOC_INSTALLED
-	$(error "protoc is not installed, please install protoc version $(PROTOC_EXPECTED_VERSION) - see https://grpc.io/docs/protoc-installation/ - included in protobuf version $(PROTOBUF_VERSION))")
+	$(error "protoc is not installed, please install protoc - see https://grpc.io/docs/protoc-installation/ ")
 endif
 #check if buf is installed
 ifndef BUF_INSTALLED
-	$(error "Buf is not installed, please install buf version $(BUF_EXPECTED_VERSION) - see https://docs.buf.build/installation")
+	$(error "Buf is not installed, please install buf - see https://docs.buf.build/installation")
 endif
 # install dependencies if not installed yet. see https://github.com/grpc-ecosystem/grpc-gateway#installation - versions are derived from go.mod via tools.go
 ifndef GEN_GW_INSTALLED
