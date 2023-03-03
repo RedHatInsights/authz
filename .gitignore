@@ -42,6 +42,8 @@ vendor
 # Ignore generated self-signed TLS files from makefile.
 tls/**
 
+# Ignore generated backupdir for grpc codegen code
+genbackup/**
 # Ignore IDE files
 .idea
 .vscode
