@@ -1,7 +1,17 @@
 GO := go
 GOFMT := gofmt
-PROTOC_INSTALLED := $(shell which protoc)
-BUF_INSTALLED := $(shell which buf)
+PROTOC_INSTALLED := $(shell which protoc 2>/dev/null)
+PROTOC_EXPECTED_VERSION =libprotoc 3.21.12
+PROTOC_CURR_VERSION := $(shell protoc --version 2>/dev/null)
+BUF_INSTALLED := $(shell which buf 2>/dev/null)
+BUF_EXPECTED_VERSION = 1.15.0
+BUF_CURR_VERSION := $(shell buf --version 2>/dev/null)
+GEN_GW_INSTALLED := $(shell which protoc-gen-grpc-gateway 2>/dev/null)
+GEN_OPENAPI_INSTALLED := $(shell which protoc-gen-openapiv2 2>/dev/null)
+GEN_GO_GRPC_INSTALLED := $(shell which protoc-gen-go-grpc 2>/dev/null)
+GEN_GO_INSTALLED := $(shell which protoc-gen-go 2>/dev/null)
+PROTOBUF_VERSION = 21.12
+API_GEN_DIR=api/gen/v1/
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell $(GO) env GOBIN))
 GOBIN=$(shell $(GO) env GOPATH)/bin
@@ -69,14 +79,59 @@ run/docs/teardown:
 .PHONY: run/docs/teardown
 
 # Generate grpc gateway code from proto
-proto-gen-local:
-	@echo "checking if protoc and buf are installed..."
+.PHONY: buf-gen
+buf-gen:
+#check if protoc is installed
 ifndef PROTOC_INSTALLED
-	$(error "protoc is not installed, please install it using e.g. 'brew install protobuf'")
+	$(error "protoc is not installed, please install protoc version $(PROTOC_EXPECTED_VERSION) - see https://grpc.io/docs/protoc-installation/ - included in protobuf version $(PROTOBUF_VERSION))")
 endif
+#check if buf is installed
 ifndef BUF_INSTALLED
-	$(error "Buf is not installed, please install it using e.g. 'brew install buf'")
+	$(error "Buf is not installed, please install buf version $(BUF_EXPECTED_VERSION) - see https://docs.buf.build/installation")
 endif
-	@echo "generating grpc gateway code from .proto"
+#check protoc Version is the expected version
+ifneq ($(PROTOC_CURR_VERSION),$(PROTOC_EXPECTED_VERSION))
+	$(error "Wrong protoc version detected. please install version $(PROTOC_EXPECTED_VERSION)")
+endif
+#check buf Version is the expected version
+ifneq ($(BUF_CURR_VERSION),$(BUF_EXPECTED_VERSION))
+	$(error "Wrong buf version detected. please install version $(BUF_EXPECTED_VERSION)")
+endif
+# install dependencies if not installed yet. see https://github.com/grpc-ecosystem/grpc-gateway#installation - versions are derived from go.mod via tools.go
+ifndef GEN_GW_INSTALLED
+	@echo "Installing protoc grpc gateway plugin to gobin"
+	@go mod tidy && go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+endif
+ifndef GEN_OPENAPI_INSTALLED
+	@echo "Installing protoc openapi plugin to gobin"
+	@go mod tidy && install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+endif
+ifndef GEN_GO_GRPC_INSTALLED
+	@echo "Installing protoc go-grpc plugin to gobin"
+	@go mod tidy && install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+endif
+ifndef GEN_GO_INSTALLED
+	@echo "Installing protoc go plugin to gobin"
+	@go mod tidy && install google.golang.org/protobuf/cmd/protoc-gen-go
+endif
+#backup old generated files into backupdir
+	@if [ -d $(API_GEN_DIR) ]; then echo "backing up generated code in dir genbackup/" && mkdir -p genbackup && cp -af $(API_GEN_DIR). genbackup/ 2>/dev/null; fi
+#run buf from api dir when everything is ok
+	@echo "Generating grpc gateway code from .proto files"
 	@cd api && buf generate
-.PHONY: proto-gen-local
+
+.PHONY: clean-tls
+clean-tls:
+	@echo "removing generated tls certs"
+	@rm -rf tls/
+
+.PHONY: clean-buf
+clean-buf:
+	@echo "removing generated code backups from proto"
+	@rm -rf genbackup/
+
+.PHONY: clean-all
+clean-all:
+	@echo "removing all generated artifacts "
+	@rm -rf genbackup/
+	@rm -rf tls/
