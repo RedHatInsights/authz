@@ -48,8 +48,8 @@ generate:
 .PHONY: generate
 
 # validate the openapi schema
-openapi/validate: openapi-generator
-	$(OPENAPI_GENERATOR) validate -i api/v1alpha/openapi-authz-v1_alpha.yaml
+openapi/validate: 
+	$(DOCKER) run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli validate -i /local/api/gen/v1/core.swagger.yaml
 .PHONY: openapi/validate
 
 # Run Swagger and host the api docs
