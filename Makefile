@@ -91,15 +91,15 @@ ifndef GEN_GW_INSTALLED
 endif
 ifndef GEN_OPENAPI_INSTALLED
 	@echo "Installing protoc openapi plugin to gobin"
-	@go mod tidy && install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	@go mod tidy && go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
 endif
 ifndef GEN_GO_GRPC_INSTALLED
 	@echo "Installing protoc go-grpc plugin to gobin"
-	@go mod tidy && install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	@go mod tidy && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 endif
 ifndef GEN_GO_INSTALLED
 	@echo "Installing protoc go plugin to gobin"
-	@go mod tidy && install google.golang.org/protobuf/cmd/protoc-gen-go
+	@go mod tidy && go install google.golang.org/protobuf/cmd/protoc-gen-go
 endif
 #run buf from api dir when everything is ok
 	@echo "Generating grpc gateway code from .proto files"
