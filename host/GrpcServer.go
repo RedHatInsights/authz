@@ -24,19 +24,61 @@ type GrpcServer struct {
 	services Services
 }
 
+func (r *GrpcServer) CreateSeats(ctx context.Context, rpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	req := contracts.ModifySeatAssignmentRequest{
+		Request: contracts.Request{
+			Requestor: r.getRequestorIdentityFromContext(ctx),
+		},
+		Principals: r.convertSubjectIdsToPrincipals(rpcReq.Subjects),
+		Org:        app.Organization{Id: rpcReq.TenantId},
+		Service:    app.Service{Id: rpcReq.ServiceId},
+	}
+
+	lic := controllers.NewLicensing(r.services.Licensing, r.services.Authz)
+
+	if err := lic.AssignSeats(req); err != nil {
+		return nil, convertDomainErrorToGrpc(err)
+	}
+
+	return &core.ModifySeatsResponse{}, nil
+}
+
+func (r *GrpcServer) DeleteSeats(ctx context.Context, rpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	req := contracts.ModifySeatAssignmentRequest{
+		Request: contracts.Request{
+			Requestor: r.getRequestorIdentityFromContext(ctx),
+		},
+		Principals: r.convertSubjectIdsToPrincipals(rpcReq.Subjects),
+		Org:        app.Organization{Id: rpcReq.TenantId},
+		Service:    app.Service{Id: rpcReq.ServiceId},
+	}
+
+	lic := controllers.NewLicensing(r.services.Licensing, r.services.Authz)
+
+	if err := lic.UnAssignSeats(req); err != nil {
+		return nil, convertDomainErrorToGrpc(err)
+	}
+
+	return &core.ModifySeatsResponse{}, nil
+}
+
+func (r *GrpcServer) GetSeats(ctx context.Context, rpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+	return nil, nil
+}
+
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (r *GrpcServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
 
 	req := contracts.CheckRequest{
 		Request: contracts.Request{
-			Requestor: getRequestorIdentityFromContext(ctx),
+			Requestor: r.getRequestorIdentityFromContext(ctx),
 		},
-		Subject:   app.Principal{ID: rpcReq.Subject},
+		Subject:   r.services.Principals.GetByID(rpcReq.Subject),
 		Operation: rpcReq.Operation,
 		Resource:  app.Resource{Type: rpcReq.Resourcetype, ID: rpcReq.Resourceid},
 	}
 
-	action := controllers.NewAccess(r.services.Store)
+	action := controllers.NewAccess(r.services.Authz)
 
 	result, err := action.Check(req)
 
@@ -80,11 +122,22 @@ func (r *GrpcServer) Host(wait *sync.WaitGroup) {
 
 	srv := grpc.NewServer(grpc.Creds(creds))
 	core.RegisterCheckPermissionServer(srv, r)
+	core.RegisterSeatsServiceServer(srv, r)
 	err = srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)
 		return
 	}
+}
+
+func (r *GrpcServer) convertSubjectIdsToPrincipals(subjectIds []string) []app.Principal {
+	principals := make([]app.Principal, len(subjectIds))
+	for i, subId := range subjectIds {
+		principal := r.services.Principals.GetByID(subId)
+		principals[i] = principal
+	}
+
+	return principals
 }
 
 func convertDomainErrorToGrpc(err error) error {
@@ -93,17 +146,19 @@ func convertDomainErrorToGrpc(err error) error {
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 	case errors.Is(err, app.ErrNotAuthorized):
 		return status.Error(codes.PermissionDenied, "Access denied.")
+	case errors.Is(err, app.ErrInvalidRequest):
+		return status.Error(codes.InvalidArgument, "Problem with request.")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}
 }
 
-func getRequestorIdentityFromContext(ctx context.Context) app.Principal {
+func (r *GrpcServer) getRequestorIdentityFromContext(ctx context.Context) app.Principal {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if metadata, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := metadata.Get(name)
 			if len(headers) > 0 {
-				return app.NewPrincipal(headers[0])
+				return r.services.Principals.GetByToken(headers[0])
 			}
 		}
 	}
