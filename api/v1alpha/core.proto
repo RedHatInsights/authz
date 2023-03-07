@@ -59,7 +59,6 @@ message GetSeatsUserRepresentation {
   bool isLicenseActive = 3;
 }
 
-//used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
 message GetSeatsCountResponse {
   sint32 seatsTotal = 1; //total seats.
   sint32 seatsAvailable = 2; //currently available seats.
