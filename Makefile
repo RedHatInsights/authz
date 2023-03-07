@@ -75,7 +75,7 @@ run/docs/genv3:
 	$(DOCKER) run --rm --name swagger_codegen \
 		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.json -l openapi -o .
 	@echo "Remove unnecessary generated artifacts"
-	#@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
 	@echo "move and rename files to v1alpha directory"
 	@cd api/gen/v1alpha && mv openapi.yaml ../../v1alpha/openapi-authz-v1alpha.yaml
 	@cd api/gen/v1alpha && mv openapi.json ../../v1alpha/openapi-authz-v1alpha.json
