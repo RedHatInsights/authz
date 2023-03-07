@@ -45,3 +45,7 @@ openapiOptions:
           "200":
             examples:
               "application/json": '{"result": true, "description": ""}'
+    - method: api.v1alpha.SeatsService.CreateSeats
+      option:
+        summary: Add licenses to users
+        description: Adds users to seats/licenses until the seats of the bought license are full.
