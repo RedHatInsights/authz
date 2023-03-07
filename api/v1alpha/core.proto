@@ -61,8 +61,8 @@ message GetSeatsUserRepresentation {
 
 //used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
 message GetSeatsCountResponse {
-  sint64 seatsTotal = 1; //total seats.
-  sint64 seatsAvailable = 2; //currently available seats.
+  sint32 seatsTotal = 1; //total seats.
+  sint32 seatsAvailable = 2; //currently available seats.
 }
 
 // TODO: Use right http status codes - see https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/

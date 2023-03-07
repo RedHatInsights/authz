@@ -239,13 +239,13 @@
       "type": "object",
       "properties": {
         "seatsTotal": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "description": "total seats."
         },
         "seatsAvailable": {
-          "type": "string",
-          "format": "int64",
+          "type": "integer",
+          "format": "int32",
           "description": "currently available seats."
         }
       },
@@ -260,7 +260,7 @@
             "type": "object",
             "$ref": "#/definitions/v1alphaGetSeatsUserRepresentation"
           },
-          "title": "empty is includeUsers = false, filled if includeUsers=true"
+          "title": "empty if includeUsers = false, filled if includeUsers=true"
         },
         "licenseInfo": {
           "$ref": "#/definitions/v1alphaGetSeatsCountResponse",
