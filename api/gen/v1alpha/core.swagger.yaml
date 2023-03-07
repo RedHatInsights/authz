@@ -27,15 +27,69 @@ produces:
   - application/json
 paths:
   /v1alpha/license/seats:
-    post:
-      summary: Add licenses to users
-      description: Adds users to seats/licenses until the seats of the bought license are full.
-      operationId: SeatsService_CreateSeats
+    get:
+      summary: Gets licensed/unlicensed users and count.
+      description: Removes users from seats/licenses
+      operationId: SeatsService_GetSeats
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1alphaCreateSeatsResponse'
+            $ref: '#/definitions/v1alphaGetSeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tenantId
+          description: tenant to get seats for
+          in: query
+          required: false
+          type: string
+        - name: serviceId
+          description: service/productlicense to get seats for
+          in: query
+          required: false
+          type: string
+        - name: includeUsers
+          description: 'true: include encriched user representation. false: do not include. Default: true.'
+          in: query
+          required: false
+          type: boolean
+        - name: filter
+          description: 'filter, either licensed or unlicensed users returned. Default: licensed. Note: Default values are not supported anymore in proto3, check serverside i guess.'
+          in: query
+          required: false
+          type: string
+          enum:
+            - licensed
+            - unlicensed
+          default: licensed
+        - name: includeLicenseInfo
+          description: 'include available and max seats of license. Default: True.'
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - SeatsService
+    delete:
+      summary: Removes licenses from users
+      description: Removes users from seats/licenses
+      operationId: SeatsService_DeleteSeats
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaModifySeatsResponse'
         "401":
           description: Returned when no valid identity information provided to a protected endpoint.
           schema: {}
@@ -55,13 +109,44 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1alphaCreateSeatsRequest'
+            $ref: '#/definitions/v1alphaModifySeatsRequest'
+      tags:
+        - SeatsService
+    post:
+      summary: Add licenses to users
+      description: Adds users to seats/licenses until the seats of the bought license are full.
+      operationId: SeatsService_CreateSeats
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaModifySeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1alphaModifySeatsRequest'
       tags:
         - SeatsService
   /v1alpha/permissions/check:
     post:
-      summary: Checks the permission and returs allowed (true) or not allowed (false)
-      description: CheckPermission end point is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
+      summary: Checks the permission and returns allowed (true) or not allowed (false)
+      description: CheckPermission endpoint is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
       operationId: CheckPermission_CheckPermission
       responses:
         "200":
@@ -131,7 +216,41 @@ definitions:
         type: boolean
       description:
         type: string
-  v1alphaCreateSeatsRequest:
+  v1alphaGetSeatsCountResponse:
+    type: object
+    properties:
+      seatsTotal:
+        type: string
+        format: int64
+        description: total seats.
+      seatsAvailable:
+        type: string
+        format: int64
+        description: currently available seats.
+    title: used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
+  v1alphaGetSeatsResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1alphaGetSeatsUserRepresentation'
+        title: empty is includeUsers = false, filled if includeUsers=true
+      licenseInfo:
+        $ref: '#/definitions/v1alphaGetSeatsCountResponse'
+        title: returns total and assigned seats for the given tenant & service, if includeLicenseInfo is true in request
+  v1alphaGetSeatsUserRepresentation:
+    type: object
+    properties:
+      displayName:
+        type: string
+      id:
+        type: string
+      isLicenseActive:
+        type: boolean
+    description: we may return more userinfo, this is a starting point.
+  v1alphaModifySeatsRequest:
     type: object
     properties:
       tenantId:
@@ -146,5 +265,11 @@ definitions:
         type: string
         title: id of service to add subjects to as "licensed users"
     description: CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
-  v1alphaCreateSeatsResponse:
+  v1alphaModifySeatsResponse:
     type: object
+  v1alphaSeatFilterType:
+    type: string
+    enum:
+      - licensed
+      - unlicensed
+    default: licensed

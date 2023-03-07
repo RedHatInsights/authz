@@ -10,3 +10,8 @@ http:
     - selector: api.v1alpha.SeatsService.CreateSeats
       post: /v1alpha/license/seats
       body: "*"
+    - selector: api.v1alpha.SeatsService.DeleteSeats
+      delete: /v1alpha/license/seats
+      body: "*"
+    - selector: api.v1alpha.SeatsService.GetSeats
+      get: /v1alpha/license/seats

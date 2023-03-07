@@ -25,15 +25,49 @@ service CheckPermission {
 }
 
 // CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
-message CreateSeatsRequest {
+message ModifySeatsRequest {
   string tenantId = 1; //tenantId of subjects
   repeated string subjects = 2; //list of subjects to add
   string serviceId = 3; //id of service to add subjects to as "licensed users"
 }
 
-message CreateSeatsResponse {
+message ModifySeatsResponse {
 }
 
+enum SeatFilterType {
+  licensed = 0;
+  unlicensed = 1;
+}
+
+message GetSeatsRequest {
+  string tenantId = 1; //tenant to get seats for
+  string serviceId=2; //service/productlicense to get seats for
+  optional bool includeUsers=3; //true: include encriched user representation. false: do not include. Default: true.
+  optional SeatFilterType filter=4; //filter, either licensed or unlicensed users returned. Default: licensed. Note: Default values are not supported anymore in proto3, check serverside i guess.
+  optional bool includeLicenseInfo=5; //include available and max seats of license. Default: True.
+}
+
+message GetSeatsResponse {
+  repeated GetSeatsUserRepresentation users = 1; //empty if includeUsers = false, filled if includeUsers=true
+  GetSeatsCountResponse licenseInfo = 2; //returns total and assigned seats for the given tenant & service, if includeLicenseInfo is true in request
+}
+
+//we may return more userinfo, this is a starting point.
+message GetSeatsUserRepresentation {
+  string displayName = 1;
+  string id=2;
+  bool isLicenseActive = 3;
+}
+
+//used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
+message GetSeatsCountResponse {
+  sint64 seatsTotal = 1; //total seats.
+  sint64 seatsAvailable = 2; //currently available seats.
+}
+
+// TODO: Use right http status codes - see https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/
 service SeatsService {
-  rpc CreateSeats (CreateSeatsRequest) returns (CreateSeatsResponse) {}
+  rpc CreateSeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
+  rpc DeleteSeats(ModifySeatsRequest) returns (ModifySeatsResponse) {}
+  rpc GetSeats(GetSeatsRequest) returns (GetSeatsResponse) {}
 }
