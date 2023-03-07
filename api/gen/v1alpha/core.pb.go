@@ -494,7 +494,6 @@ func (x *GetSeatsUserRepresentation) GetIsLicenseActive() bool {
 	return false
 }
 
-// used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
 type GetSeatsCountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

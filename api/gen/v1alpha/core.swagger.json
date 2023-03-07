@@ -248,8 +248,7 @@
           "format": "int32",
           "description": "currently available seats."
         }
-      },
-      "title": "used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar"
+      }
     },
     "v1alphaGetSeatsResponse": {
       "type": "object",
