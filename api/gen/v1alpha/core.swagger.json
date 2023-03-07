@@ -7,6 +7,9 @@
   "tags": [
     {
       "name": "CheckPermission"
+    },
+    {
+      "name": "SeatsService"
     }
   ],
   "consumes": [
@@ -16,6 +19,39 @@
     "application/json"
   ],
   "paths": {
+    "/v1alpha/license/seats": {
+      "post": {
+        "operationId": "SeatsService_CreateSeats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaCreateSeatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an \"admin\" can actually add licenses.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaCreateSeatsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SeatsService"
+        ]
+      }
+    },
     "/v1alpha/permissions/check": {
       "post": {
         "operationId": "CheckPermission_CheckPermission",
@@ -105,6 +141,30 @@
           "type": "string"
         }
       }
+    },
+    "v1alphaCreateSeatsRequest": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "type": "string",
+          "title": "tenantId of subjects"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "list of subjects to add"
+        },
+        "serviceId": {
+          "type": "string",
+          "title": "id of service to add subjects to as \"licensed users\""
+        }
+      },
+      "description": "CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an \"admin\" can actually add licenses."
+    },
+    "v1alphaCreateSeatsResponse": {
+      "type": "object"
     }
   }
 }

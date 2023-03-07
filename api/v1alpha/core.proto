@@ -23,3 +23,17 @@ message CheckPermissionResponse {
 service CheckPermission {
     rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse) {}
 }
+
+// CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
+message CreateSeatsRequest {
+  string tenantId = 1; //tenantId of subjects
+  repeated string subjects = 2; //list of subjects to add
+  string serviceId = 3; //id of service to add subjects to as "licensed users"
+}
+
+message CreateSeatsResponse {
+}
+
+service SeatsService {
+  rpc CreateSeats (CreateSeatsRequest) returns (CreateSeatsResponse) {}
+}

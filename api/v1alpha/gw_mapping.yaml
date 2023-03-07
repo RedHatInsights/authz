@@ -7,3 +7,6 @@ http:
     - selector: api.v1alpha.CheckPermission.CheckPermission
       post: /v1alpha/permissions/check
       body: "*"
+    - selector: api.v1alpha.SeatsService.CreateSeats
+      post: /v1alpha/license/seats
+      body: "*"
