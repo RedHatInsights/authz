@@ -22,6 +22,7 @@ type Authzedclient struct {
 	ctx     context.Context
 }
 
+// CheckPermission - Checkpermission wrapper
 func (a Authzedclient) CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error) {
 	return a.authzed.CheckPermission(a.ctx, checkReq)
 }
