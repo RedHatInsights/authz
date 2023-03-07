@@ -35,8 +35,8 @@ paths:
     post:
       tags:
         - check
-      summary: Checks the permission and returs allowed (true) or not allowed (false)
-      description: CheckPermission end point is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
+      summary: Checks the permission and returns allowed (true) or not allowed (false)
+      description: CheckPermission endpoint is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
       operationId: CheckPermission
       requestBody:
         description: Create a new pet in the store
