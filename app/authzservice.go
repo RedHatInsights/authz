@@ -4,15 +4,17 @@ import (
 	"authz/app/client/authzed"
 )
 
-// AuthzService
+// AuthzService - AuthZ service interface
 type AuthzService interface {
 	CheckPermission()
 }
 
+// ServiceAuthz - ServiceAuthz struct definition
 type ServiceAuthz struct {
 	authzed authzed.Client
 }
 
+// CheckPermission - Check permission TODO
 func (s ServiceAuthz) CheckPermission() {
 	//TODO implement me
 	//s.authzed.CheckPermission()
