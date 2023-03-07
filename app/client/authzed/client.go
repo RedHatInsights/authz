@@ -2,13 +2,14 @@ package authzed
 
 import (
 	"context"
-	"github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"log"
+
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
-	"log"
 )
 
-// AuthzedClient
+// AuthzedClient - Authzed client interface
 type AuthzedClient interface {
 	CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error)
 }
@@ -24,7 +25,7 @@ func (a authzedclient) CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1
 	return a.authzed.CheckPermission(a.ctx, checkReq)
 }
 
-// NewAuthzedConnection
+// NewAuthzedConnection - creates and returns a new AuthZ client
 func NewAuthzedConnection(endpoint string, token string) *authzedclient {
 	client, err := authzed.NewClient(endpoint, grpcutil.WithBearerToken(token))
 	if err != nil {

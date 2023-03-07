@@ -91,9 +91,8 @@ func StringEqualsIgnoreCase[T string | *string](s1 T, s2 T) bool {
 	convertToString := func(v T) string {
 		if val, ok := any(v).(string); ok {
 			return val
-		} else {
-			return *any(v).(*string)
 		}
+		return *any(v).(*string)
 	}
 
 	v1 := convertToString(s1)

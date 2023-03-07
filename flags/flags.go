@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 )
@@ -33,6 +34,7 @@ func MustGetBool(flagName string, flags *pflag.FlagSet) bool {
 	return flagVal
 }
 
+// MustGetInt - checks if its integer
 func MustGetInt(flagName string, flags *pflag.FlagSet) int {
 	flagVal, err := flags.GetInt(flagName)
 	if err != nil {
