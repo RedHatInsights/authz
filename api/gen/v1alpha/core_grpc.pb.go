@@ -106,7 +106,9 @@ var CheckPermission_ServiceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SeatsServiceClient interface {
-	CreateSeats(ctx context.Context, in *CreateSeatsRequest, opts ...grpc.CallOption) (*CreateSeatsResponse, error)
+	CreateSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
+	DeleteSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
+	GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error)
 }
 
 type seatsServiceClient struct {
@@ -117,9 +119,27 @@ func NewSeatsServiceClient(cc grpc.ClientConnInterface) SeatsServiceClient {
 	return &seatsServiceClient{cc}
 }
 
-func (c *seatsServiceClient) CreateSeats(ctx context.Context, in *CreateSeatsRequest, opts ...grpc.CallOption) (*CreateSeatsResponse, error) {
-	out := new(CreateSeatsResponse)
+func (c *seatsServiceClient) CreateSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error) {
+	out := new(ModifySeatsResponse)
 	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/CreateSeats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *seatsServiceClient) DeleteSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error) {
+	out := new(ModifySeatsResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/DeleteSeats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *seatsServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error) {
+	out := new(GetSeatsResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/GetSeats", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,15 +150,23 @@ func (c *seatsServiceClient) CreateSeats(ctx context.Context, in *CreateSeatsReq
 // All implementations should embed UnimplementedSeatsServiceServer
 // for forward compatibility
 type SeatsServiceServer interface {
-	CreateSeats(context.Context, *CreateSeatsRequest) (*CreateSeatsResponse, error)
+	CreateSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
+	DeleteSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
+	GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error)
 }
 
 // UnimplementedSeatsServiceServer should be embedded to have forward compatible implementations.
 type UnimplementedSeatsServiceServer struct {
 }
 
-func (UnimplementedSeatsServiceServer) CreateSeats(context.Context, *CreateSeatsRequest) (*CreateSeatsResponse, error) {
+func (UnimplementedSeatsServiceServer) CreateSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSeats not implemented")
+}
+func (UnimplementedSeatsServiceServer) DeleteSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSeats not implemented")
+}
+func (UnimplementedSeatsServiceServer) GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSeats not implemented")
 }
 
 // UnsafeSeatsServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -153,7 +181,7 @@ func RegisterSeatsServiceServer(s grpc.ServiceRegistrar, srv SeatsServiceServer)
 }
 
 func _SeatsService_CreateSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateSeatsRequest)
+	in := new(ModifySeatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -165,7 +193,43 @@ func _SeatsService_CreateSeats_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/api.v1alpha.SeatsService/CreateSeats",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SeatsServiceServer).CreateSeats(ctx, req.(*CreateSeatsRequest))
+		return srv.(SeatsServiceServer).CreateSeats(ctx, req.(*ModifySeatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SeatsService_DeleteSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModifySeatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeatsServiceServer).DeleteSeats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.SeatsService/DeleteSeats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeatsServiceServer).DeleteSeats(ctx, req.(*ModifySeatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SeatsService_GetSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSeatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeatsServiceServer).GetSeats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.SeatsService/GetSeats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeatsServiceServer).GetSeats(ctx, req.(*GetSeatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -180,6 +244,14 @@ var SeatsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSeats",
 			Handler:    _SeatsService_CreateSeats_Handler,
+		},
+		{
+			MethodName: "DeleteSeats",
+			Handler:    _SeatsService_DeleteSeats_Handler,
+		},
+		{
+			MethodName: "GetSeats",
+			Handler:    _SeatsService_GetSeats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

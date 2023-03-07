@@ -39,8 +39,8 @@ openapiOptions:
   method:
     - method: api.v1alpha.CheckPermission.CheckPermission
       option:
-        summary: Checks the permission and returs allowed (true) or not allowed (false)
-        description: CheckPermission end point is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
+        summary: Checks the permission and returns allowed (true) or not allowed (false)
+        description: CheckPermission endpoint is used by the clients to determine if the given "subject" has the given permission "Operation" on a given "Resource"
         responses:
           "200":
             examples:
@@ -49,3 +49,11 @@ openapiOptions:
       option:
         summary: Add licenses to users
         description: Adds users to seats/licenses until the seats of the bought license are full.
+    - method: api.v1alpha.SeatsService.DeleteSeats
+      option:
+        summary: Removes licenses from users
+        description: Removes users from seats/licenses
+    - method: api.v1alpha.SeatsService.GetSeats
+      option:
+        summary: Gets licensed/unlicensed users and count.
+        description: Removes users from seats/licenses
