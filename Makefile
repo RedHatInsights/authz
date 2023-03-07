@@ -61,11 +61,25 @@ openapi/validate:
 # Run Swagger and host the api docs
 run/docs:
 	$(DOCKER) run --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
-		{ url: \"/openapi/gen/v1alpha/core.swagger.yaml\", name: \"Authz API\"}]"\
+		{ url: \"/openapi/gen/v1alpha/openapi.yaml\", name: \"Authz API\"}]"\
 		  -v $(PWD)/api/:/usr/share/nginx/html/openapi:Z swaggerapi/swagger-ui
 	@echo "Please open http://localhost:8082/"
 .PHONY: run/docs
 
+#convert grpc gateway openapiv2 spec to openapi v3
+run/docs/genv3:
+	@echo "generating v3 openapi.yaml from grpc-gateway v2 yaml..."
+	$(DOCKER) run --rm --name swagger_codegen \
+		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.yaml -l openapi-yaml -o .
+	@echo "generating v3 openapi.json from grpc-gateway v2 json..."
+	$(DOCKER) run --rm --name swagger_codegen \
+		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.json -l openapi -o .
+	@echo "Remove unnecessary generated artifacts"
+	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+	@echo "move and rename files to v1alpha directory"
+	@cd api/gen/v1alpha && mv openapi.yaml ../../v1alpha/openapi-authz-v1alpha.yaml
+	@cd api/gen/v1alpha && mv openapi.json ../../v1alpha/openapi-authz-v1alpha.json
+.PHONY: run/docs/genv3
 
 # Remove Swagger container
 run/docs/teardown:
