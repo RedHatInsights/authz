@@ -10,6 +10,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 tags:
   - name: CheckPermission
+  - name: SeatsService
   - name: AuthZ
     description: Everything about your AuthZ
     externalDocs:
@@ -25,6 +26,38 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1alpha/license/seats:
+    post:
+      summary: Add licenses to users
+      description: Adds users to seats/licenses until the seats of the bought license are full.
+      operationId: SeatsService_CreateSeats
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaCreateSeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1alphaCreateSeatsRequest'
+      tags:
+        - SeatsService
   /v1alpha/permissions/check:
     post:
       summary: Checks the permission and returs allowed (true) or not allowed (false)
@@ -98,3 +131,20 @@ definitions:
         type: boolean
       description:
         type: string
+  v1alphaCreateSeatsRequest:
+    type: object
+    properties:
+      tenantId:
+        type: string
+        title: tenantId of subjects
+      subjects:
+        type: array
+        items:
+          type: string
+        title: list of subjects to add
+      serviceId:
+        type: string
+        title: id of service to add subjects to as "licensed users"
+    description: CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
+  v1alphaCreateSeatsResponse:
+    type: object

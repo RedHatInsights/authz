@@ -65,6 +65,40 @@ func local_request_CheckPermission_CheckPermission_0(ctx context.Context, marsha
 
 }
 
+func request_SeatsService_CreateSeats_0(ctx context.Context, marshaler runtime.Marshaler, client SeatsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateSeatsRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.CreateSeats(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_SeatsService_CreateSeats_0(ctx context.Context, marshaler runtime.Marshaler, server SeatsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq CreateSeatsRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.CreateSeats(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 // RegisterCheckPermissionHandlerServer registers the http handlers for service CheckPermission to "mux".
 // UnaryRPC     :call CheckPermissionServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -93,6 +127,40 @@ func RegisterCheckPermissionHandlerServer(ctx context.Context, mux *runtime.Serv
 		}
 
 		forward_CheckPermission_CheckPermission_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	return nil
+}
+
+// RegisterSeatsServiceHandlerServer registers the http handlers for service SeatsService to "mux".
+// UnaryRPC     :call SeatsServiceServer directly.
+// StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSeatsServiceHandlerFromEndpoint instead.
+func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SeatsServiceServer) error {
+
+	mux.Handle("POST", pattern_SeatsService_CreateSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.SeatsService/CreateSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_SeatsService_CreateSeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_SeatsService_CreateSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -168,4 +236,75 @@ var (
 
 var (
 	forward_CheckPermission_CheckPermission_0 = runtime.ForwardResponseMessage
+)
+
+// RegisterSeatsServiceHandlerFromEndpoint is same as RegisterSeatsServiceHandler but
+// automatically dials to "endpoint" and closes the connection when "ctx" gets done.
+func RegisterSeatsServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+			return
+		}
+		go func() {
+			<-ctx.Done()
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+			}
+		}()
+	}()
+
+	return RegisterSeatsServiceHandler(ctx, mux, conn)
+}
+
+// RegisterSeatsServiceHandler registers the http handlers for service SeatsService to "mux".
+// The handlers forward requests to the grpc endpoint over "conn".
+func RegisterSeatsServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterSeatsServiceHandlerClient(ctx, mux, NewSeatsServiceClient(conn))
+}
+
+// RegisterSeatsServiceHandlerClient registers the http handlers for service SeatsService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "SeatsServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SeatsServiceClient"
+// doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
+// "SeatsServiceClient" to call the correct interceptors.
+func RegisterSeatsServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SeatsServiceClient) error {
+
+	mux.Handle("POST", pattern_SeatsService_CreateSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.SeatsService/CreateSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_SeatsService_CreateSeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_SeatsService_CreateSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	return nil
+}
+
+var (
+	pattern_SeatsService_CreateSeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha", "license", "seats"}, ""))
+)
+
+var (
+	forward_SeatsService_CreateSeats_0 = runtime.ForwardResponseMessage
 )

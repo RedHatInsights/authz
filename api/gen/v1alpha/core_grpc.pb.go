@@ -101,3 +101,87 @@ var CheckPermission_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "v1alpha/core.proto",
 }
+
+// SeatsServiceClient is the client API for SeatsService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type SeatsServiceClient interface {
+	CreateSeats(ctx context.Context, in *CreateSeatsRequest, opts ...grpc.CallOption) (*CreateSeatsResponse, error)
+}
+
+type seatsServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewSeatsServiceClient(cc grpc.ClientConnInterface) SeatsServiceClient {
+	return &seatsServiceClient{cc}
+}
+
+func (c *seatsServiceClient) CreateSeats(ctx context.Context, in *CreateSeatsRequest, opts ...grpc.CallOption) (*CreateSeatsResponse, error) {
+	out := new(CreateSeatsResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/CreateSeats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SeatsServiceServer is the server API for SeatsService service.
+// All implementations should embed UnimplementedSeatsServiceServer
+// for forward compatibility
+type SeatsServiceServer interface {
+	CreateSeats(context.Context, *CreateSeatsRequest) (*CreateSeatsResponse, error)
+}
+
+// UnimplementedSeatsServiceServer should be embedded to have forward compatible implementations.
+type UnimplementedSeatsServiceServer struct {
+}
+
+func (UnimplementedSeatsServiceServer) CreateSeats(context.Context, *CreateSeatsRequest) (*CreateSeatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSeats not implemented")
+}
+
+// UnsafeSeatsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SeatsServiceServer will
+// result in compilation errors.
+type UnsafeSeatsServiceServer interface {
+	mustEmbedUnimplementedSeatsServiceServer()
+}
+
+func RegisterSeatsServiceServer(s grpc.ServiceRegistrar, srv SeatsServiceServer) {
+	s.RegisterService(&SeatsService_ServiceDesc, srv)
+}
+
+func _SeatsService_CreateSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSeatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeatsServiceServer).CreateSeats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.SeatsService/CreateSeats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeatsServiceServer).CreateSeats(ctx, req.(*CreateSeatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// SeatsService_ServiceDesc is the grpc.ServiceDesc for SeatsService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var SeatsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "api.v1alpha.SeatsService",
+	HandlerType: (*SeatsServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateSeats",
+			Handler:    _SeatsService_CreateSeats_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "v1alpha/core.proto",
+}
