@@ -220,12 +220,12 @@ definitions:
     type: object
     properties:
       seatsTotal:
-        type: string
-        format: int64
+        type: integer
+        format: int32
         description: total seats.
       seatsAvailable:
-        type: string
-        format: int64
+        type: integer
+        format: int32
         description: currently available seats.
     title: used sint64 after consulting https://protobuf.dev/programming-guides/proto/#scalar
   v1alphaGetSeatsResponse:
@@ -236,7 +236,7 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1alphaGetSeatsUserRepresentation'
-        title: empty is includeUsers = false, filled if includeUsers=true
+        title: empty if includeUsers = false, filled if includeUsers=true
       licenseInfo:
         $ref: '#/definitions/v1alphaGetSeatsCountResponse'
         title: returns total and assigned seats for the given tenant & service, if includeLicenseInfo is true in request
