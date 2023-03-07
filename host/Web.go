@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	core "authz/api/gen/v1"
+	core "authz/api/gen/v1alpha"
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"

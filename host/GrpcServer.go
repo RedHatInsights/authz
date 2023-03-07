@@ -1,7 +1,7 @@
 package host
 
 import (
-	core "authz/api/gen/v1"
+	core "authz/api/gen/v1alpha"
 	"authz/app"
 	"authz/app/contracts"
 	"authz/app/controllers"
