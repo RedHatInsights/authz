@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "v1/core.proto",
+    "title": "v1alpha/core.proto",
     "version": "version not set"
   },
   "tags": [
@@ -16,14 +16,14 @@
     "application/json"
   ],
   "paths": {
-    "/v1/permissions/check": {
+    "/v1alpha/permissions/check": {
       "post": {
         "operationId": "CheckPermission_CheckPermission",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1CheckPermissionResponse"
+              "$ref": "#/definitions/v1alphaCheckPermissionResponse"
             }
           },
           "default": {
@@ -39,7 +39,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1CheckPermissionRequest"
+              "$ref": "#/definitions/v1alphaCheckPermissionRequest"
             }
           }
         ],
@@ -78,7 +78,7 @@
         }
       }
     },
-    "v1CheckPermissionRequest": {
+    "v1alphaCheckPermissionRequest": {
       "type": "object",
       "properties": {
         "subject": {
@@ -95,7 +95,7 @@
         }
       }
     },
-    "v1CheckPermissionResponse": {
+    "v1alphaCheckPermissionResponse": {
       "type": "object",
       "properties": {
         "result": {

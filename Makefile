@@ -55,13 +55,13 @@ generate:
 
 # validate the openapi schema
 openapi/validate: 
-	$(DOCKER) run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli validate -i /local/api/gen/v1/core.swagger.yaml
+	$(DOCKER) run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli validate -i /local/api/gen/v1alpha/core.swagger.yaml
 .PHONY: openapi/validate
 
 # Run Swagger and host the api docs
 run/docs:
 	$(DOCKER) run --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
-		{ url: \"/openapi/gen/v1/core.swagger.yaml\", name: \"Authz API\"}]"\
+		{ url: \"/openapi/gen/v1alpha/core.swagger.yaml\", name: \"Authz API\"}]"\
 		  -v $(PWD)/api/:/usr/share/nginx/html/openapi:Z swaggerapi/swagger-ui
 	@echo "Please open http://localhost:8082/"
 .PHONY: run/docs

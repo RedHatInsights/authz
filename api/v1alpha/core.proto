@@ -2,9 +2,9 @@ syntax = "proto3";
 
 // Additional imports go here
 
-package api.v1;
+package api.v1alpha;
 
-option go_package = "github.com/RedHatInsights/authz/proto/gen/go/core/v1;core";
+option go_package = "github.com/RedHatInsights/authz/proto/gen/go/core/v1alpha;core";
 
 // Service & message definitions go here
 
