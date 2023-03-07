@@ -22,7 +22,7 @@ COPY --from=builder /workspace/authz /usr/local/bin/
 EXPOSE 8080
 
 USER 1001
-ENTRYPOINT ["/usr/local/bin/authz"]
+ENTRYPOINT ["/usr/local/bin/authz","serve"]
 
 LABEL name="authz" \
       version="0.0.1" \
