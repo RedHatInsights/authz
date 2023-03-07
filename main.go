@@ -7,10 +7,10 @@ import (
 	"authz/host"
 	"authz/host/impl"
 	"flag"
-	"github.com/spf13/cobra"
 	"sync"
 
 	"github.com/golang/glog"
+	cobra "github.com/spf13/cobra"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func main() {
 
 }
 
-// Serve
+// Serve - Serve command
 func Serve(cmd *cobra.Command, args []string) {
 	endpoint := flags.MustGetString("endpoint", cmd.Flags())
 	token := flags.MustGetString("token", cmd.Flags())

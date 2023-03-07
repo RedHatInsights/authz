@@ -9,29 +9,30 @@ import (
 	"github.com/authzed/grpcutil"
 )
 
-// AuthzedClient - Authzed client interface
-type AuthzedClient interface {
+// Client - Authzed client interface
+type Client interface {
 	CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error)
 }
 
-var _ AuthzedClient = &authzedclient{}
+var _ Client = &Authzedclient{}
 
-type authzedclient struct {
+// Authzedclient - Authz client struct
+type Authzedclient struct {
 	authzed *authzed.Client
 	ctx     context.Context
 }
 
-func (a authzedclient) CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error) {
+func (a Authzedclient) CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error) {
 	return a.authzed.CheckPermission(a.ctx, checkReq)
 }
 
 // NewAuthzedConnection - creates and returns a new AuthZ client
-func NewAuthzedConnection(endpoint string, token string) *authzedclient {
+func NewAuthzedConnection(endpoint string, token string) *Authzedclient {
 	client, err := authzed.NewClient(endpoint, grpcutil.WithBearerToken(token))
 	if err != nil {
 		log.Fatalf("unable to initialize client: %s", err)
 	}
-	return &authzedclient{
+	return &Authzedclient{
 		authzed: client,
 		ctx:     context.Background(),
 	}

@@ -9,22 +9,22 @@ type AuthzService interface {
 	CheckPermission()
 }
 
-type serviceAuthz struct {
-	authzed authzed.AuthzedClient
+type ServiceAuthz struct {
+	authzed authzed.Client
 }
 
-func (s serviceAuthz) CheckPermission() {
+func (s ServiceAuthz) CheckPermission() {
 	//TODO implement me
 	//s.authzed.CheckPermission()
 	panic("implement me")
 }
 
-var _ AuthzService = &serviceAuthz{}
+var _ AuthzService = &ServiceAuthz{}
 
-// NewAuthzService
-func NewAuthzService(endpoint string, token string) *serviceAuthz {
+// NewAuthzService - returns a new AuthZ service
+func NewAuthzService(endpoint string, token string) *ServiceAuthz {
 	az := authzed.NewAuthzedConnection(endpoint, token)
-	return &serviceAuthz{
+	return &ServiceAuthz{
 		authzed: az,
 	}
 }
