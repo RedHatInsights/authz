@@ -4,6 +4,6 @@ config_version: 3
 # Please refer google.api.Http in https://github.com/googleapis/googleapis/blob/master/google/api/http.proto file for details.
 http:
   rules:
-    - selector: api.v1.CheckPermission.CheckPermission
-      post: /v1/permissions/check
+    - selector: api.v1alpha.CheckPermission.CheckPermission
+      post: /v1alpha/permissions/check
       body: "*"
