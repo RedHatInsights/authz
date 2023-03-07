@@ -45,6 +45,20 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
+func TestAssignLicenseReturnsAdded(t *testing.T) {
+	t.Parallel()
+	resp := runRequest(post("/v1alpha/license/seats", "system",
+		`{
+			"tenantId": "aspian",
+			"subjects": [
+			  "alice"
+			],
+			"serviceId": "wisdom"
+		  }`))
+
+	assertJSONResponse(t, resp, 200, `{}`)
+}
+
 func post(uri string, token string, body string) *http.Request {
 	return reqWithBody(http.MethodPost, uri, token, body)
 }
@@ -61,7 +75,8 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 
 // runRequest connects a mock HTTP front-end to a mock Store back-end using the generated proxy code and real gRPC implementation to test that integration
 func runRequest(req *http.Request) *http.Response {
-	mux, _ := createMultiplexer(NewGrpcServer(Services{Store: mockAuthzStore()}))
+	srv := NewGrpcServer(Services{Authz: mockAuthzStore(), Principals: mockPrincipalStore()})
+	mux, _ := createMultiplexer(srv, srv)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 
@@ -87,4 +102,8 @@ func mockAuthzStore() dependencies.AuthzStore {
 		"okay":   true,
 		"bad":    false,
 	}}
+}
+
+func mockPrincipalStore() dependencies.PrincipalStore {
+	return impl.StubPrincipalStore{}
 }

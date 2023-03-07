@@ -18,10 +18,10 @@ type Web struct {
 }
 
 // Host exposes an HTTP endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (web Web) Host(wait *sync.WaitGroup, handler core.CheckPermissionServer) {
+func (web Web) Host(wait *sync.WaitGroup, checkPermission core.CheckPermissionServer, seatManagement core.SeatsServiceServer) {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(handler)
+	mux, err := createMultiplexer(checkPermission, seatManagement)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return
@@ -53,10 +53,14 @@ func NewWeb(services Services) Web {
 	return Web{services: services}
 }
 
-func createMultiplexer(handler core.CheckPermissionServer) (*runtime.ServeMux, error) {
+func createMultiplexer(checkPermission core.CheckPermissionServer, seatManagement core.SeatsServiceServer) (*runtime.ServeMux, error) {
 	mux := runtime.NewServeMux()
 
-	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, handler); err != nil {
+	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, checkPermission); err != nil {
+		return nil, err
+	}
+
+	if err := core.RegisterSeatsServiceHandlerServer(context.Background(), mux, seatManagement); err != nil {
 		return nil, err
 	}
 
