@@ -37,11 +37,7 @@ func main() {
 	rootCmd.Flags().String("endpoint", "", "endpoint")
 	rootCmd.Flags().String("token", "", "token")
 	rootCmd.Flags().Bool("debug", false, "debug")
-	// Always log to stderr by default
 
-	//rootCmd.AddCommand(.NewServeCommand())
-
-	//service.Execute()
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
 	}
@@ -54,8 +50,10 @@ func Serve(cmd *cobra.Command, args []string) {
 	token := flags.MustGetString("token", cmd.Flags())
 	// debug := flags.MustGetBool("debug", cmd.Flags())
 
-	if shared.IsNil(endpoint) && shared.IsNil(token) {
-		app.NewAuthzService(endpoint, token)
+	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
+		authzService := app.NewAuthzService(endpoint, token)
+		//TODO - For testing purpose - should be removed
+		authzService.ReadSchema()
 	}
 
 	services := host.Services{Store: impl.StubAuthzStore{Data: map[string]bool{
