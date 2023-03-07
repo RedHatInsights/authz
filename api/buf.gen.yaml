@@ -17,16 +17,20 @@ plugins:
     opt:
       - paths=source_relative
       - grpc_api_configuration=v1alpha/gw_mapping.yaml
+      - allow_delete_body=true
+
   # # protoc-gen-openapiv2 needs to be installed, generate swagger config files based on proto files
   - name: openapiv2
     out: gen
     opt:
       - grpc_api_configuration=v1alpha/gw_mapping.yaml
       - openapi_configuration=v1alpha/gw_openapi_mapping.yaml
+      - allow_delete_body=true
       - output_format=yaml
     # # protoc-gen-openapiv2 needs to be installed, generate swagger config files based on proto files
   - name: openapiv2
     out: gen
     opt:
       - grpc_api_configuration=v1alpha/gw_mapping.yaml
+      - allow_delete_body=true
       - output_format=json
