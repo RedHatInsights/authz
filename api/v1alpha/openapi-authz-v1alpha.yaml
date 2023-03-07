@@ -12,6 +12,7 @@ servers:
 - url: /
 tags:
 - name: CheckPermission
+- name: SeatsService
 - name: AuthZ
   description: Everything about your AuthZ
   externalDocs:
@@ -20,12 +21,197 @@ tags:
 - name: user
   description: Operations about user
 paths:
+  /v1alpha/license/seats:
+    get:
+      tags:
+      - SeatsService
+      summary: Gets licensed/unlicensed users and count.
+      description: Removes users from seats/licenses
+      operationId: SeatsService_GetSeats
+      parameters:
+      - name: tenantId
+        in: query
+        description: tenant to get seats for
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: serviceId
+        in: query
+        description: service/productlicense to get seats for
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: includeUsers
+        in: query
+        description: "true: include encriched user representation. false: do not include.\
+          \ Default: true."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: filter
+        in: query
+        description: "filter, either licensed or unlicensed users returned. Default:\
+          \ licensed. Note: Default values are not supported anymore in proto3, check\
+          \ serverside i guess."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          default: licensed
+          enum:
+          - licensed
+          - unlicensed
+      - name: includeLicenseInfo
+        in: query
+        description: "include available and max seats of license. Default: True."
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alphaGetSeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected
+            endpoint.
+          content:
+            application/json:
+              schema:
+                type: object
+        "403":
+          description: Returned when the user does not have permission to access the
+            resource.
+          content:
+            application/json:
+              schema:
+                type: object
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+    post:
+      tags:
+      - SeatsService
+      summary: Add licenses to users
+      description: Adds users to seats/licenses until the seats of the bought license
+        are full.
+      operationId: SeatsService_CreateSeats
+      requestBody:
+        description: CreateSeatsRequest assuming we get the userId etc from the requestor
+          in the authorization header to validate if an "admin" can actually add licenses.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1alphaModifySeatsRequest'
+        required: true
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alphaModifySeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected
+            endpoint.
+          content:
+            application/json:
+              schema:
+                type: object
+        "403":
+          description: Returned when the user does not have permission to access the
+            resource.
+          content:
+            application/json:
+              schema:
+                type: object
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+      x-codegen-request-body-name: body
+    delete:
+      tags:
+      - SeatsService
+      summary: Removes licenses from users
+      description: Removes users from seats/licenses
+      operationId: SeatsService_DeleteSeats
+      requestBody:
+        description: CreateSeatsRequest assuming we get the userId etc from the requestor
+          in the authorization header to validate if an "admin" can actually add licenses.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1alphaModifySeatsRequest'
+        required: true
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alphaModifySeatsResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected
+            endpoint.
+          content:
+            application/json:
+              schema:
+                type: object
+        "403":
+          description: Returned when the user does not have permission to access the
+            resource.
+          content:
+            application/json:
+              schema:
+                type: object
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+      x-codegen-request-body-name: body
   /v1alpha/permissions/check:
     post:
       tags:
       - CheckPermission
-      summary: Checks the permission and returs allowed (true) or not allowed (false)
-      description: CheckPermission end point is used by the clients to determine if
+      summary: Checks the permission and returns allowed (true) or not allowed (false)
+      description: CheckPermission endpoint is used by the clients to determine if
         the given "subject" has the given permission "Operation" on a given "Resource"
       operationId: CheckPermission_CheckPermission
       requestBody:
@@ -110,4 +296,59 @@ components:
           type: boolean
         description:
           type: string
+    v1alphaGetSeatsCountResponse:
+      type: object
+      properties:
+        seatsTotal:
+          type: integer
+          description: total seats.
+          format: int32
+        seatsAvailable:
+          type: integer
+          description: currently available seats.
+          format: int32
+    v1alphaGetSeatsResponse:
+      type: object
+      properties:
+        users:
+          title: "empty if includeUsers = false, filled if includeUsers=true"
+          type: array
+          items:
+            $ref: '#/components/schemas/v1alphaGetSeatsUserRepresentation'
+        licenseInfo:
+          $ref: '#/components/schemas/v1alphaGetSeatsCountResponse'
+    v1alphaGetSeatsUserRepresentation:
+      type: object
+      properties:
+        displayName:
+          type: string
+        id:
+          type: string
+        isLicenseActive:
+          type: boolean
+      description: "we may return more userinfo, this is a starting point."
+    v1alphaModifySeatsRequest:
+      type: object
+      properties:
+        tenantId:
+          title: tenantId of subjects
+          type: string
+        subjects:
+          title: list of subjects to add
+          type: array
+          items:
+            type: string
+        serviceId:
+          title: id of service to add subjects to as "licensed users"
+          type: string
+      description: CreateSeatsRequest assuming we get the userId etc from the requestor
+        in the authorization header to validate if an "admin" can actually add licenses.
+    v1alphaModifySeatsResponse:
+      type: object
+    v1alphaSeatFilterType:
+      type: string
+      default: licensed
+      enum:
+      - licensed
+      - unlicensed
 x-original-swagger-version: "2.0"
