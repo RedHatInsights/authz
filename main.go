@@ -48,6 +48,7 @@ func main() {
 
 }
 
+// Serve
 func Serve(cmd *cobra.Command, args []string) {
 	endpoint := flags.MustGetString("endpoint", cmd.Flags())
 	token := flags.MustGetString("token", cmd.Flags())

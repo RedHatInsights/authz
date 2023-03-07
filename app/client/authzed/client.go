@@ -8,6 +8,7 @@ import (
 	"log"
 )
 
+// AuthzedClient
 type AuthzedClient interface {
 	CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1.CheckPermissionResponse, error)
 }
@@ -23,6 +24,7 @@ func (a authzedclient) CheckPermission(checkReq *v1.CheckPermissionRequest) (*v1
 	return a.authzed.CheckPermission(a.ctx, checkReq)
 }
 
+// NewAuthzedConnection
 func NewAuthzedConnection(endpoint string, token string) *authzedclient {
 	client, err := authzed.NewClient(endpoint, grpcutil.WithBearerToken(token))
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"authz/app/client/authzed"
 )
 
+// AuthzService
 type AuthzService interface {
 	CheckPermission()
 }
@@ -20,6 +21,7 @@ func (s serviceAuthz) CheckPermission() {
 
 var _ AuthzService = &serviceAuthz{}
 
+// NewAuthzService
 func NewAuthzService(endpoint string, token string) *serviceAuthz {
 	az := authzed.NewAuthzedConnection(endpoint, token)
 	return &serviceAuthz{
