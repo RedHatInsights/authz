@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             (unknown)
-// source: v1/core.proto
+// source: v1alpha/core.proto
 
 package core
 
@@ -35,7 +35,7 @@ func NewCheckPermissionClient(cc grpc.ClientConnInterface) CheckPermissionClient
 
 func (c *checkPermissionClient) CheckPermission(ctx context.Context, in *CheckPermissionRequest, opts ...grpc.CallOption) (*CheckPermissionResponse, error) {
 	out := new(CheckPermissionResponse)
-	err := c.cc.Invoke(ctx, "/api.v1.CheckPermission/CheckPermission", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.CheckPermission/CheckPermission", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func _CheckPermission_CheckPermission_Handler(srv interface{}, ctx context.Conte
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.v1.CheckPermission/CheckPermission",
+		FullMethod: "/api.v1alpha.CheckPermission/CheckPermission",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CheckPermissionServer).CheckPermission(ctx, req.(*CheckPermissionRequest))
@@ -90,7 +90,7 @@ func _CheckPermission_CheckPermission_Handler(srv interface{}, ctx context.Conte
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CheckPermission_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1.CheckPermission",
+	ServiceName: "api.v1alpha.CheckPermission",
 	HandlerType: (*CheckPermissionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -99,5 +99,5 @@ var CheckPermission_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "v1/core.proto",
+	Metadata: "v1alpha/core.proto",
 }
