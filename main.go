@@ -49,23 +49,34 @@ func Serve(cmd *cobra.Command, args []string) {
 	endpoint := flags.MustGetString("endpoint", cmd.Flags())
 	token := flags.MustGetString("token", cmd.Flags())
 	store := flags.MustGetString("store", cmd.Flags())
+	principals := impl.StubPrincipalStore{}
 
 	var services host.Services
 	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
 		authzclient := authzed.NewAuthzedConnection(endpoint, token)
+		authz := impl.SpiceDBAuthzStore{Authzed: authzclient}
 		if shared.StringEqualsIgnoreCase(store, "spicedb") {
-			services = host.Services{Store: impl.SpiceDBAuthzStore{Authzed: authzclient}}
+			services = host.Services{
+				Authz: 		authz,
+				Licensing: 	authz,
+				Principals: principals,
+			}
 			// Added below line to test the implementation - commented out for now, since testing is done
 			//authzclient.ReadSchema()
 		}
 
 	} else {
-		services = host.Services{Authz: impl.StubAuthzStore{Data: map[string]bool{
-			"token": true,
-			"alice": true,
-			"bob":   true,
-			"chuck": false,
-		}}, Principals: impl.StubPrincipalStore{}}
+		authz := impl.StubAuthzStore{
+			AuthzdUsers: map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
+		}
+
+		principals := impl.StubPrincipalStore{}
+
+		services = host.Services{
+			Authz: 		authz,
+			Licensing: 	authz,
+			Principals: principals,
+		}
 	}
 
 	wait := sync.WaitGroup{}
