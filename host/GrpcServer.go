@@ -25,11 +25,21 @@ type GrpcServer struct {
 }
 
 func (r *GrpcServer) CreateSeats(ctx context.Context, rpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	requestor, err := r.getRequestorIdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	principals, err := r.convertSubjectIdsToPrincipals(rpcReq.Subjects)
+	if err != nil {
+		return nil, err
+	}
+
 	req := contracts.ModifySeatAssignmentRequest{
 		Request: contracts.Request{
-			Requestor: r.getRequestorIdentityFromContext(ctx),
+			Requestor: requestor,
 		},
-		Principals: r.convertSubjectIdsToPrincipals(rpcReq.Subjects),
+		Principals: principals,
 		Org:        app.Organization{Id: rpcReq.TenantId},
 		Service:    app.Service{Id: rpcReq.ServiceId},
 	}
@@ -44,11 +54,21 @@ func (r *GrpcServer) CreateSeats(ctx context.Context, rpcReq *core.ModifySeatsRe
 }
 
 func (r *GrpcServer) DeleteSeats(ctx context.Context, rpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	requestor, err := r.getRequestorIdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	principals, err := r.convertSubjectIdsToPrincipals(rpcReq.Subjects)
+	if err != nil {
+		return nil, err
+	}
+
 	req := contracts.ModifySeatAssignmentRequest{
 		Request: contracts.Request{
-			Requestor: r.getRequestorIdentityFromContext(ctx),
+			Requestor: requestor,
 		},
-		Principals: r.convertSubjectIdsToPrincipals(rpcReq.Subjects),
+		Principals: principals,
 		Org:        app.Organization{Id: rpcReq.TenantId},
 		Service:    app.Service{Id: rpcReq.ServiceId},
 	}
@@ -68,12 +88,20 @@ func (r *GrpcServer) GetSeats(ctx context.Context, rpcReq *core.GetSeatsRequest)
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (r *GrpcServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
+	requestor, err := r.getRequestorIdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	subject, err := r.services.Principals.GetByID(rpcReq.Subject)
+	if err != nil {
+		return nil, err
+	}
 
 	req := contracts.CheckRequest{
 		Request: contracts.Request{
-			Requestor: r.getRequestorIdentityFromContext(ctx),
+			Requestor: requestor,
 		},
-		Subject:   r.services.Principals.GetByID(rpcReq.Subject),
+		Subject:   subject,
 		Operation: rpcReq.Operation,
 		Resource:  app.Resource{Type: rpcReq.Resourcetype, ID: rpcReq.Resourceid},
 	}
@@ -130,14 +158,17 @@ func (r *GrpcServer) Host(wait *sync.WaitGroup) {
 	}
 }
 
-func (r *GrpcServer) convertSubjectIdsToPrincipals(subjectIds []string) []app.Principal {
+func (r *GrpcServer) convertSubjectIdsToPrincipals(subjectIds []string) ([]app.Principal, error) {
 	principals := make([]app.Principal, len(subjectIds))
 	for i, subId := range subjectIds {
-		principal := r.services.Principals.GetByID(subId)
-		principals[i] = principal
+		if principal, err := r.services.Principals.GetByID(subId); err != nil {
+			return nil, err
+		} else {
+			principals[i] = principal
+		}
 	}
 
-	return principals
+	return principals, nil
 }
 
 func convertDomainErrorToGrpc(err error) error {
@@ -153,15 +184,19 @@ func convertDomainErrorToGrpc(err error) error {
 	}
 }
 
-func (r *GrpcServer) getRequestorIdentityFromContext(ctx context.Context) app.Principal {
+func (r *GrpcServer) getRequestorIdentityFromContext(ctx context.Context) (app.Principal, error) {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if metadata, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := metadata.Get(name)
 			if len(headers) > 0 {
-				return r.services.Principals.GetByToken(headers[0])
+				if sub, err := r.services.Principals.GetByToken(headers[0]); err != nil {
+					return sub, err
+				} else {
+					return sub, nil
+				}
 			}
 		}
 	}
 
-	return app.NewAnonymousPrincipal()
+	return app.NewAnonymousPrincipal(), nil
 }

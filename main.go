@@ -24,12 +24,16 @@ func main() {
 		glog.Infof("Unable to set logtostderr to true")
 	}
 
-	services := host.Services{Authz: impl.StubAuthzStore{Data: map[string]bool{
-		"token": true,
-		"alice": true,
-		"bob":   true,
-		"chuck": false,
-	}}, Principals: impl.StubPrincipalStore{}}
+	authz := impl.StubAuthzStore{
+		AuthzdUsers: map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
+	}
+	principals := impl.StubPrincipalStore{}
+
+	services := host.Services{
+		Authz:      authz,
+		Licensing:  authz,
+		Principals: principals,
+	}
 
 	wait := sync.WaitGroup{}
 	web := host.NewWeb(services)
