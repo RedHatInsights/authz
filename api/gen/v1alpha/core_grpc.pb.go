@@ -102,156 +102,156 @@ var CheckPermission_ServiceDesc = grpc.ServiceDesc{
 	Metadata: "v1alpha/core.proto",
 }
 
-// LicenseServiceClient is the client API for LicenseService service.
+// SeatsServiceClient is the client API for SeatsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type LicenseServiceClient interface {
-	GetLicense(ctx context.Context, in *GetLicenseRequest, opts ...grpc.CallOption) (*GetLicenseResponse, error)
-	ModifySeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
+type SeatsServiceClient interface {
+	CreateSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
+	DeleteSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
 	GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error)
 }
 
-type licenseServiceClient struct {
+type seatsServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewLicenseServiceClient(cc grpc.ClientConnInterface) LicenseServiceClient {
-	return &licenseServiceClient{cc}
+func NewSeatsServiceClient(cc grpc.ClientConnInterface) SeatsServiceClient {
+	return &seatsServiceClient{cc}
 }
 
-func (c *licenseServiceClient) GetLicense(ctx context.Context, in *GetLicenseRequest, opts ...grpc.CallOption) (*GetLicenseResponse, error) {
-	out := new(GetLicenseResponse)
-	err := c.cc.Invoke(ctx, "/api.v1alpha.LicenseService/GetLicense", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *licenseServiceClient) ModifySeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error) {
+func (c *seatsServiceClient) CreateSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error) {
 	out := new(ModifySeatsResponse)
-	err := c.cc.Invoke(ctx, "/api.v1alpha.LicenseService/ModifySeats", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/CreateSeats", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *licenseServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error) {
+func (c *seatsServiceClient) DeleteSeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error) {
+	out := new(ModifySeatsResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/DeleteSeats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *seatsServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error) {
 	out := new(GetSeatsResponse)
-	err := c.cc.Invoke(ctx, "/api.v1alpha.LicenseService/GetSeats", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.SeatsService/GetSeats", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// LicenseServiceServer is the server API for LicenseService service.
-// All implementations should embed UnimplementedLicenseServiceServer
+// SeatsServiceServer is the server API for SeatsService service.
+// All implementations should embed UnimplementedSeatsServiceServer
 // for forward compatibility
-type LicenseServiceServer interface {
-	GetLicense(context.Context, *GetLicenseRequest) (*GetLicenseResponse, error)
-	ModifySeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
+type SeatsServiceServer interface {
+	CreateSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
+	DeleteSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
 	GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error)
 }
 
-// UnimplementedLicenseServiceServer should be embedded to have forward compatible implementations.
-type UnimplementedLicenseServiceServer struct {
+// UnimplementedSeatsServiceServer should be embedded to have forward compatible implementations.
+type UnimplementedSeatsServiceServer struct {
 }
 
-func (UnimplementedLicenseServiceServer) GetLicense(context.Context, *GetLicenseRequest) (*GetLicenseResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLicense not implemented")
+func (UnimplementedSeatsServiceServer) CreateSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSeats not implemented")
 }
-func (UnimplementedLicenseServiceServer) ModifySeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ModifySeats not implemented")
+func (UnimplementedSeatsServiceServer) DeleteSeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSeats not implemented")
 }
-func (UnimplementedLicenseServiceServer) GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error) {
+func (UnimplementedSeatsServiceServer) GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSeats not implemented")
 }
 
-// UnsafeLicenseServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to LicenseServiceServer will
+// UnsafeSeatsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SeatsServiceServer will
 // result in compilation errors.
-type UnsafeLicenseServiceServer interface {
-	mustEmbedUnimplementedLicenseServiceServer()
+type UnsafeSeatsServiceServer interface {
+	mustEmbedUnimplementedSeatsServiceServer()
 }
 
-func RegisterLicenseServiceServer(s grpc.ServiceRegistrar, srv LicenseServiceServer) {
-	s.RegisterService(&LicenseService_ServiceDesc, srv)
+func RegisterSeatsServiceServer(s grpc.ServiceRegistrar, srv SeatsServiceServer) {
+	s.RegisterService(&SeatsService_ServiceDesc, srv)
 }
 
-func _LicenseService_GetLicense_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLicenseRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LicenseServiceServer).GetLicense(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.v1alpha.LicenseService/GetLicense",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LicenseServiceServer).GetLicense(ctx, req.(*GetLicenseRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LicenseService_ModifySeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SeatsService_CreateSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ModifySeatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LicenseServiceServer).ModifySeats(ctx, in)
+		return srv.(SeatsServiceServer).CreateSeats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.v1alpha.LicenseService/ModifySeats",
+		FullMethod: "/api.v1alpha.SeatsService/CreateSeats",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LicenseServiceServer).ModifySeats(ctx, req.(*ModifySeatsRequest))
+		return srv.(SeatsServiceServer).CreateSeats(ctx, req.(*ModifySeatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LicenseService_GetSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SeatsService_DeleteSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModifySeatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SeatsServiceServer).DeleteSeats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.SeatsService/DeleteSeats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SeatsServiceServer).DeleteSeats(ctx, req.(*ModifySeatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SeatsService_GetSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetSeatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LicenseServiceServer).GetSeats(ctx, in)
+		return srv.(SeatsServiceServer).GetSeats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.v1alpha.LicenseService/GetSeats",
+		FullMethod: "/api.v1alpha.SeatsService/GetSeats",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LicenseServiceServer).GetSeats(ctx, req.(*GetSeatsRequest))
+		return srv.(SeatsServiceServer).GetSeats(ctx, req.(*GetSeatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// LicenseService_ServiceDesc is the grpc.ServiceDesc for LicenseService service.
+// SeatsService_ServiceDesc is the grpc.ServiceDesc for SeatsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var LicenseService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "api.v1alpha.LicenseService",
-	HandlerType: (*LicenseServiceServer)(nil),
+var SeatsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "api.v1alpha.SeatsService",
+	HandlerType: (*SeatsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetLicense",
-			Handler:    _LicenseService_GetLicense_Handler,
+			MethodName: "CreateSeats",
+			Handler:    _SeatsService_CreateSeats_Handler,
 		},
 		{
-			MethodName: "ModifySeats",
-			Handler:    _LicenseService_ModifySeats_Handler,
+			MethodName: "DeleteSeats",
+			Handler:    _SeatsService_DeleteSeats_Handler,
 		},
 		{
 			MethodName: "GetSeats",
-			Handler:    _LicenseService_GetSeats_Handler,
+			Handler:    _SeatsService_GetSeats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
