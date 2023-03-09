@@ -1,7 +1,7 @@
 package server
 
 import (
-	"authz/seatlicensing/domain/contracts"
+	"authz/domain/contracts"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

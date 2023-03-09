@@ -1,6 +1,8 @@
 package main
 
-import "authz/seatlicensing/app"
+import (
+	"authz/app"
+)
 
 // main bootstrapping the current composition of the service
 func main() {

@@ -1,7 +1,7 @@
 package server
 
 import (
-	"authz/seatlicensing/domain/contracts"
+	"authz/domain/contracts"
 )
 
 // SrvBuilder is the builder containing the config for building technical implementations of the server
