@@ -30,9 +30,9 @@ func main() {
 	principals := impl.StubPrincipalStore{}
 
 	services := host.Services{
-		Authz:      authz,
-		Licensing:  authz,
-		Principals: principals,
+		Authz:      &authz,
+		Licensing:  &authz,
+		Principals: &principals,
 	}
 
 	wait := sync.WaitGroup{}

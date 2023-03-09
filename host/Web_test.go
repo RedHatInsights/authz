@@ -131,7 +131,7 @@ func createTestServer() *GrpcServer {
 	authz := mockAuthzStore()
 	principals := mockPrincipalStore()
 
-	return NewGrpcServer(Services{Authz: authz, Licensing: authz, Principals: principals})
+	return NewGrpcServer(Services{Authz: &authz, Licensing: &authz, Principals: &principals})
 }
 
 func runRequestWithServer(req *http.Request, srv *GrpcServer) *http.Response {
