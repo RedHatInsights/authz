@@ -1,0 +1,18 @@
+package model
+
+import (
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+func TestPrincipalIsAnonymousTrueForAnonymousPrincipal(t *testing.T) {
+	p := NewAnonymousPrincipal()
+
+	assert.True(t, p.IsAnonymous(), "Should have been anonymous.")
+}
+
+func TestPrincipalIsAnonymousFalseForSpecificPrincipal(t *testing.T) {
+	p := NewPrincipal("alice")
+
+	assert.False(t, p.IsAnonymous(), "Should NOT have been anonymous.")
+}
