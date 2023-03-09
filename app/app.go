@@ -1,20 +1,20 @@
 package app
 
 import (
-	"authz/seatlicensing/domain/contracts"
-	"authz/seatlicensing/domain/handler"
-	"authz/seatlicensing/infrastructure/config"
-	"authz/seatlicensing/infrastructure/server"
+	contracts2 "authz/domain/contracts"
+	"authz/domain/handler"
+	"authz/infrastructure/config"
+	"authz/infrastructure/server"
 	"fmt"
 )
 
 // getConfig uses the interface to load the config based on the technical implementation "viper".
-func getConfig() contracts.Config {
+func getConfig() contracts2.Config {
 	cfg, err := config.NewBuilder().
 		ConfigName("viperexampleconfig").
 		ConfigType("yaml").
 		ConfigPaths(
-			"./seatlicensing/app/exampleconfig/",
+			"app/exampleconfig/", //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
 		).
 		Defaults(map[string]interface{}{}).
 		Options().
@@ -26,7 +26,7 @@ func getConfig() contracts.Config {
 	return cfg
 }
 
-func getServer() contracts.Server {
+func getServer() contracts2.Server {
 	srv, err := server.NewBuilder().WithFramework("gin").Build()
 	if err != nil {
 		panic(err)

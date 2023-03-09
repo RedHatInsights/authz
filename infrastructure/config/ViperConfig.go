@@ -1,7 +1,7 @@
 package config
 
 import (
-	"authz/seatlicensing/domain/contracts"
+	"authz/domain/contracts"
 	"time"
 
 	"github.com/spf13/viper"
