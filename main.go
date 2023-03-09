@@ -4,6 +4,7 @@ import (
 	authzed "authz/app/client/authzed"
 	"authz/app/shared"
 	"authz/flags"
+	"authz/app"
 	"authz/host"
 	"authz/host/impl"
 	"flag"
@@ -70,7 +71,14 @@ func Serve(cmd *cobra.Command, args []string) {
 			AuthzdUsers: map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
 		}
 
-		principals := impl.StubPrincipalStore{}
+		principals := impl.StubPrincipalStore{
+		Principals: map[string]app.Principal{
+			"token": app.NewPrincipal("token", "aspian"),
+			"alice": app.NewPrincipal("alice", "aspian"),
+			"bob":   app.NewPrincipal("bob", "aspian"),
+			"chuck": app.NewPrincipal("chuck", "aspian"),
+		},
+	}
 
 		services = host.Services{
 			Authz: 		&authz,
