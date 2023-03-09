@@ -4,6 +4,7 @@ import (
 	core "authz/api/gen/v1alpha"
 	"authz/domain/contracts"
 	"authz/domain/model"
+	"authz/domain/services"
 	"context"
 	"errors"
 	"github.com/golang/glog"
@@ -85,8 +86,25 @@ func (r *GrpcGatewayServer) GetName() string {
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
+	req := model.CheckRequest{
+		Request: model.Request{
+			Requestor: getRequestorIdentityFromContext(ctx),
+		},
+		Subject:   model.Principal{ID: rpcReq.Subject},
+		Operation: rpcReq.Operation,
+		Resource:  model.Resource{Type: rpcReq.Resourcetype, ID: rpcReq.Resourceid},
+	}
 
-	return &core.CheckPermissionResponse{Result: true, Description: "Test!"}, nil
+	action := services.NewAccessService(r.Engine)
+
+	result, err := action.Check(req)
+
+	if err != nil {
+		return nil, convertDomainErrorToGrpc(err)
+	}
+
+	return &core.CheckPermissionResponse{Result: result}, nil
+	//return &core.CheckPermissionResponse{Result: true, Description: "Test!"}, nil
 }
 
 func getRequestorIdentityFromContext(ctx context.Context) model.Principal {
@@ -102,7 +120,7 @@ func getRequestorIdentityFromContext(ctx context.Context) model.Principal {
 	return model.NewAnonymousPrincipal()
 }
 
-func convertErrorToGrpc(err error) error {
+func convertDomainErrorToGrpc(err error) error {
 	switch {
 	case errors.Is(err, model.ErrNotAuthenticated):
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
