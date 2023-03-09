@@ -1,3 +1,4 @@
+// Package contracts contains the contracts that can be used in the domain
 package contracts
 
 import (

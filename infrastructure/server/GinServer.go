@@ -16,7 +16,7 @@ type GinServer struct {
 }
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
-func (g GinServer) Serve(host string, wait *sync.WaitGroup) error {
+func (g *GinServer) Serve(host string, wait *sync.WaitGroup) error {
 	defer wait.Done()
 	router := gin.Default()
 	router.GET("/", func(c *gin.Context) {
@@ -29,16 +29,16 @@ func (g GinServer) Serve(host string, wait *sync.WaitGroup) error {
 }
 
 // NewServer creates a new Server object to use.
-func (g GinServer) NewServer() contracts.Server {
-	return GinServer{}
+func (g *GinServer) NewServer() contracts.Server {
+	return &GinServer{}
 }
 
 // SetEngine Sets the AuthzEngine
-func (g GinServer) SetEngine(eng contracts.AuthzEngine) {
+func (g *GinServer) SetEngine(eng contracts.AuthzEngine) {
 	g.Engine = eng
 }
 
 // GetName returns the impl name
-func (g GinServer) GetName() string {
+func (g *GinServer) GetName() string {
 	return "gin"
 }

@@ -1,3 +1,4 @@
+// Package engine contains the technical implementations for the authzengine
 package engine
 
 import (

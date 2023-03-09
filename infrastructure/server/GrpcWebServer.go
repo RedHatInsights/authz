@@ -4,11 +4,12 @@ import (
 	core "authz/api/gen/v1alpha"
 	"authz/domain/contracts"
 	"context"
-	"github.com/golang/glog"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/golang/glog"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
 // GrpcWebServer serves a HTTP api based on the generated grpc gateway code
@@ -17,6 +18,7 @@ type GrpcWebServer struct {
 	Handler core.CheckPermissionServer
 }
 
+// Serve starts serving
 func (w *GrpcWebServer) Serve(host string, wait *sync.WaitGroup) error {
 	defer wait.Done()
 

@@ -7,30 +7,21 @@ import (
 	"authz/domain/services"
 	"context"
 	"errors"
+	"net"
+	"os"
+	"sync"
+
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"net"
-	"os"
-	"sync"
 )
 
 // GrpcGatewayServer represents a GrpcServer host service
 type GrpcGatewayServer struct {
 	Engine contracts.AuthzEngine
-}
-
-func (r *GrpcGatewayServer) GetHandler() core.CheckPermissionServer {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *GrpcGatewayServer) SetHandler(server core.CheckPermissionServer) {
-	//TODO implement me
-	panic("implement me")
 }
 
 // NewServer creates a new Server object to use.
@@ -49,7 +40,7 @@ func (r *GrpcGatewayServer) Serve(host string, wait *sync.WaitGroup) error {
 		return err
 	}
 
-	var creds credentials.TransportCredentials = nil
+	var creds credentials.TransportCredentials
 	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("TLS cert and Key found  - Starting gRPC server in secure TLS mode")

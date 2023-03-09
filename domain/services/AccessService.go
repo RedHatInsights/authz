@@ -1,3 +1,4 @@
+// Package services contains domain services. Only usage of other domain packages allowed.
 package services
 
 import (
