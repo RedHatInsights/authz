@@ -4,7 +4,7 @@ import (
 	"authz/domain/model"
 )
 
-// StubAuthzStore represents an in-memory authorization system with a fixed state
+// StubAuthzEngine represents an in-memory authorization system with a fixed state
 type StubAuthzEngine struct {
 	//The internal authorization state. The keys are subject IDs, and the values are the results. The results are the same per subject regardless of operation and resource.
 	Data map[string]bool

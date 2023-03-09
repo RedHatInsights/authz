@@ -25,9 +25,11 @@ func (s *ServerBuilder) WithFramework(fw string) *ServerBuilder {
 func (s *ServerBuilder) Build() (contracts.Server, error) {
 	switch s.framework {
 	case "gin":
-		return server.GinServer{}.NewServer(), nil
+		var srv = server.GinServer{}
+		return srv.NewServer(), nil
 	case "echo":
-		return server.EchoServer{}.NewServer(), nil
+		var srv = server.EchoServer{}
+		return srv.NewServer(), nil
 	case "grpc":
 		var srv = server.GrpcGatewayServer{}
 		return srv.NewServer(), nil

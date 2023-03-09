@@ -1,3 +1,4 @@
+// Package main starts the app from the app package.
 package main
 
 import (

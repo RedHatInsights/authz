@@ -1,3 +1,4 @@
+// Package model contains the Domain model classes.
 package model
 
 // A CheckRequest contains the parameters to request whether a subject can perform an operation on a resource
