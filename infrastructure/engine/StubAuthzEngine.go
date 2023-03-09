@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"authz/domain/contracts"
 	"authz/domain/model"
 )
 
@@ -18,9 +17,4 @@ func (s StubAuthzEngine) CheckAccess(principal model.Principal, operation string
 	}
 
 	return false, nil
-}
-
-// NewEngine creates a new Engine object to use.
-func (s StubAuthzEngine) NewEngine() contracts.AuthzEngine {
-	return StubAuthzEngine{}
 }
