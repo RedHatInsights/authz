@@ -3,9 +3,10 @@ package impl
 import (
 	"authz/app"
 	"authz/app/client/authzed"
+	"fmt"
 )
 
-// AuthzStore represents an spicedb authorization
+// SpiceDBAuthzStore represents an spicedb authorization
 type SpiceDBAuthzStore struct {
 	Authzed authzed.Client
 }
@@ -16,7 +17,9 @@ func (s SpiceDBAuthzStore) CheckAccess(principal app.Principal, operation string
 	return false, nil
 }
 
+// ReadSchema - Implements Readschema
 func (s SpiceDBAuthzStore) ReadSchema() {
-	s.Authzed.ReadSchema()
-	return
+	resp, err := s.Authzed.ReadSchema()
+	fmt.Println("Response: ", resp, "Error:", err)
+
 }
