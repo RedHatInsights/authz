@@ -1,7 +1,7 @@
 package main
 
 import (
-	"authz/app"
+	authzed "authz/app/client/authzed"
 	"authz/app/shared"
 	"authz/flags"
 	"authz/host"
@@ -36,7 +36,7 @@ func main() {
 	}
 	rootCmd.Flags().String("endpoint", "", "endpoint")
 	rootCmd.Flags().String("token", "", "token")
-	rootCmd.Flags().Bool("debug", false, "debug")
+	rootCmd.Flags().String("store", "stub", "stub or spicedb")
 
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
@@ -48,20 +48,24 @@ func main() {
 func Serve(cmd *cobra.Command, args []string) {
 	endpoint := flags.MustGetString("endpoint", cmd.Flags())
 	token := flags.MustGetString("token", cmd.Flags())
-	// debug := flags.MustGetBool("debug", cmd.Flags())
+	store := flags.MustGetString("store", cmd.Flags())
 
+	var services host.Services
 	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
-		authzService := app.NewAuthzService(endpoint, token)
-		//TODO - For testing purpose - should be removed
-		authzService.ReadSchema()
+		authzclient := authzed.NewAuthzedConnection(endpoint, token)
+		if shared.StringEqualsIgnoreCase(store, "spicedb") {
+			services = host.Services{Store: impl.AuthzStore{Authzed: authzclient}}
+		}
+
+	} else {
+		services = host.Services{Store: impl.StubAuthzStore{Data: map[string]bool{
+			"token": true,
+			"alice": true,
+			"bob":   true,
+			"chuck": false,
+		}}}
 	}
 
-	services := host.Services{Store: impl.StubAuthzStore{Data: map[string]bool{
-		"token": true,
-		"alice": true,
-		"bob":   true,
-		"chuck": false,
-	}}}
 	wait := sync.WaitGroup{}
 	web := host.NewWeb(services)
 	gRPC := host.NewGrpcServer(services)
