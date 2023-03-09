@@ -12,16 +12,26 @@ import (
 // see https://github.com/labstack/echo/issues/397
 
 // EchoServer underlying struct
-type EchoServer struct{}
+type EchoServer struct {
+	Engine contracts.AuthzEngine
+}
+
+func (e EchoServer) GetName() string {
+	return "echo"
+}
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
-func (e EchoServer) Serve(host string, handler http.HandlerFunc, wait *sync.WaitGroup) error {
+func (e EchoServer) Serve(host string, wait *sync.WaitGroup) error {
+	defer wait.Done()
+
 	e2 := echo.New()
 	e2.Use(middleware.Logger())
 	e2.Use(middleware.Recover()) //TODO: eval real necessary middlewares, this is just added as per the docs
 
 	// Routes
-	e2.GET("/", echo.WrapHandler(handler))
+	e2.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, "Hello from echo!")
+	})
 	e2.Logger.Fatal(e2.Start(":" + host))
 	return nil //interesting nothing here throws errs... well, for later.
 }
@@ -29,4 +39,9 @@ func (e EchoServer) Serve(host string, handler http.HandlerFunc, wait *sync.Wait
 // NewServer object to call serve from, implementing contract.
 func (e EchoServer) NewServer() contracts.Server {
 	return EchoServer{}
+}
+
+// SetEngine sets the AuthzEngine
+func (e EchoServer) SetEngine(eng contracts.AuthzEngine) {
+	e.Engine = eng
 }

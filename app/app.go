@@ -2,8 +2,8 @@ package app
 
 import (
 	"authz/domain/contracts"
-	"authz/domain/handler"
 	"authz/infrastructure/config"
+	"authz/infrastructure/server"
 	"fmt"
 	"sync"
 )
@@ -26,14 +26,6 @@ func getConfig() contracts.Config {
 	return cfg
 }
 
-func getServer() contracts.Server {
-	srv, err := NewAppBuilder().WithFramework("echo").WithEngine("stub").Build()
-	if err != nil {
-		panic(err)
-	}
-	return srv
-}
-
 // Run configures and runs the actual app. DEMO! switch the server from "echo" to "gin". see what happens.
 func Run() {
 	cfg := getConfig()
@@ -43,12 +35,54 @@ func Run() {
 	fmt.Println(cfg.GetStringSlice("example.list"))
 
 	srv := getServer()
+	e := getAuthzEngine()
+	srv.SetEngine(e)
 	wait := sync.WaitGroup{}
-	wait.Add(1)
 
-	err := srv.Serve("8080", handler.GetHello, &wait) // port could e.g. be derived from config ;)
+	delta := 1
+	if srv.GetName() == "grpc" { //2 chans for grpc
+		delta = 2
+	}
+	wait.Add(delta)
+
+	go func() {
+		err := srv.Serve("50051", &wait)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	if srv.GetName() == "grpc" {
+		webSrv, err := NewServerBuilder().WithFramework("grpcweb").Build()
+		webSrv.SetEngine(e)
+		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack. :)
+		if err != nil {
+			panic(err)
+		}
+
+		go func() {
+			err := webSrv.Serve("8080", &wait)
+			if err != nil {
+				panic(err)
+			}
+		}()
+	}
+
+	wait.Wait()
+}
+
+func getServer() contracts.Server {
+	srv, err := NewServerBuilder().WithFramework("grpc").Build()
 	if err != nil {
 		panic(err)
 	}
-	wait.Wait()
+	return srv
+}
+
+func getAuthzEngine() contracts.AuthzEngine {
+	eng, err := NewAuthzEngineBuilder().WithEngine("stub").Build()
+	if err != nil {
+		panic(err)
+	}
+	return eng
 }
