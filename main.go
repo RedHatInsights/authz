@@ -59,7 +59,7 @@ func Serve(cmd *cobra.Command, args []string) {
 			services = host.Services{
 				Authz: 		authz,
 				Licensing: 	authz,
-				Principals: principals,
+				Principals: &principals,
 			}
 			// Added below line to test the implementation - commented out for now, since testing is done
 			//authzclient.ReadSchema()
@@ -73,9 +73,9 @@ func Serve(cmd *cobra.Command, args []string) {
 		principals := impl.StubPrincipalStore{}
 
 		services = host.Services{
-			Authz: 		authz,
-			Licensing: 	authz,
-			Principals: principals,
+			Authz: 		&authz,
+			Licensing: 	&authz,
+			Principals: &principals,
 		}
 	}
 

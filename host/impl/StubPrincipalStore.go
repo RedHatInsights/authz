@@ -9,7 +9,7 @@ type StubPrincipalStore struct {
 	Principals map[string]app.Principal
 }
 
-func (s StubPrincipalStore) GetByID(id string) (app.Principal, error) {
+func (s *StubPrincipalStore) GetByID(id string) (app.Principal, error) {
 	if principal, ok := s.Principals[id]; ok {
 		return principal, nil
 	} else {
@@ -17,7 +17,7 @@ func (s StubPrincipalStore) GetByID(id string) (app.Principal, error) {
 	}
 }
 
-func (s StubPrincipalStore) GetByIDs(ids []string) ([]app.Principal, error) {
+func (s *StubPrincipalStore) GetByIDs(ids []string) ([]app.Principal, error) {
 	principals := make([]app.Principal, 0, len(ids))
 
 	for i, id := range ids {
@@ -30,6 +30,6 @@ func (s StubPrincipalStore) GetByIDs(ids []string) ([]app.Principal, error) {
 	return principals, nil
 }
 
-func (s StubPrincipalStore) GetByToken(token string) (app.Principal, error) {
+func (s *StubPrincipalStore) GetByToken(token string) (app.Principal, error) {
 	return s.GetByID(token)
 }

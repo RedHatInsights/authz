@@ -70,7 +70,7 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 }
 
 func mockAuthzStore() dependencies.AuthzStore {
-	return impl.StubAuthzStore{AuthzdUsers: map[string]bool{
+	return &impl.StubAuthzStore{AuthzdUsers: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
