@@ -15,3 +15,8 @@ func (s AuthzStore) CheckAccess(principal app.Principal, operation string, resou
 	//s.Authzed.CheckPermission()
 	return false, nil
 }
+
+func (s AuthzStore) ReadSchema() {
+	s.Authzed.ReadSchema()
+	return
+}

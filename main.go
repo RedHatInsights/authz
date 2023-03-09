@@ -55,6 +55,8 @@ func Serve(cmd *cobra.Command, args []string) {
 		authzclient := authzed.NewAuthzedConnection(endpoint, token)
 		if shared.StringEqualsIgnoreCase(store, "spicedb") {
 			services = host.Services{Store: impl.AuthzStore{Authzed: authzclient}}
+			// Added below line to test the implementation - commented out for now, since testing is done
+			//authzclient.ReadSchema()
 		}
 
 	} else {
