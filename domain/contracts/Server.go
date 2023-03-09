@@ -1,12 +1,13 @@
 package contracts
 
 import (
-	"net/http"
 	"sync"
 )
 
 // Server the interface for the runtime
 type Server interface {
-	Serve(host string, defaultHandler http.HandlerFunc, wait *sync.WaitGroup) error
+	Serve(host string, wait *sync.WaitGroup) error
 	NewServer() Server
+	SetEngine(eng AuthzEngine)
+	GetName() string
 }
