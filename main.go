@@ -29,9 +29,9 @@ func main() {
 	}
 
 	var rootCmd = &cobra.Command{
-		Use:   "ciam-authzed-api",
-		Short: "ciam-authzed-api",
-		Long:  `ciam-authzed-api serve`,
+		Use:   "authz",
+		Short: "authz service",
+		Long:  `authz service`,
 		Run:   Serve,
 	}
 	rootCmd.Flags().String("endpoint", "", "endpoint")
@@ -54,7 +54,7 @@ func Serve(cmd *cobra.Command, args []string) {
 	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
 		authzclient := authzed.NewAuthzedConnection(endpoint, token)
 		if shared.StringEqualsIgnoreCase(store, "spicedb") {
-			services = host.Services{Store: impl.AuthzStore{Authzed: authzclient}}
+			services = host.Services{Store: impl.SpiceDBAuthzStore{Authzed: authzclient}}
 			// Added below line to test the implementation - commented out for now, since testing is done
 			//authzclient.ReadSchema()
 		}
