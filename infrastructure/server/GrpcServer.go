@@ -104,9 +104,9 @@ func getRequestorIdentityFromContext(ctx context.Context) model.Principal {
 
 func convertErrorToGrpc(err error) error {
 	switch {
-	case errors.Is(err, ErrNotAuthenticated):
+	case errors.Is(err, model.ErrNotAuthenticated):
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
-	case errors.Is(err, ErrNotAuthorized):
+	case errors.Is(err, model.ErrNotAuthorized):
 		return status.Error(codes.PermissionDenied, "Access denied.")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")

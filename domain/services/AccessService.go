@@ -3,7 +3,6 @@ package services
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
-	"authz/infrastructure/server"
 )
 
 // AccessService is a domain service for abstract access management (ex: querying whether access has been granted.)
@@ -19,7 +18,7 @@ func NewAccessService(engine contracts.AuthzEngine) AccessService {
 // Check processes a CheckRequest and returns true or false if successful, otherwise error
 func (a AccessService) Check(req model.CheckRequest) (bool, error) {
 	if req.Requestor.IsAnonymous() {
-		return false, server.ErrNotAuthenticated
+		return false, model.ErrNotAuthenticated
 	}
 
 	accessResult, err := a.engine.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
@@ -28,7 +27,7 @@ func (a AccessService) Check(req model.CheckRequest) (bool, error) {
 	}
 
 	if !accessResult {
-		return false, server.ErrNotAuthorized
+		return false, model.ErrNotAuthorized
 	}
 
 	return a.engine.CheckAccess(req.Subject, req.Operation, req.Resource)
