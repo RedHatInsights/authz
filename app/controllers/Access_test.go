@@ -3,7 +3,6 @@ package controllers
 import (
 	"authz/app"
 	"authz/app/contracts"
-	"authz/app/dependencies"
 	"authz/host/impl"
 	"testing"
 )
@@ -69,10 +68,10 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 	}
 }
 
-func mockAuthzStore() dependencies.AuthzStore {
+func mockAuthzStore() *impl.StubAuthzStore {
 	return &impl.StubAuthzStore{AuthzdUsers: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}}
+	}, LicensedSeats: map[string]map[string]bool{}}
 }
