@@ -10,8 +10,7 @@ type AuthzStore struct {
 	Authzed authzed.Client
 }
 
-// CheckPermission - Check permission TODO
-// CheckAccess returns false TODO implementation.
+// CheckAccess returns false TODO Impl calling authz client.
 func (s AuthzStore) CheckAccess(principal app.Principal, operation string, resource app.Resource) (bool, error) {
 	//s.Authzed.CheckPermission()
 	return false, nil
