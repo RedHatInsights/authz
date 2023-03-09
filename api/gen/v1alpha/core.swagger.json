@@ -9,7 +9,7 @@
       "name": "CheckPermission"
     },
     {
-      "name": "LicenseService"
+      "name": "SeatsService"
     }
   ],
   "consumes": [
@@ -19,7 +19,133 @@
     "application/json"
   ],
   "paths": {
-    "/v1alpha/check": {
+    "/v1alpha/license/seats": {
+      "get": {
+        "operationId": "SeatsService_GetSeats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaGetSeatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "tenantId",
+            "description": "tenant to get seats for",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "serviceId",
+            "description": "service/productlicense to get seats for",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "includeUsers",
+            "description": "true: include encriched user representation. false: do not include. Default: true.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "filter",
+            "description": "filter, either licensed or unlicensed users returned. Default: licensed. Note: Default values are not supported anymore in proto3, check serverside i guess.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "licensed",
+              "unlicensed"
+            ],
+            "default": "licensed"
+          },
+          {
+            "name": "includeLicenseInfo",
+            "description": "include available and max seats of license. Default: True.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "SeatsService"
+        ]
+      },
+      "delete": {
+        "operationId": "SeatsService_DeleteSeats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaModifySeatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an \"admin\" can actually add licenses.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaModifySeatsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SeatsService"
+        ]
+      },
+      "post": {
+        "operationId": "SeatsService_CreateSeats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaModifySeatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an \"admin\" can actually add licenses.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alphaModifySeatsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SeatsService"
+        ]
+      }
+    },
+    "/v1alpha/permissions/check": {
       "post": {
         "operationId": "CheckPermission_CheckPermission",
         "responses": {
@@ -48,162 +174,6 @@
         ],
         "tags": [
           "CheckPermission"
-        ]
-      }
-    },
-    "/v1alpha/orgs/{orgId}/licenses/{serviceId}": {
-      "get": {
-        "operationId": "LicenseService_GetLicense",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alphaGetLicenseResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "orgId",
-            "description": "The id of an license-able organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "serviceId",
-            "description": "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "LicenseService"
-        ]
-      },
-      "post": {
-        "operationId": "LicenseService_ModifySeats",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alphaModifySeatsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "orgId",
-            "description": "The id of an license-able organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "serviceId",
-            "description": "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "type": "object",
-              "properties": {
-                "assign": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "User IDs to assign to the license."
-                },
-                "unassign": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  },
-                  "description": "User IDs to remove from the license."
-                }
-              },
-              "description": "ModifySeatsRequest assuming we get the userId etc from the requester in the authorization header to validate if an \"admin\" can actually add licenses."
-            }
-          }
-        ],
-        "tags": [
-          "LicenseService"
-        ]
-      }
-    },
-    "/v1alpha/orgs/{orgId}/licenses/{serviceId}/seats": {
-      "get": {
-        "operationId": "LicenseService_GetSeats",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alphaGetSeatsResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "orgId",
-            "description": "The id of an license-able organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "serviceId",
-            "description": "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "includeUsers",
-            "description": "true: include enriched user representation. false: do not include (only IDs). Default: true.",
-            "in": "query",
-            "required": false,
-            "type": "boolean"
-          },
-          {
-            "name": "filter",
-            "description": "filter, either assigned or assignable users returned. Default: assigned.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "assigned",
-              "assignable"
-            ],
-            "default": "assigned"
-          }
-        ],
-        "tags": [
-          "LicenseService"
         ]
       }
     }
@@ -265,18 +235,18 @@
         }
       }
     },
-    "v1alphaGetLicenseResponse": {
+    "v1alphaGetSeatsCountResponse": {
       "type": "object",
       "properties": {
         "seatsTotal": {
           "type": "integer",
           "format": "int32",
-          "description": "Total number of seats assignable."
+          "description": "total seats."
         },
         "seatsAvailable": {
           "type": "integer",
           "format": "int32",
-          "description": "Current number of available seats which can be assigned."
+          "description": "currently available seats."
         }
       }
     },
@@ -289,7 +259,11 @@
             "type": "object",
             "$ref": "#/definitions/v1alphaGetSeatsUserRepresentation"
           },
-          "description": "Just user IDs, unless \"includeUsers\" = true."
+          "title": "empty if includeUsers = false, filled if includeUsers=true"
+        },
+        "licenseInfo": {
+          "$ref": "#/definitions/v1alphaGetSeatsCountResponse",
+          "title": "returns total and assigned seats for the given tenant \u0026 service, if includeLicenseInfo is true in request"
         }
       }
     },
@@ -302,11 +276,32 @@
         "id": {
           "type": "string"
         },
-        "assigned": {
+        "isLicenseActive": {
           "type": "boolean"
         }
       },
       "description": "we may return more userinfo, this is a starting point."
+    },
+    "v1alphaModifySeatsRequest": {
+      "type": "object",
+      "properties": {
+        "tenantId": {
+          "type": "string",
+          "title": "tenantId of subjects"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "list of subjects to add"
+        },
+        "serviceId": {
+          "type": "string",
+          "title": "id of service to add subjects to as \"licensed users\""
+        }
+      },
+      "description": "CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an \"admin\" can actually add licenses."
     },
     "v1alphaModifySeatsResponse": {
       "type": "object"
@@ -314,10 +309,10 @@
     "v1alphaSeatFilterType": {
       "type": "string",
       "enum": [
-        "assigned",
-        "assignable"
+        "licensed",
+        "unlicensed"
       ],
-      "default": "assigned"
+      "default": "licensed"
     }
   }
 }

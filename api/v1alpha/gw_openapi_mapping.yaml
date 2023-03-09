@@ -4,12 +4,13 @@ openapiOptions:
       option:
         info:
           title: CIAM Authz
-          description: This is the CIAM-Authz service based on the OpenAPI 2.0 specification.
+          description: This is the CIAM-AuthZ service based on the OpenAPI 2.0 specification.
           contact:
             email: ciam-authz@redhat.com
           license:
             name: Apache 2.0
             url: http://www.apache.org/licenses/LICENSE-2.0.html
+          version: 1.0.11
         tags:
             - name: AuthZ
               description: Everything about your AuthZ
@@ -44,22 +45,15 @@ openapiOptions:
           "200":
             examples:
               "application/json": '{"result": true, "description": ""}'
-    - method: api.v1alpha.LicenseService.ModifySeats
+    - method: api.v1alpha.SeatsService.CreateSeats
       option:
-        summary: Assign or unassign users to/from the license.
-        description: >
-          Assign or unassign users to or from the license. 
-          Users assigned may access the service identified by serviceId
-          as contracted with an organization (identified by orgId).
-          Assigned users consume a limited number of seats in a license.
-    - method: api.v1alpha.LicenseService.GetSeats
+        summary: Add licenses to users
+        description: Adds users to seats/licenses until the seats of the bought license are full.
+    - method: api.v1alpha.SeatsService.DeleteSeats
       option:
-        summary: Gets user details with filters.
-        description: Get details of users who are assigned to the license or available to be assigned.
-    - method: api.v1alpha.LicenseService.GetLicense
+        summary: Removes licenses from users
+        description: Removes users from seats/licenses
+    - method: api.v1alpha.SeatsService.GetSeats
       option:
-        summary: Summarize a license.
-        description: > 
-          Returns information about the license, 
-          including the number of entitled seats (maximum assignable)
-          and the current number of available seats.
+        summary: Gets licensed/unlicensed users and count.
+        description: Removes users from seats/licenses
