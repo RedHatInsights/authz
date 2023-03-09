@@ -1,6 +1,7 @@
 package main
 
 import (
+	"authz/app"
 	"authz/host"
 	"authz/host/impl"
 	"flag"
@@ -27,7 +28,14 @@ func main() {
 	authz := impl.StubAuthzStore{
 		AuthzdUsers: map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
 	}
-	principals := impl.StubPrincipalStore{}
+	principals := impl.StubPrincipalStore{
+		Principals: map[string]app.Principal{
+			"token": app.NewPrincipal("token", "aspian"),
+			"alice": app.NewPrincipal("alice", "aspian"),
+			"bob":   app.NewPrincipal("bob", "aspian"),
+			"chuck": app.NewPrincipal("chuck", "aspian"),
+		},
+	}
 
 	services := host.Services{
 		Authz:      &authz,
