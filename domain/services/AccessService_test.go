@@ -69,7 +69,7 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 }
 
 func mockAuthzEngine() contracts.AuthzEngine {
-	return engine.StubAuthzEngine{Data: map[string]bool{
+	return &engine.StubAuthzEngine{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,

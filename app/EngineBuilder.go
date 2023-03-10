@@ -26,11 +26,11 @@ func (e *AuthzEngineBuilder) WithEngine(engine string) *AuthzEngineBuilder {
 func (e *AuthzEngineBuilder) Build() (contracts.AuthzEngine, error) {
 	switch e.engine {
 	case "stub":
-		return engine.StubAuthzEngine{Data: getMockData()}, nil
+		return &engine.StubAuthzEngine{Data: getMockData()}, nil
 	case "spicedb":
-		return engine.SpiceDbAuthzEngine{}, nil
+		return &engine.SpiceDbAuthzEngine{}, nil
 	default:
-		return engine.StubAuthzEngine{Data: getMockData()}, nil
+		return &engine.StubAuthzEngine{Data: getMockData()}, nil
 	}
 }
 
