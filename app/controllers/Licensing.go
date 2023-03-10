@@ -43,6 +43,31 @@ func (l Licensing) UnAssignSeats(req contracts.ModifySeatAssignmentRequest) erro
 	return nil
 }
 
+func (l Licensing) GetLicensedSeats(req contracts.GetSeatsRequest) ([]app.Principal, error) {
+	if err := l.ensureRequestorIsAuthorizedToReadLicenses(req.Requestor, req.Org); err != nil {
+		return nil, err
+	}
+
+	return []app.Principal{}, nil // TODO
+}
+
+func (l Licensing) GetUnlicensedSeats(req contracts.GetSeatsRequest) ([]app.Principal, error) {
+	if err := l.ensureRequestorIsAuthorizedToReadLicenses(req.Requestor, req.Org); err != nil {
+		return nil, err
+	}
+
+	return []app.Principal{}, nil // TODO
+}
+
+func (l Licensing) GetLicenseInformation(req contracts.GetSeatsRequest) (app.LicenseInformation, error) {
+	err := l.ensureRequestorIsAuthorizedToReadLicenses(req.Requestor, req.Org)
+	if err != nil {
+		return app.LicenseInformation{}, err
+	}
+
+	return app.LicenseInformation{}, nil
+}
+
 func NewLicensing(licenseStore dependencies.LicenseStore, authz dependencies.AuthzStore) Licensing {
 	return Licensing{licenseStore: licenseStore, authzStore: authz}
 }
@@ -53,6 +78,23 @@ func (l Licensing) ensureRequestorIsAuthorizedToManageLicenses(requestor app.Pri
 	}
 
 	authz, err := l.authzStore.CheckAccess(requestor, "manage_license", org.AsResource()) //Maybe on a per-service basis?
+	if err != nil {
+		return err
+	}
+
+	if !authz {
+		return app.ErrNotAuthorized
+	}
+
+	return nil
+}
+
+func (l Licensing) ensureRequestorIsAuthorizedToReadLicenses(requestor app.Principal, org app.Organization) error {
+	if requestor.IsAnonymous() {
+		return app.ErrNotAuthenticated
+	}
+
+	authz, err := l.authzStore.CheckAccess(requestor, "view_license", org.AsResource()) //Maybe on a per-service basis?
 	if err != nil {
 		return err
 	}

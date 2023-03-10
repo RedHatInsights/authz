@@ -83,7 +83,67 @@ func (r *GrpcServer) DeleteSeats(ctx context.Context, rpcReq *core.ModifySeatsRe
 }
 
 func (r *GrpcServer) GetSeats(ctx context.Context, rpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
-	return nil, nil
+	requestor, err := r.getRequestorIdentityFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := contracts.GetSeatsRequest{
+		Request: contracts.Request{
+			Requestor: requestor,
+		},
+		Org:                app.Organization{Id: rpcReq.GetTenantId()},
+		Service:            app.Service{Id: rpcReq.GetServiceId()},
+		IncludeLicenseInfo: rpcReq.GetIncludeLicenseInfo(),
+		IncludeUsers:       rpcReq.GetIncludeUsers(),
+		Filter:             rpcReq.GetFilter().String(),
+	}
+
+	lic := controllers.NewLicensing(r.services.Licensing, r.services.Authz)
+
+	var resp = &core.GetSeatsResponse{}
+
+	if req.IncludeUsers {
+		switch req.Filter {
+		case "licensed":
+			users, err := lic.GetLicensedSeats(req)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range users {
+				resp.Users = append(resp.Users, &core.GetSeatsUserRepresentation{
+					DisplayName:     v.Name,
+					Id:              v.ID,
+					IsLicenseActive: v.IsLicenseActive,
+				})
+			}
+		case "unlicensed":
+			users, err := lic.GetUnlicensedSeats(req)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range users {
+				resp.Users = append(resp.Users, &core.GetSeatsUserRepresentation{
+					DisplayName:     v.Name,
+					Id:              v.ID,
+					IsLicenseActive: v.IsLicenseActive,
+				})
+			}
+		}
+	}
+
+	if req.IncludeLicenseInfo {
+		li, err := lic.GetLicenseInformation(req)
+		if err != nil {
+			return nil, err
+		}
+		resp.LicenseInfo = &core.GetSeatsCountResponse{
+			SeatsTotal:     li.SeatsTotal,
+			SeatsAvailable: li.SeatsAvailable,
+		}
+	}
+
+	return resp, nil
 }
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed

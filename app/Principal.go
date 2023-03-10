@@ -6,6 +6,10 @@ type Principal struct {
 	ID string
 	//OrgIDs represent the organization a principal is a member of.
 	OrgID string
+	//Names are human-readable names
+	Name string
+	//Status of a license for the principal  in the context of a specific service
+	IsLicenseActive bool //TODO: Not sure if we won't need another struct instead. may be mixing concerns.
 }
 
 // IsAnonymous returns true if this Principal has no identity information and returns false if this Principal represents a specific identity
