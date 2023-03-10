@@ -10,8 +10,13 @@ type StubAuthzEngine struct {
 	Data map[string]bool
 }
 
+// NewConnection Stub impl
+func (s *StubAuthzEngine) NewConnection(endpoint string, token string) {
+	// NOT USED IN STUBSTORE
+}
+
 // CheckAccess returns true if the subject has been specified to have access, otherwise false.
-func (s StubAuthzEngine) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
+func (s *StubAuthzEngine) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
 	if authz, ok := s.Data[principal.ID]; ok {
 		return authz, nil
 	}
