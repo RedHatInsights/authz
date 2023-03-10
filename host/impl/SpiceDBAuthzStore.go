@@ -8,7 +8,8 @@ import (
 
 // SpiceDBAuthzStore represents an spicedb authorization
 type SpiceDBAuthzStore struct {
-	Authzed authzed.Client
+	Authzed       authzed.Client
+	LicensedSeats map[string]map[string]bool
 }
 
 func (s SpiceDBAuthzStore) AssignSeat(principal app.Principal, svc app.Service) error {

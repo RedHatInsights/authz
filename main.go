@@ -50,17 +50,28 @@ func Serve(cmd *cobra.Command, args []string) {
 	endpoint := flags.MustGetString("endpoint", cmd.Flags())
 	token := flags.MustGetString("token", cmd.Flags())
 	store := flags.MustGetString("store", cmd.Flags())
-	principals := impl.StubPrincipalStore{}
-
+	//TODO: empty for now.
+	var licensedSeats = make(map[string]map[string]bool)
+	p1 := impl.StubPrincipalStore{ //TODO: SpiceDbPrincipalStore (and discuss generally)
+		Principals: map[string]app.Principal{
+			"token": app.NewPrincipal("token", "aspian"),
+			"alice": app.NewPrincipal("alice", "aspian"),
+			"bob":   app.NewPrincipal("bob", "aspian"),
+			"chuck": app.NewPrincipal("chuck", "aspian"),
+		},
+	}
 	var services host.Services
 	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
 		authzclient := authzed.NewAuthzedConnection(endpoint, token)
-		authz := impl.SpiceDBAuthzStore{Authzed: authzclient}
+		authz := impl.SpiceDBAuthzStore{
+			Authzed:       authzclient,
+			LicensedSeats: licensedSeats,
+		}
 		if shared.StringEqualsIgnoreCase(store, "spicedb") {
 			services = host.Services{
 				Authz:      authz,
 				Licensing:  authz,
-				Principals: &principals,
+				Principals: &p1,
 			}
 			// Added below line to test the implementation - commented out for now, since testing is done
 			//authzclient.ReadSchema()
@@ -68,10 +79,11 @@ func Serve(cmd *cobra.Command, args []string) {
 
 	} else {
 		authz := impl.StubAuthzStore{
-			AuthzdUsers: map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
+			AuthzdUsers:   map[string]bool{"token": true, "alice": true, "bob": true, "chuck": false},
+			LicensedSeats: make(map[string]map[string]bool),
 		}
 
-		principals := impl.StubPrincipalStore{
+		p2 := impl.StubPrincipalStore{
 			Principals: map[string]app.Principal{
 				"token": app.NewPrincipal("token", "aspian"),
 				"alice": app.NewPrincipal("alice", "aspian"),
@@ -83,7 +95,7 @@ func Serve(cmd *cobra.Command, args []string) {
 		services = host.Services{
 			Authz:      &authz,
 			Licensing:  &authz,
-			Principals: &principals,
+			Principals: &p2,
 		}
 	}
 
