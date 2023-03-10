@@ -17,7 +17,7 @@ func main() {
 
 	// Always log to stderr by default
 	if err := flag.Set("logtostderr", "true"); err != nil {
-		glog.Infof("Unable to set logtostderr to true")
+		glog.Warningf("Unable to log to stderr by default. using stdout.")
 	}
 
 	app.Run()
