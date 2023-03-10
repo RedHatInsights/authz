@@ -4,17 +4,19 @@ import (
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
 	"authz/infrastructure/server"
-	"fmt"
 	"sync"
 )
+
+// cfg holds the config from yaml. package private for now.
+var cfg contracts.Config
 
 // getConfig uses the interface to load the config based on the technical implementation "viper".
 func getConfig() contracts.Config {
 	cfg, err := config.NewBuilder().
-		ConfigName("viperexampleconfig").
+		ConfigName("config").
 		ConfigType("yaml").
 		ConfigPaths(
-			"app/exampleconfig/", //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
+			"app/config/", //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
 		).
 		Defaults(map[string]interface{}{}).
 		Options().
@@ -28,40 +30,41 @@ func getConfig() contracts.Config {
 
 // Run configures and runs the actual app. DEMO! switch the server from "echo" to "gin". see what happens.
 func Run() {
-	cfg := getConfig()
-	fmt.Println(cfg.GetAll())
-	fmt.Println(cfg.GetBool("example.boolVal"))
-	fmt.Println(cfg.GetString("example.stringVal"))
-	fmt.Println(cfg.GetStringSlice("example.list"))
+	cfg = getConfig()
 
 	srv := getServer()
 	e := getAuthzEngine()
+	e.NewConnection(cfg.GetString("app.engine.endpoint"), cfg.GetString("app.engine.token"))
 	srv.SetEngine(e)
 	wait := sync.WaitGroup{}
 
 	delta := 1
-	if srv.GetName() == "grpc" { //2 chans for grpc
+	srvKind := cfg.GetString("app.server.kind")
+
+	//2 chans for grpc gateway for http and grpc
+	if srvKind == "grpc" {
 		delta = 2
 	}
+
 	wait.Add(delta)
 
 	go func() {
-		err := srv.Serve("50051", &wait)
+		err := srv.Serve(&wait, cfg.GetString("app.server.port"))
 		if err != nil {
 			panic(err)
 		}
 	}()
 
-	if srv.GetName() == "grpc" {
+	if srvKind == "grpc" {
 		webSrv, err := NewServerBuilder().WithFramework("grpcweb").Build()
 		webSrv.SetEngine(e)
-		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack. :)
+		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
 			panic(err)
 		}
 
 		go func() {
-			err := webSrv.Serve("8080", &wait)
+			err := webSrv.Serve(&wait, cfg.GetString("app.server.grpc-web-httpPort"), cfg.GetString("app.server.grpc-web-httpsPort"))
 			if err != nil {
 				panic(err)
 			}
@@ -72,7 +75,7 @@ func Run() {
 }
 
 func getServer() contracts.Server {
-	srv, err := NewServerBuilder().WithFramework("grpc").Build()
+	srv, err := NewServerBuilder().WithFramework(cfg.GetString("app.server.kind")).Build()
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +83,7 @@ func getServer() contracts.Server {
 }
 
 func getAuthzEngine() contracts.AuthzEngine {
-	eng, err := NewAuthzEngineBuilder().WithEngine("stub").Build()
+	eng, err := NewAuthzEngineBuilder().WithEngine(cfg.GetString("app.engine.kind")).Build()
 	if err != nil {
 		panic(err)
 	}

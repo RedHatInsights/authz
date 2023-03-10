@@ -47,7 +47,6 @@ func (s *SpiceDbAuthzEngine) CheckAccess(principal model.Principal, operation st
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
 func (s *SpiceDbAuthzEngine) NewConnection(spiceDbEndpoint string, token string) {
-	log.Println("Init new client!!")
 	client, err := authzed.NewClient(
 		spiceDbEndpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

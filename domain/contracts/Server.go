@@ -6,8 +6,7 @@ import (
 
 // Server the interface for the runtime
 type Server interface {
-	Serve(host string, wait *sync.WaitGroup) error
+	Serve(wait *sync.WaitGroup, ports ...string) error
 	NewServer() Server
 	SetEngine(eng AuthzEngine)
-	GetName() string
 }

@@ -30,10 +30,10 @@ func (r *GrpcGatewayServer) NewServer() contracts.Server {
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (r *GrpcGatewayServer) Serve(host string, wait *sync.WaitGroup) error {
+func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+host)
+	ls, err := net.Listen("tcp", ":"+ports[0])
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -52,7 +52,7 @@ func (r *GrpcGatewayServer) Serve(host string, wait *sync.WaitGroup) error {
 			}
 		}
 	} else { // For all cases of error - we start a plain HTTP server
-		glog.Info("TLS cert or Key not found  - Starting gRPC server in insecure mode")
+		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s", ports[0])
 	}
 
 	srv := grpc.NewServer(grpc.Creds(creds))

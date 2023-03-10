@@ -16,7 +16,7 @@ type GinServer struct {
 }
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
-func (g *GinServer) Serve(host string, wait *sync.WaitGroup) error {
+func (g *GinServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	defer wait.Done()
 	router := gin.Default()
 	router.GET("/", func(c *gin.Context) {
@@ -24,7 +24,7 @@ func (g *GinServer) Serve(host string, wait *sync.WaitGroup) error {
 			"message": "Hello from Gin!",
 		})
 	})
-	err := router.Run(":" + host)
+	err := router.Run(":" + ports[0])
 	return err
 }
 

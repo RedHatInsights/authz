@@ -21,7 +21,7 @@ func (e *EchoServer) GetName() string {
 }
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
-func (e *EchoServer) Serve(host string, wait *sync.WaitGroup) error {
+func (e *EchoServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	defer wait.Done()
 
 	e2 := echo.New()
@@ -32,7 +32,7 @@ func (e *EchoServer) Serve(host string, wait *sync.WaitGroup) error {
 	e2.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, "Hello from echo!")
 	})
-	e2.Logger.Fatal(e2.Start(":" + host))
+	e2.Logger.Fatal(e2.Start(":" + ports[0]))
 	return nil //interesting nothing here throws errs... well, for later.
 }
 
