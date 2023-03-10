@@ -103,10 +103,10 @@ func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 func modifyLicRequestFromVars(requestorID string, requestorOrg string, subjectOrg string) contracts.ModifySeatAssignmentRequest {
 	return contracts.ModifySeatAssignmentRequest{
 		Request: contracts.Request{
-			Requestor: app.NewPrincipal(requestorID, requestorOrg),
+			Requestor: app.NewPrincipal(requestorID, "requestorName", requestorOrg, true), //TODO: ok, severe sign that we need another struct i guess. we're mixing concerns :)
 		},
 		Org:        app.Organization{Id: "aspian"},
-		Principals: []app.Principal{app.NewPrincipal("okay", subjectOrg)},
+		Principals: []app.Principal{app.NewPrincipal("okay", "u1", subjectOrg, true)}, //TODO: see comment above.
 		Service:    app.Service{Id: "wisdom"},
 	}
 }

@@ -45,6 +45,30 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
+func TestGetSeatsReturnsListOfLicensedUsersAndLicenseInformation(t *testing.T) {
+	//TODO implement
+}
+
+func TestGetSeatsReturnsListOfUnlicensedUsersAndLicenseInformation(t *testing.T) {
+	//TODO implement
+}
+
+func TestGetSeatsReturnsNoListOfUsersAndLicenseInformation(t *testing.T) {
+	//TODO implement
+}
+
+func TestGetSeatsReturnsNoListOfUsersAndNoInformation(t *testing.T) {
+	//TODO implement
+}
+
+func TestGetSeatsReturnsUsersWithoutExplicitParamSet(t *testing.T) {
+	//TODO implement
+}
+
+func TestGetSeatsReturnsLicenseInfoWithoutExplicitParamSet(t *testing.T) {
+	//TODO implement
+}
+
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/license/seats", "okay",
@@ -169,9 +193,26 @@ func mockAuthzStore() impl.StubAuthzStore {
 func mockPrincipalStore() impl.StubPrincipalStore {
 	return impl.StubPrincipalStore{
 		Principals: map[string]app.Principal{
-			"system": app.NewPrincipal("system", "wisdom"),
-			"okay":   app.NewPrincipal("okay", "aspian"),
-			"bad":    app.NewPrincipal("bad", "aspian"),
+			"system": app.NewPrincipal("system", "test", "wisdom", true),
+			"okay":   app.NewPrincipal("okay", "abigail", "aspian", true),
+			"bad":    app.NewPrincipal("bad", "Aron", "aspian", false),
+		},
+	}
+}
+
+func mockGetSeatsPrincipalStore() impl.StubPrincipalStore {
+	return impl.StubPrincipalStore{
+		Principals: map[string]app.Principal{
+			"id1":  app.NewPrincipal("id1", "User1", "wisdom", true),
+			"id2":  app.NewPrincipal("id2", "User2", "wisdom", false),
+			"id3":  app.NewPrincipal("id3", "User1", "aspian", true),
+			"id4":  app.NewPrincipal("id4", "User2", "aspian", true),
+			"id5":  app.NewPrincipal("id5", "User3", "aspian", true),
+			"id6":  app.NewPrincipal("id6", "User4", "aspian", true),
+			"id7":  app.NewPrincipal("id7", "User1", "test", true),
+			"id8":  app.NewPrincipal("id8", "User2", "test", false),
+			"id9":  app.NewPrincipal("id9", "User5", "aspian", false),
+			"id10": app.NewPrincipal("id10", "User6", "aspian", false),
 		},
 	}
 }

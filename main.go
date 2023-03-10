@@ -30,10 +30,10 @@ func main() {
 	}
 	principals := impl.StubPrincipalStore{
 		Principals: map[string]app.Principal{
-			"token": app.NewPrincipal("token", "aspian"),
-			"alice": app.NewPrincipal("alice", "aspian"),
-			"bob":   app.NewPrincipal("bob", "aspian"),
-			"chuck": app.NewPrincipal("chuck", "aspian"),
+			"token": app.NewPrincipal("token", "u1", "aspian", true),
+			"alice": app.NewPrincipal("alice", "u2", "aspian", true),
+			"bob":   app.NewPrincipal("bob", "u3", "aspian", true),
+			"chuck": app.NewPrincipal("chuck", "u4", "aspian", false),
 		},
 	}
 
