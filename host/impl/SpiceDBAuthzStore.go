@@ -11,6 +11,16 @@ type SpiceDBAuthzStore struct {
 	Authzed authzed.Client
 }
 
+func (s SpiceDBAuthzStore) AssignSeat(principal app.Principal, svc app.Service) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s SpiceDBAuthzStore) UnAssignSeat(principal app.Principal, svc app.Service) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 // CheckAccess returns false TODO Impl calling authz client.
 func (s SpiceDBAuthzStore) CheckAccess(principal app.Principal, operation string, resource app.Resource) (bool, error) {
 	//s.Authzed.CheckPermission()
