@@ -50,13 +50,17 @@ func Serve(cmd *cobra.Command, args []string) {
 	token := flags.MustGetString("token", cmd.Flags())
 	store := flags.MustGetString("store", cmd.Flags())
 
+	glog.Infof("Authz Store Endpoint: %v", endpoint)
+
 	var services host.Services
 	if !shared.StringEmpty(endpoint) && !shared.StringEmpty(token) {
 		authzclient := authzed.NewAuthzedConnection(endpoint, token)
 		if shared.StringEqualsIgnoreCase(store, "spicedb") {
 			services = host.Services{Store: impl.SpiceDBAuthzStore{Authzed: authzclient}}
 			// Added below line to test the implementation - commented out for now, since testing is done
-			//authzclient.ReadSchema()
+			glog.Infof("Test: AuhtZ service <-> SpiceDB store connection")
+			resp, err := authzclient.ReadSchema()
+			glog.Infof("response: %v Error %v", resp, err)
 		}
 
 	} else {
