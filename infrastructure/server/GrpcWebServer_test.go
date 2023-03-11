@@ -2,7 +2,7 @@ package server
 
 import (
 	"authz/domain/contracts"
-	"authz/infrastructure/engine"
+	"authz/infrastructure/engine/mock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -83,7 +83,7 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func mockAuthzEngine() contracts.AuthzEngine {
-	return &engine.StubAuthzEngine{Data: map[string]bool{
+	return &mock.StubAuthzEngine{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
