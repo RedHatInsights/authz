@@ -1,7 +1,7 @@
 package app
 
 import (
-	"authz/domain/contracts"
+	"authz/app/contracts"
 	"authz/infrastructure/server"
 )
 

@@ -2,6 +2,7 @@
 package server
 
 import (
+	contracts2 "authz/app/contracts"
 	"authz/domain/contracts"
 	"net/http"
 	"sync"
@@ -37,7 +38,7 @@ func (e *EchoServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 }
 
 // NewServer object to call serve from, implementing contract.
-func (e *EchoServer) NewServer() contracts.Server {
+func (e *EchoServer) NewServer() contracts2.Server {
 	return &EchoServer{}
 }
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	core "authz/api/gen/v1alpha"
+	contracts2 "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/domain/model"
 	"authz/domain/services"
@@ -25,7 +26,7 @@ type GrpcGatewayServer struct {
 }
 
 // NewServer creates a new Server object to use.
-func (r *GrpcGatewayServer) NewServer() contracts.Server {
+func (r *GrpcGatewayServer) NewServer() contracts2.Server {
 	return &GrpcGatewayServer{}
 }
 
