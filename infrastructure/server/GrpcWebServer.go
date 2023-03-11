@@ -2,6 +2,7 @@ package server
 
 import (
 	core "authz/api/gen/v1alpha"
+	contracts2 "authz/app/contracts"
 	"authz/domain/contracts"
 	"context"
 	"net/http"
@@ -61,7 +62,7 @@ func (w *GrpcWebServer) SetHandler(h core.CheckPermissionServer) {
 }
 
 // NewServer creates a new Server object to use.
-func (w *GrpcWebServer) NewServer() contracts.Server {
+func (w *GrpcWebServer) NewServer() contracts2.Server {
 	return &GrpcWebServer{}
 }
 

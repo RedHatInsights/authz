@@ -11,7 +11,7 @@ import (
 func main() {
 
 	// Needed to make `glog` believe that the flags have already been parsed, otherwise
-	// every log messages is prefixed by an error message stating the flags haven't been
+	// every log message is prefixed by an error message stating the flags haven't been
 	// parsed.
 	_ = flag.CommandLine.Parse([]string{})
 

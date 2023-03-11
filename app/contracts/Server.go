@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"authz/domain/contracts"
 	"sync"
 )
 
@@ -8,5 +9,5 @@ import (
 type Server interface {
 	Serve(wait *sync.WaitGroup, ports ...string) error
 	NewServer() Server
-	SetEngine(eng AuthzEngine)
+	SetEngine(eng contracts.AuthzEngine)
 }

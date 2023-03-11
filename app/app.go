@@ -1,17 +1,18 @@
 package app
 
 import (
+	appcontracts "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
 	"authz/infrastructure/server"
 	"sync"
 )
 
-// cfg holds the config from yaml. package private for now.
-var cfg contracts.Config
+// Cfg holds the config from yaml. package private for now.
+var Cfg appcontracts.Config
 
 // getConfig uses the interface to load the config based on the technical implementation "viper".
-func getConfig() contracts.Config {
+func getConfig() appcontracts.Config {
 	cfg, err := config.NewBuilder().
 		ConfigName("config").
 		ConfigType("yaml").
@@ -30,16 +31,16 @@ func getConfig() contracts.Config {
 
 // Run configures and runs the actual app. DEMO! switch the server from "echo" to "gin". see what happens.
 func Run() {
-	cfg = getConfig()
+	Cfg = getConfig()
 
 	srv := getServer()
 	e := getAuthzEngine()
-	e.NewConnection(cfg.GetString("app.engine.endpoint"), cfg.GetString("app.engine.token"))
+	e.NewConnection(Cfg.GetString("app.engine.endpoint"), Cfg.GetString("app.engine.token"))
 	srv.SetEngine(e)
 	wait := sync.WaitGroup{}
 
 	delta := 1
-	srvKind := cfg.GetString("app.server.kind")
+	srvKind := Cfg.GetString("app.server.kind")
 
 	//2 chans for grpc gateway for http and grpc
 	if srvKind == "grpc" {
@@ -49,7 +50,7 @@ func Run() {
 	wait.Add(delta)
 
 	go func() {
-		err := srv.Serve(&wait, cfg.GetString("app.server.port"))
+		err := srv.Serve(&wait, Cfg.GetString("app.server.port"))
 		if err != nil {
 			panic(err)
 		}
@@ -64,7 +65,7 @@ func Run() {
 		}
 
 		go func() {
-			err := webSrv.Serve(&wait, cfg.GetString("app.server.grpc-web-httpPort"), cfg.GetString("app.server.grpc-web-httpsPort"))
+			err := webSrv.Serve(&wait, Cfg.GetString("app.server.grpc-web-httpPort"), Cfg.GetString("app.server.grpc-web-httpsPort"))
 			if err != nil {
 				panic(err)
 			}
@@ -74,8 +75,8 @@ func Run() {
 	wait.Wait()
 }
 
-func getServer() contracts.Server {
-	srv, err := NewServerBuilder().WithFramework(cfg.GetString("app.server.kind")).Build()
+func getServer() appcontracts.Server {
+	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).Build()
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +84,7 @@ func getServer() contracts.Server {
 }
 
 func getAuthzEngine() contracts.AuthzEngine {
-	eng, err := NewAuthzEngineBuilder().WithEngine(cfg.GetString("app.engine.kind")).Build()
+	eng, err := NewAuthzEngineBuilder().WithEngine(Cfg.GetString("app.engine.kind")).Build()
 	if err != nil {
 		panic(err)
 	}
