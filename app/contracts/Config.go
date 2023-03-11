@@ -1,3 +1,6 @@
+// Package contracts inside the app package defines interfaces
+// for technical implementations that are not necessary for the domain itself,
+// but for the actual runtime, so the app itself is not coupled to technical implementations.
 package contracts
 
 import "time"

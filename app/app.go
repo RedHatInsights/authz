@@ -1,3 +1,4 @@
+// Package app sticks the application parts together and runs it.
 package app
 
 import (
@@ -29,7 +30,7 @@ func getConfig() appcontracts.Config {
 	return cfg
 }
 
-// Run configures and runs the actual app. DEMO! switch the server from "echo" to "gin". see what happens.
+// Run configures and runs the actual app.
 func Run() {
 	Cfg = getConfig()
 

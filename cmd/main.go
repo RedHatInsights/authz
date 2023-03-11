@@ -4,6 +4,7 @@ package main
 import (
 	"authz/app"
 	"flag"
+
 	"github.com/golang/glog"
 )
 

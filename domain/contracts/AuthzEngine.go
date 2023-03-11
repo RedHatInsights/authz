@@ -1,4 +1,5 @@
-// Package contracts contains the contracts that can be used in the domain
+// Package contracts inside the domain package contains the contracts that can be used in the domain
+// without being coupled to a technical implementation
 package contracts
 
 import (
