@@ -2,7 +2,9 @@ package app
 
 import (
 	"authz/domain/contracts"
-	"authz/infrastructure/engine"
+	"authz/infrastructure/engine/authzed"
+	"authz/infrastructure/engine/mock"
+	"authz/infrastructure/engine/openfga"
 )
 
 // AuthzEngineBuilder is the builder containing the config for building technical implementations of the server
@@ -25,11 +27,13 @@ func (e *AuthzEngineBuilder) WithEngine(engine string) *AuthzEngineBuilder {
 func (e *AuthzEngineBuilder) Build() (contracts.AuthzEngine, error) {
 	switch e.engine {
 	case "stub":
-		return &engine.StubAuthzEngine{Data: getMockData()}, nil
+		return &mock.StubAuthzEngine{Data: getMockData()}, nil
 	case "spicedb":
-		return &engine.SpiceDbAuthzEngine{}, nil
+		return &authzed.SpiceDbAuthzEngine{}, nil
+	case "openfga":
+		return &openfga.FgaAuthzEngine{}, nil
 	default:
-		return &engine.StubAuthzEngine{Data: getMockData()}, nil
+		return &mock.StubAuthzEngine{Data: getMockData()}, nil
 	}
 }
 

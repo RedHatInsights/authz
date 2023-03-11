@@ -1,5 +1,5 @@
-// Package engine contains the technical implementations for the authzengine
-package engine
+// Package authzed contains the technical implementations for the authzengine from authzed spicedb
+package authzed
 
 import (
 	"authz/domain/model"
@@ -17,18 +17,18 @@ import (
 type SpiceDbAuthzEngine struct{}
 
 // AuthzedClient - Authz client struct
-type AuthzedClient struct {
+type authzedClient struct {
 	client *authzed.Client
 	ctx    context.Context
 }
 
-var accessConn *AuthzedClient
+var authzedConn *authzedClient
 
 // CheckAccess -
 func (s *SpiceDbAuthzEngine) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
 	s2, o2 := createSubjectObjectTuple("user", principal.ID, resource.Type, resource.ID)
 
-	r, err := accessConn.client.CheckPermission(accessConn.ctx, &v1.CheckPermissionRequest{
+	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
 		Resource:   o2,
 		Permission: "whatever",
 		Subject:    s2,
@@ -58,7 +58,7 @@ func (s *SpiceDbAuthzEngine) NewConnection(spiceDbEndpoint string, token string)
 		log.Fatalf("unable to initialize client: %s", err)
 	}
 
-	accessConn = &AuthzedClient{
+	authzedConn = &authzedClient{
 		client: client,
 		ctx:    context.Background(),
 	}

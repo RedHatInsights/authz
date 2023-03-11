@@ -1,4 +1,4 @@
-package engine
+package authzed
 
 import (
 	"context"
@@ -52,7 +52,7 @@ func spicedbTestClient(t *testing.T, port string) (*authzed.Client, error) {
 	e := &SpiceDbAuthzEngine{}
 	e.NewConnection("localhost:"+port, randomKey)
 
-	return accessConn.client, nil
+	return authzedConn.client, nil
 }
 
 func TestSpiceDB(t *testing.T) {

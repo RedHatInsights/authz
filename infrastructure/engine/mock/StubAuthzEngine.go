@@ -1,4 +1,5 @@
-package engine
+// Package mock implements a stub authzengine
+package mock
 
 import (
 	"authz/domain/model"
