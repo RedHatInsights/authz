@@ -15,8 +15,8 @@ import (
 
 // GrpcWebServer serves a HTTP api based on the generated grpc gateway code
 type GrpcWebServer struct {
-	Engine  contracts.AuthzEngine
-	Handler core.CheckPermissionServer
+	AccessRepo contracts.AccessRepository
+	Handler    core.CheckPermissionServer
 }
 
 // Serve starts serving
@@ -51,9 +51,9 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	return nil
 }
 
-// SetEngine sets the authzengine
-func (w *GrpcWebServer) SetEngine(eng contracts.AuthzEngine) {
-	w.Engine = eng
+// SetAccessRepository sets the authzengine
+func (w *GrpcWebServer) SetAccessRepository(eng contracts.AccessRepository) {
+	w.AccessRepo = eng
 }
 
 // SetHandler sets the handler for reference to grpc

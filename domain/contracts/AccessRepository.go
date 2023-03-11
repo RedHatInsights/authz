@@ -6,8 +6,8 @@ import (
 	"authz/domain/model"
 )
 
-// AuthzEngine - the contract for the engine
-type AuthzEngine interface {
+// AccessRepository - the contract for the access repository
+type AccessRepository interface {
 	CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error)
 	NewConnection(endpoint string, token string)
 }

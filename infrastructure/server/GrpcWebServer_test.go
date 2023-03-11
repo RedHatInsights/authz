@@ -2,7 +2,7 @@ package server
 
 import (
 	"authz/domain/contracts"
-	"authz/infrastructure/engine/mock"
+	"authz/infrastructure/repository/mock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +61,7 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 
 // runRequest connects a mock HTTP front-end to a mock Store back-end using the generated proxy code and real gRPC implementation to test that integration
 func runRequest(req *http.Request) *http.Response {
-	srv := GrpcGatewayServer{Engine: mockAuthzEngine()}
+	srv := GrpcGatewayServer{AccessRepo: mockAccessRepository()}
 	mux, _ := createMultiplexer(&srv)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
@@ -82,8 +82,8 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 	}
 }
 
-func mockAuthzEngine() contracts.AuthzEngine {
-	return &mock.StubAuthzEngine{Data: map[string]bool{
+func mockAccessRepository() contracts.AccessRepository {
+	return &mock.StubAccessRepository{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,

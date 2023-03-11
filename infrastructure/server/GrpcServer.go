@@ -22,7 +22,7 @@ import (
 
 // GrpcGatewayServer represents a GrpcServer host service
 type GrpcGatewayServer struct {
-	Engine contracts.AuthzEngine
+	AccessRepo contracts.AccessRepository
 }
 
 // NewServer creates a new Server object to use.
@@ -66,9 +66,9 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	return nil
 }
 
-// SetEngine sets the AuthzEngine to use
-func (r *GrpcGatewayServer) SetEngine(eng contracts.AuthzEngine) {
-	r.Engine = eng
+// SetAccessRepository sets the AccessRepo to use
+func (r *GrpcGatewayServer) SetAccessRepository(eng contracts.AccessRepository) {
+	r.AccessRepo = eng
 }
 
 // GetName returns the impl name
@@ -87,7 +87,7 @@ func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.Ch
 		Resource:  model.Resource{Type: rpcReq.Resourcetype, ID: rpcReq.Resourceid},
 	}
 
-	action := services.NewAccessService(r.Engine)
+	action := services.NewAccessService(r.AccessRepo)
 
 	result, err := action.Check(req)
 

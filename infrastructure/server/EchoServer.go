@@ -13,7 +13,7 @@ import (
 
 // EchoServer underlying struct
 type EchoServer struct {
-	Engine contracts.AuthzEngine
+	AccessRepo contracts.AccessRepository
 }
 
 // GetName returns the server name
@@ -42,7 +42,7 @@ func (e *EchoServer) NewServer() contracts2.Server {
 	return &EchoServer{}
 }
 
-// SetEngine sets the AuthzEngine
-func (e *EchoServer) SetEngine(eng contracts.AuthzEngine) {
-	e.Engine = eng
+// SetAccessRepository sets the AccessRepo
+func (e *EchoServer) SetAccessRepository(eng contracts.AccessRepository) {
+	e.AccessRepo = eng
 }

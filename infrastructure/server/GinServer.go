@@ -13,7 +13,7 @@ import (
 
 // GinServer underlying struct
 type GinServer struct {
-	Engine contracts.AuthzEngine
+	AccessRepo contracts.AccessRepository
 }
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
@@ -34,9 +34,9 @@ func (g *GinServer) NewServer() contracts2.Server {
 	return &GinServer{}
 }
 
-// SetEngine Sets the AuthzEngine
-func (g *GinServer) SetEngine(eng contracts.AuthzEngine) {
-	g.Engine = eng
+// SetAccessRepository Sets the AccessRepo
+func (g *GinServer) SetAccessRepository(eng contracts.AccessRepository) {
+	g.AccessRepo = eng
 }
 
 // GetName returns the impl name

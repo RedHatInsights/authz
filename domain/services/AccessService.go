@@ -8,12 +8,12 @@ import (
 
 // AccessService is a domain service for abstract access management (ex: querying whether access has been granted.)
 type AccessService struct {
-	engine contracts.AuthzEngine
+	accessRepository contracts.AccessRepository
 }
 
 // NewAccessService constructs a new instance of the Access domain service
-func NewAccessService(engine contracts.AuthzEngine) AccessService {
-	return AccessService{engine}
+func NewAccessService(accessRepository contracts.AccessRepository) AccessService {
+	return AccessService{accessRepository}
 }
 
 // Check processes a CheckRequest and returns true or false if successful, otherwise error
@@ -22,7 +22,7 @@ func (a AccessService) Check(req model.CheckRequest) (bool, error) {
 		return false, model.ErrNotAuthenticated
 	}
 
-	accessResult, err := a.engine.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
+	accessResult, err := a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
 	if err != nil {
 		return false, err
 	}
@@ -31,5 +31,5 @@ func (a AccessService) Check(req model.CheckRequest) (bool, error) {
 		return false, model.ErrNotAuthorized
 	}
 
-	return a.engine.CheckAccess(req.Subject, req.Operation, req.Resource)
+	return a.accessRepository.CheckAccess(req.Subject, req.Operation, req.Resource)
 }

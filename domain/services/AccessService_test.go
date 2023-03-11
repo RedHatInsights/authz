@@ -3,12 +3,12 @@ package services
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
-	"authz/infrastructure/engine/mock"
+	"authz/infrastructure/repository/mock"
 	"testing"
 )
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
-	access := NewAccessService(mockAuthzEngine())
+	access := NewAccessService(mockAuthzRepository())
 	_, err := access.Check(objFromRequest(
 		"other system",
 		"okay",
@@ -22,7 +22,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenStoreReturnsTrue(t *testing.T) {
-	access := NewAccessService(mockAuthzEngine())
+	access := NewAccessService(mockAuthzRepository())
 	result, err := access.Check(objFromRequest(
 		"system",
 		"okay",
@@ -40,7 +40,7 @@ func TestCheckReturnsTrueWhenStoreReturnsTrue(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
-	access := NewAccessService(mockAuthzEngine())
+	access := NewAccessService(mockAuthzRepository())
 	result, err := access.Check(objFromRequest(
 		"system",
 		"bad",
@@ -68,8 +68,8 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 	}
 }
 
-func mockAuthzEngine() contracts.AuthzEngine {
-	return &mock.StubAuthzEngine{Data: map[string]bool{
+func mockAuthzRepository() contracts.AccessRepository {
+	return &mock.StubAccessRepository{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,

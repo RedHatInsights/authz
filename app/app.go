@@ -35,9 +35,9 @@ func Run() {
 	Cfg = getConfig()
 
 	srv := getServer()
-	e := getAuthzEngine()
-	e.NewConnection(Cfg.GetString("app.engine.endpoint"), Cfg.GetString("app.engine.token"))
-	srv.SetEngine(e)
+	e := getAccessRepository()
+	e.NewConnection(Cfg.GetString("app.accessRepository.endpoint"), Cfg.GetString("app.accessRepository.token"))
+	srv.SetAccessRepository(e)
 	wait := sync.WaitGroup{}
 
 	delta := 1
@@ -59,7 +59,7 @@ func Run() {
 
 	if srvKind == "grpc" {
 		webSrv, err := NewServerBuilder().WithFramework("grpcweb").Build()
-		webSrv.SetEngine(e)
+		webSrv.SetAccessRepository(e)
 		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
 			panic(err)
@@ -84,10 +84,10 @@ func getServer() appcontracts.Server {
 	return srv
 }
 
-func getAuthzEngine() contracts.AuthzEngine {
-	eng, err := NewAuthzEngineBuilder().WithEngine(Cfg.GetString("app.engine.kind")).Build()
+func getAccessRepository() contracts.AccessRepository {
+	r, err := NewAccessRepositoryBuilder().WithImplementation(Cfg.GetString("app.accessRepository.kind")).Build()
 	if err != nil {
 		panic(err)
 	}
-	return eng
+	return r
 }
