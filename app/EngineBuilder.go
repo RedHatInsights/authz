@@ -1,4 +1,3 @@
-// Package app contains the application glue.
 package app
 
 import (
