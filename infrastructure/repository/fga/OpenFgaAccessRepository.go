@@ -1,5 +1,5 @@
-// Package openfga contains the openfga technical implementation.
-package openfga
+// Package fga contains the fga technical implementation.
+package fga
 
 import (
 	"authz/domain/model"
@@ -10,19 +10,19 @@ import (
 	"github.com/openfga/go-sdk/credentials"
 )
 
-// FgaAuthzEngine -
-type FgaAuthzEngine struct{}
+// OpenFgaAccessRepository -
+type OpenFgaAccessRepository struct{}
 
-// FgaClient - Authz client struct
-type FgaClient struct {
+// OpenFgaClient - Authz client struct
+type OpenFgaClient struct {
 	client *openfga.APIClient
 	ctx    context.Context
 }
 
-var openfgaConn *FgaClient
+var openfgaConn *OpenFgaClient
 
 // CheckAccess -
-func (o FgaAuthzEngine) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
+func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
 	trace := false
 
 	body := openfga.CheckRequest{TupleKey: openfga.TupleKey{
@@ -41,12 +41,12 @@ func (o FgaAuthzEngine) CheckAccess(principal model.Principal, operation string,
 }
 
 // NewConnection initializes a new openfga client
-func (o FgaAuthzEngine) NewConnection(endpoint string, token string) {
+func (o OpenFgaAccessRepository) NewConnection(endpoint string, token string) {
 
 	configuration, err := openfga.NewConfiguration(openfga.Configuration{
 		ApiScheme: "http", //TODO: derive from endpoint or cfg
 		ApiHost:   endpoint,
-		StoreId:   "foo", // TODO, dynamic - see experiments example. may result in leaky abstraction though, different to spiceDB. perhaps an engineConfig struct helps
+		StoreId:   "foo", // TODO, dynamic - see experiments example. may result in leaky abstraction though, different to spiceDB. perhaps an accessRepoConfig struct helps
 		Credentials: &credentials.Credentials{
 			Method: credentials.CredentialsMethodApiToken,
 			Config: &credentials.Config{
@@ -61,7 +61,7 @@ func (o FgaAuthzEngine) NewConnection(endpoint string, token string) {
 
 	client := openfga.NewAPIClient(configuration)
 
-	openfgaConn = &FgaClient{
+	openfgaConn = &OpenFgaClient{
 		client: client,
 		ctx:    context.Background(),
 	}

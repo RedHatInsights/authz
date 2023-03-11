@@ -49,7 +49,7 @@ func spicedbTestClient(t *testing.T, port string) (*authzed.Client, error) {
 	}
 	randomKey := base64.StdEncoding.EncodeToString(buf)
 
-	e := &SpiceDbAuthzEngine{}
+	e := &SpiceDbAccessRepository{}
 	e.NewConnection("localhost:"+port, randomKey)
 
 	return authzedConn.client, nil

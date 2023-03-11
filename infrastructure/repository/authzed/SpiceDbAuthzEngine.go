@@ -1,4 +1,4 @@
-// Package authzed contains the technical implementations for the authzengine from authzed spicedb
+// Package authzed contains the technical implementations for the accessRepo from authzed spicedb
 package authzed
 
 import (
@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// SpiceDbAuthzEngine -
-type SpiceDbAuthzEngine struct{}
+// SpiceDbAccessRepository -
+type SpiceDbAccessRepository struct{}
 
-// AuthzedClient - Authz client struct
+// authzedClient - Authz client struct
 type authzedClient struct {
 	client *authzed.Client
 	ctx    context.Context
@@ -25,7 +25,7 @@ type authzedClient struct {
 var authzedConn *authzedClient
 
 // CheckAccess -
-func (s *SpiceDbAuthzEngine) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
+func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
 	s2, o2 := createSubjectObjectTuple("user", principal.ID, resource.Type, resource.ID)
 
 	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
@@ -46,7 +46,7 @@ func (s *SpiceDbAuthzEngine) CheckAccess(principal model.Principal, operation st
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
-func (s *SpiceDbAuthzEngine) NewConnection(spiceDbEndpoint string, token string) {
+func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string) {
 	client, err := authzed.NewClient(
 		spiceDbEndpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

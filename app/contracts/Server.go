@@ -9,5 +9,5 @@ import (
 type Server interface {
 	Serve(wait *sync.WaitGroup, ports ...string) error
 	NewServer() Server
-	SetEngine(eng contracts.AuthzEngine)
+	SetAccessRepository(eng contracts.AccessRepository)
 }
