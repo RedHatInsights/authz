@@ -95,14 +95,13 @@ func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.Ch
 		return nil, convertDomainErrorToGrpc(err)
 	}
 
-	return &core.CheckPermissionResponse{Result: result}, nil
-	//return &core.CheckPermissionResponse{Result: true, Description: "Test!"}, nil
+	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
 func getRequestorIdentityFromContext(ctx context.Context) model.Principal {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
-		if metadata, ok := metadata.FromIncomingContext(ctx); ok {
-			headers := metadata.Get(name)
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			headers := md.Get(name)
 			if len(headers) > 0 {
 				return model.NewPrincipal(headers[0])
 			}

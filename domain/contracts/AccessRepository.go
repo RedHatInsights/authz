@@ -4,10 +4,11 @@ package contracts
 
 import (
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 )
 
 // AccessRepository - the contract for the access repository
 type AccessRepository interface {
-	CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error)
+	CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error)
 	NewConnection(endpoint string, token string)
 }

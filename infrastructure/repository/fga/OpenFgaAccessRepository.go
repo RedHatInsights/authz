@@ -3,6 +3,7 @@ package fga
 
 import (
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 	"context"
 
 	"github.com/golang/glog"
@@ -22,7 +23,7 @@ type OpenFgaClient struct {
 var openfgaConn *OpenFgaClient
 
 // CheckAccess -
-func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
+func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	trace := false
 
 	body := openfga.CheckRequest{TupleKey: openfga.TupleKey{
@@ -37,7 +38,7 @@ func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operatio
 		glog.Errorf("Error checking assertion tuple (%s): %v", body.TupleKey.GetObject(), err)
 		return false, err
 	}
-	return result.GetAllowed(), nil
+	return vo.AccessDecision(result.GetAllowed()), nil
 }
 
 // NewConnection initializes a new openfga client

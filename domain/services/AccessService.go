@@ -4,6 +4,7 @@ package services
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 )
 
 // AccessService is a domain service for abstract access management (ex: querying whether access has been granted.)
@@ -17,7 +18,7 @@ func NewAccessService(accessRepository contracts.AccessRepository) AccessService
 }
 
 // Check processes a CheckRequest and returns true or false if successful, otherwise error
-func (a AccessService) Check(req model.CheckRequest) (bool, error) {
+func (a AccessService) Check(req model.CheckRequest) (vo.AccessDecision, error) {
 	if req.Requestor.IsAnonymous() {
 		return false, model.ErrNotAuthenticated
 	}
