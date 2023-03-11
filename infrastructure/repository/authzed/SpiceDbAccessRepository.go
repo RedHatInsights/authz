@@ -3,6 +3,7 @@ package authzed
 
 import (
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 	"context"
 	"log"
 
@@ -25,9 +26,8 @@ type authzedClient struct {
 var authzedConn *authzedClient
 
 // CheckAccess -
-func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (bool, error) {
+func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	s2, o2 := createSubjectObjectTuple("user", principal.ID, resource.Type, resource.ID)
-
 	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
 		Resource:   o2,
 		Permission: "whatever",
