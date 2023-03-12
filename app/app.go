@@ -7,6 +7,7 @@ import (
 	appcontracts "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
+	"github.com/golang/glog"
 	"sync"
 )
 
@@ -26,7 +27,7 @@ func getConfig(configPath string) appcontracts.Config {
 		Build()
 
 	if err != nil {
-		panic(err)
+		glog.Fatal("Could not initialize config: ", err)
 	}
 	return cfg
 }
@@ -54,7 +55,7 @@ func Run(configPath string) {
 	go func() {
 		err := srv.Serve(&wait, Cfg.GetString("app.server.port"))
 		if err != nil {
-			panic(err)
+			glog.Fatal("Could not start serving: ", err)
 		}
 	}()
 
@@ -63,13 +64,15 @@ func Run(configPath string) {
 		webSrv.SetAccessRepository(e)
 		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
-			panic(err)
+			glog.Fatal("Could not start serving grpc & web using grpc gateway: ", err)
+
 		}
 
 		go func() {
 			err := webSrv.Serve(&wait, Cfg.GetString("app.server.grpc-web-httpPort"), Cfg.GetString("app.server.grpc-web-httpsPort"))
 			if err != nil {
-				panic(err)
+				glog.Fatal("Could not start serving grpc webserver: ", err)
+
 			}
 		}()
 	}
@@ -80,7 +83,7 @@ func Run(configPath string) {
 func getServer() apicontracts.Server {
 	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).Build()
 	if err != nil {
-		panic(err)
+		glog.Fatal("Could not initialize server: ", err)
 	}
 	return srv
 }
@@ -88,7 +91,7 @@ func getServer() apicontracts.Server {
 func getAccessRepository() contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().WithImplementation(Cfg.GetString("app.accessRepository.kind")).Build()
 	if err != nil {
-		panic(err)
+		glog.Fatal("Could not initialize access repository: ", err)
 	}
 	return r
 }
