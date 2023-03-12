@@ -1,10 +1,11 @@
-# Authz Service
+# authz service
 
-# Build Commands
-`make binary`
+# Start up
 
-# Run 
-## For using stub store
-`./authz serve --endpoint=<endpoint>:50051 --token=<token> --store=stub`
-## For using spicedb store
-`./authz serve --endpoint=<endpoint>:50051 --token=<token> --store=spicedb`
+run `go run cmd/main.go -c <path-to-config.yaml>`
+
+or `go run cmd/main.go --config <path-to-config.yaml>`
+
+for now, the file has to be named `config.yml` (easily changebale, but this is for illustrative purposes for now)
+
+
