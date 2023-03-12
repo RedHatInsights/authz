@@ -14,12 +14,12 @@ import (
 var Cfg appcontracts.Config
 
 // getConfig uses the interface to load the config based on the technical implementation "viper".
-func getConfig() appcontracts.Config {
+func getConfig(configPath string) appcontracts.Config {
 	cfg, err := config.NewBuilder().
 		ConfigName("config").
 		ConfigType("yaml").
 		ConfigPaths(
-			"app/config/", //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
+			configPath, //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
 		).
 		Defaults(map[string]interface{}{}).
 		Options().
@@ -32,8 +32,8 @@ func getConfig() appcontracts.Config {
 }
 
 // Run configures and runs the actual app.
-func Run() {
-	Cfg = getConfig()
+func Run(configPath string) {
+	Cfg = getConfig(configPath)
 
 	srv := getServer()
 	e := getAccessRepository()
