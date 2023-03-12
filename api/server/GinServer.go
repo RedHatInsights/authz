@@ -2,6 +2,7 @@ package server
 
 import (
 	apicontracts "authz/api/contracts"
+	"authz/api/handler"
 	"authz/domain/contracts"
 	"net/http"
 	"sync"
@@ -30,7 +31,7 @@ func (g *GinServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 }
 
 // NewServer creates a new Server object to use.
-func (g *GinServer) NewServer() apicontracts.Server {
+func (g *GinServer) NewServer(h handler.PermissionHandler) apicontracts.Server {
 	return &GinServer{}
 }
 

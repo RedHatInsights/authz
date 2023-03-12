@@ -3,9 +3,9 @@ package server
 import (
 	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
-	"authz/domain/contracts"
+	"authz/api/handler"
 	"authz/domain/model"
-	"authz/domain/services"
+	vo "authz/domain/valueobjects"
 	"context"
 	"errors"
 	"net"
@@ -22,12 +22,12 @@ import (
 
 // GrpcGatewayServer represents a GrpcServer host service
 type GrpcGatewayServer struct {
-	AccessRepo contracts.AccessRepository
+	PermissionHandler *handler.PermissionHandler
 }
 
 // NewServer creates a new Server object to use.
-func (r *GrpcGatewayServer) NewServer() apicontracts.Server {
-	return &GrpcGatewayServer{}
+func (r *GrpcGatewayServer) NewServer(h handler.PermissionHandler) apicontracts.Server {
+	return &GrpcGatewayServer{PermissionHandler: &h}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
@@ -66,11 +66,6 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	return nil
 }
 
-// SetAccessRepository sets the AccessRepo to use
-func (r *GrpcGatewayServer) SetAccessRepository(eng contracts.AccessRepository) {
-	r.AccessRepo = eng
-}
-
 // GetName returns the impl name
 func (r *GrpcGatewayServer) GetName() string {
 	return "grpc"
@@ -78,18 +73,8 @@ func (r *GrpcGatewayServer) GetName() string {
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
-	req := model.CheckRequest{
-		Request: model.Request{
-			Requestor: getRequestorIdentityFromContext(ctx),
-		},
-		Subject:   model.Principal{ID: rpcReq.Subject},
-		Operation: rpcReq.Operation,
-		Resource:  model.Resource{Type: rpcReq.Resourcetype, ID: rpcReq.Resourceid},
-	}
 
-	action := services.NewAccessService(r.AccessRepo)
-
-	result, err := action.Check(req)
+	result, err := r.check(ctx, rpcReq)
 
 	if err != nil {
 		return nil, convertDomainErrorToGrpc(err)
@@ -98,7 +83,20 @@ func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.Ch
 	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
-func getRequestorIdentityFromContext(ctx context.Context) model.Principal {
+func (r *GrpcGatewayServer) check(ctx context.Context, rpcReq *core.CheckPermissionRequest) (vo.AccessDecision, error) {
+	req := handler.CheckRequest{
+		Requestor:    getRequestorIdentityFromGrpcContext(ctx),
+		Subject:      rpcReq.Subject,
+		Operation:    rpcReq.Operation,
+		ResourceType: rpcReq.Resourcetype,
+		ResourceID:   rpcReq.Resourceid,
+	}
+
+	result, err := r.PermissionHandler.Check(req)
+	return result, err
+}
+
+func getRequestorIdentityFromGrpcContext(ctx context.Context) model.Principal {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := md.Get(name)

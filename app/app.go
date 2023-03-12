@@ -3,12 +3,14 @@ package app
 
 import (
 	apicontracts "authz/api/contracts"
+	"authz/api/handler"
 	"authz/api/server"
 	appcontracts "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
-	"github.com/golang/glog"
 	"sync"
+
+	"github.com/golang/glog"
 )
 
 // Cfg holds the config from yaml. package private for now.
@@ -35,11 +37,12 @@ func getConfig(configPath string) appcontracts.Config {
 // Run configures and runs the actual app.
 func Run(configPath string) {
 	Cfg = getConfig(configPath)
+	ar := getAccessRepository()
+	ar.NewConnection(Cfg.GetString("app.accessRepository.endpoint"), Cfg.GetString("app.accessRepository.token"))
+	ph := initPermissionHandler(&ar) //TODO: discuss and think about it.
 
-	srv := getServer()
-	e := getAccessRepository()
-	e.NewConnection(Cfg.GetString("app.accessRepository.endpoint"), Cfg.GetString("app.accessRepository.token"))
-	srv.SetAccessRepository(e)
+	srv := getServer(ph)
+
 	wait := sync.WaitGroup{}
 
 	delta := 1
@@ -60,8 +63,7 @@ func Run(configPath string) {
 	}()
 
 	if srvKind == "grpc" {
-		webSrv, err := NewServerBuilder().WithFramework("grpcweb").Build()
-		webSrv.SetAccessRepository(e)
+		webSrv, err := NewServerBuilder().WithFramework("grpcweb").WithPermissionHandler(ph).Build()
 		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
 			glog.Fatal("Could not start serving grpc & web using grpc gateway: ", err)
@@ -80,8 +82,15 @@ func Run(configPath string) {
 	wait.Wait()
 }
 
-func getServer() apicontracts.Server {
-	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).Build()
+// init permissionhandler with repo.
+func initPermissionHandler(ar *contracts.AccessRepository) *handler.PermissionHandler {
+	permissionHandler := handler.PermissionHandler{}
+	return permissionHandler.NewPermissionHandler(ar)
+}
+
+func getServer(h *handler.PermissionHandler) apicontracts.Server {
+	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).WithPermissionHandler(h).Build()
+
 	if err != nil {
 		glog.Fatal("Could not initialize server: ", err)
 	}

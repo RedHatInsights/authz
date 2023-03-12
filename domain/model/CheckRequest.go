@@ -1,8 +1,8 @@
 // Package model contains the Domain model classes.
 package model
 
-// A CheckRequest contains the parameters to request whether a subject can perform an operation on a resource
-type CheckRequest struct {
+// A CheckEvent contains the parameters to request whether a subject can perform an operation on a resource
+type CheckEvent struct {
 	//The common request parameters
 	Request
 	//The operation that would be performed

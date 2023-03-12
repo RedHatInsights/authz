@@ -17,8 +17,8 @@ func NewAccessService(accessRepository contracts.AccessRepository) AccessService
 	return AccessService{accessRepository}
 }
 
-// Check processes a CheckRequest and returns true or false if successful, otherwise error
-func (a AccessService) Check(req model.CheckRequest) (vo.AccessDecision, error) {
+// Check processes a CheckEvent and returns true or false if successful, otherwise error
+func (a AccessService) Check(req model.CheckEvent) (vo.AccessDecision, error) {
 	if req.Requestor.IsAnonymous() {
 		return false, model.ErrNotAuthenticated
 	}

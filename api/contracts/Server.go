@@ -4,13 +4,12 @@
 package contracts
 
 import (
-	"authz/domain/contracts"
+	"authz/api/handler"
 	"sync"
 )
 
 // Server the interface for the runtime
 type Server interface {
 	Serve(wait *sync.WaitGroup, ports ...string) error
-	NewServer() Server
-	SetAccessRepository(eng contracts.AccessRepository)
+	NewServer(handler handler.PermissionHandler) Server
 }

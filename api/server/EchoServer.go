@@ -3,6 +3,7 @@ package server
 
 import (
 	apicontracts "authz/api/contracts"
+	"authz/api/handler"
 	"authz/domain/contracts"
 	"net/http"
 	"sync"
@@ -38,7 +39,7 @@ func (e *EchoServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 }
 
 // NewServer object to call serve from, implementing contract.
-func (e *EchoServer) NewServer() apicontracts.Server {
+func (e *EchoServer) NewServer(h handler.PermissionHandler) apicontracts.Server {
 	return &EchoServer{}
 }
 
