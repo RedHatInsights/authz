@@ -3,6 +3,7 @@ package server
 import (
 	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
+	"authz/api/handler"
 	"authz/domain/contracts"
 	"context"
 	"net/http"
@@ -62,7 +63,7 @@ func (w *GrpcWebServer) SetHandler(h core.CheckPermissionServer) {
 }
 
 // NewServer creates a new Server object to use.
-func (w *GrpcWebServer) NewServer() apicontracts.Server {
+func (w *GrpcWebServer) NewServer(_ handler.PermissionHandler) apicontracts.Server {
 	return &GrpcWebServer{}
 }
 

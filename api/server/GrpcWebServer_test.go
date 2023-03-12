@@ -1,6 +1,7 @@
 package server
 
 import (
+	"authz/api/handler"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/mock"
 	"io"
@@ -61,7 +62,9 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 
 // runRequest connects a mock HTTP front-end to a mock Store back-end using the generated proxy code and real gRPC implementation to test that integration
 func runRequest(req *http.Request) *http.Response {
-	srv := GrpcGatewayServer{AccessRepo: mockAccessRepository()}
+	h := handler.PermissionHandler{}
+	accessRepo := mockAccessRepository()
+	srv := GrpcGatewayServer{PermissionHandler: h.NewPermissionHandler(&accessRepo)}
 	mux, _ := createMultiplexer(&srv)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)

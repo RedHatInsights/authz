@@ -57,8 +57,8 @@ func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
 	}
 }
 
-func objFromRequest(requestorID string, subjectID string, operation string, resourceType string, resourceID string) model.CheckRequest {
-	return model.CheckRequest{
+func objFromRequest(requestorID string, subjectID string, operation string, resourceType string, resourceID string) model.CheckEvent {
+	return model.CheckEvent{
 		Request: model.Request{
 			Requestor: model.Principal{ID: requestorID},
 		},
