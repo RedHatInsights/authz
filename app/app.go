@@ -2,10 +2,11 @@
 package app
 
 import (
+	apicontracts "authz/api/contracts"
+	"authz/api/server"
 	appcontracts "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
-	"authz/infrastructure/server"
 	"sync"
 )
 
@@ -76,7 +77,7 @@ func Run() {
 	wait.Wait()
 }
 
-func getServer() appcontracts.Server {
+func getServer() apicontracts.Server {
 	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).Build()
 	if err != nil {
 		panic(err)

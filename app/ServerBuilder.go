@@ -1,8 +1,8 @@
 package app
 
 import (
-	"authz/app/contracts"
-	"authz/infrastructure/server"
+	"authz/api/contracts"
+	"authz/api/server"
 )
 
 // ServerBuilder is the builder containing the config for building technical implementations of the server
