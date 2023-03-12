@@ -5,6 +5,7 @@ import (
 	"authz/app"
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -31,7 +32,7 @@ func main() {
 		Run:   serve,
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "", "config")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "path to config.yml")
 
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
@@ -49,7 +50,9 @@ func serve(cmd *cobra.Command, _ []string) {
 // mustGetDefinedString attempts to get a non-empty string flag from the provided flag set or panic
 func nonEmptyStringFlag(flagName string, flags *pflag.FlagSet) string {
 	flagVal := mustGetString(flagName, flags)
-	if flagVal == "" {
+
+	//also check for leading/trailing whitespaces
+	if strings.TrimSpace(flagVal) == "" {
 		glog.Fatal(undefinedValueMessage(flagName))
 	}
 	return flagVal
@@ -65,9 +68,9 @@ func mustGetString(flagName string, flags *pflag.FlagSet) string {
 }
 
 func undefinedValueMessage(flagName string) string {
-	return fmt.Sprintf("flag %s has undefined value", flagName)
+	return fmt.Sprintf("flag %s needs a defined value.", flagName)
 }
 
-func notFoundMessage(flagName string, err error) string {
+func notFoundMessage(flagName string, err error) string { //TODO: evaluate if needed.
 	return fmt.Sprintf("could not get flag %s from flag set: %s", flagName, err.Error())
 }
