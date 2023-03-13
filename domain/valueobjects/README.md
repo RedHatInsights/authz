@@ -1,0 +1,3 @@
+Here go Value Objects, so objects without an identity. Value objects are a little boilerplate to write, but help a lot in creating a domain layer that is really debatable with (non-technical or techincal) "domain experts". instead of "bool", you now talk about "accessDecisions" that are returned. Different conversation.
+
+Further reading: https://levelup.gitconnected.com/practical-ddd-in-golang-value-object-4fc97bcad70 

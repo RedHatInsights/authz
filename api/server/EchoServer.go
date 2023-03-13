@@ -5,6 +5,7 @@ import (
 	apicontracts "authz/api/contracts"
 	"authz/api/handler"
 	"authz/app/config"
+	"authz/domain/model"
 	"net/http"
 	"sync"
 
@@ -34,6 +35,17 @@ func (e *EchoServer) Serve(wait *sync.WaitGroup) error {
 	// Routes
 	e2.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, "Hello from echo!")
+	})
+
+	e2.POST("/permissions/check", func(c echo.Context) error {
+		checkRes, _ := e.PermissionHandler.Check(handler.CheckRequest{
+			Requestor:    model.Principal{ID: "token"}, // these fields should come from the actual http req body
+			Subject:      "",
+			ResourceType: "",
+			ResourceID:   "",
+			Operation:    "",
+		})
+		return c.JSON(http.StatusOK, checkRes)
 	})
 	e2.Logger.Fatal(e2.Start(":" + e.ServerConfig.MainPort))
 	return nil //interesting nothing here throws errs... well, for later.
