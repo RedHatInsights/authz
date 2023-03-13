@@ -5,11 +5,12 @@ package contracts
 
 import (
 	"authz/api/handler"
+	"authz/app/config"
 	"sync"
 )
 
 // Server the interface for the runtime
 type Server interface {
-	Serve(wait *sync.WaitGroup, ports ...string) error
-	NewServer(handler handler.PermissionHandler) Server
+	Serve(wait *sync.WaitGroup) error
+	NewServer(handler handler.PermissionHandler, cfg config.ServerConfig) Server
 }

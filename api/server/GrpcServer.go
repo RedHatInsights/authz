@@ -4,6 +4,7 @@ import (
 	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
 	"authz/api/handler"
+	"authz/app/config"
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
@@ -23,18 +24,19 @@ import (
 // GrpcGatewayServer represents a GrpcServer host service
 type GrpcGatewayServer struct {
 	PermissionHandler *handler.PermissionHandler
+	ServerConfig      *config.ServerConfig
 }
 
 // NewServer creates a new Server object to use.
-func (r *GrpcGatewayServer) NewServer(h handler.PermissionHandler) apicontracts.Server {
-	return &GrpcGatewayServer{PermissionHandler: &h}
+func (r *GrpcGatewayServer) NewServer(h handler.PermissionHandler, c config.ServerConfig) apicontracts.Server {
+	return &GrpcGatewayServer{PermissionHandler: &h, ServerConfig: &c}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
+func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+ports[0])
+	ls, err := net.Listen("tcp", ":"+r.ServerConfig.MainPort)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -42,6 +44,7 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	}
 
 	var creds credentials.TransportCredentials
+
 	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("TLS cert and Key found  - Starting gRPC server in secure TLS mode")
@@ -53,7 +56,8 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 			}
 		}
 	} else { // For all cases of error - we start a plain HTTP server
-		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s", ports[0])
+		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s",
+			r.ServerConfig.MainPort)
 	}
 
 	srv := grpc.NewServer(grpc.Creds(creds))
