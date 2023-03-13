@@ -4,7 +4,7 @@ package server
 import (
 	apicontracts "authz/api/contracts"
 	"authz/api/handler"
-	"authz/domain/contracts"
+	"authz/app/config"
 	"net/http"
 	"sync"
 
@@ -14,7 +14,8 @@ import (
 
 // EchoServer underlying struct
 type EchoServer struct {
-	AccessRepo contracts.AccessRepository
+	PermissionHandler *handler.PermissionHandler
+	ServerConfig      *config.ServerConfig
 }
 
 // GetName returns the server name
@@ -23,7 +24,7 @@ func (e *EchoServer) GetName() string {
 }
 
 // Serve starts a gin server with a wrapped http Handler from the domain layer.
-func (e *EchoServer) Serve(wait *sync.WaitGroup, ports ...string) error {
+func (e *EchoServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
 	e2 := echo.New()
@@ -34,16 +35,14 @@ func (e *EchoServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	e2.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, "Hello from echo!")
 	})
-	e2.Logger.Fatal(e2.Start(":" + ports[0]))
+	e2.Logger.Fatal(e2.Start(":" + e.ServerConfig.MainPort))
 	return nil //interesting nothing here throws errs... well, for later.
 }
 
 // NewServer object to call serve from, implementing contract.
-func (e *EchoServer) NewServer(h handler.PermissionHandler) apicontracts.Server {
-	return &EchoServer{}
-}
-
-// SetAccessRepository sets the AccessRepo
-func (e *EchoServer) SetAccessRepository(eng contracts.AccessRepository) {
-	e.AccessRepo = eng
+func (e *EchoServer) NewServer(h handler.PermissionHandler, c config.ServerConfig) apicontracts.Server {
+	return &EchoServer{
+		PermissionHandler: &h,
+		ServerConfig:      &c,
+	}
 }

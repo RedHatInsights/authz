@@ -4,7 +4,7 @@ import (
 	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
 	"authz/api/handler"
-	"authz/domain/contracts"
+	"authz/app/config"
 	"context"
 	"net/http"
 	"os"
@@ -16,12 +16,12 @@ import (
 
 // GrpcWebServer serves a HTTP api based on the generated grpc gateway code
 type GrpcWebServer struct {
-	AccessRepo contracts.AccessRepository
-	Handler    core.CheckPermissionServer
+	ServerConfig *config.ServerConfig
+	Handler      core.CheckPermissionServer
 }
 
 // Serve starts serving
-func (w *GrpcWebServer) Serve(wait *sync.WaitGroup, ports ...string) error {
+func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
 	mux, err := createMultiplexer(w.Handler)
@@ -32,17 +32,22 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 
 	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in HTTPS mode
-			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s", ports[1])
+			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
+				w.ServerConfig.GrpcWebHttpsPort)
 
-			err = http.ListenAndServeTLS(":"+ports[1], "/etc/tls/tls.crt", "/etc/tls/tls.key", mux)
+			err = http.ListenAndServeTLS(
+				":"+w.ServerConfig.GrpcWebHttpsPort,
+				"/etc/tls/tls.crt", //TODO: Needs sanity checking and get from config.
+				"/etc/tls/tls.key", mux)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
 			}
 		}
 	} else { // For all cases of error - we start a plain HTTP server
-		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s", ports[0])
-		err = http.ListenAndServe(":"+ports[0], mux)
+		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
+			w.ServerConfig.GrpcWebHttpPort)
+		err = http.ListenAndServe(":"+w.ServerConfig.GrpcWebHttpPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -52,19 +57,16 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup, ports ...string) error {
 	return nil
 }
 
-// SetAccessRepository sets the authzengine
-func (w *GrpcWebServer) SetAccessRepository(eng contracts.AccessRepository) {
-	w.AccessRepo = eng
-}
-
 // SetHandler sets the handler for reference to grpc
 func (w *GrpcWebServer) SetHandler(h core.CheckPermissionServer) {
 	w.Handler = h
 }
 
 // NewServer creates a new Server object to use.
-func (w *GrpcWebServer) NewServer(_ handler.PermissionHandler) apicontracts.Server {
-	return &GrpcWebServer{}
+func (w *GrpcWebServer) NewServer(_ handler.PermissionHandler, c config.ServerConfig) apicontracts.Server {
+	return &GrpcWebServer{
+		ServerConfig: &c,
+	}
 }
 
 // GetName returns the Name of the impl

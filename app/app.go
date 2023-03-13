@@ -5,6 +5,7 @@ import (
 	apicontracts "authz/api/contracts"
 	"authz/api/handler"
 	"authz/api/server"
+	appcfg "authz/app/config"
 	appcontracts "authz/app/contracts"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
@@ -22,7 +23,7 @@ func getConfig(configPath string) appcontracts.Config {
 		ConfigName("config").
 		ConfigType("yaml").
 		ConfigPaths(
-			configPath, //TODO: configurable via flag. this only works when binary is in rootdir and code is there.
+			configPath,
 		).
 		Defaults(map[string]interface{}{}).
 		Options().
@@ -37,11 +38,14 @@ func getConfig(configPath string) appcontracts.Config {
 // Run configures and runs the actual app.
 func Run(configPath string) {
 	Cfg = getConfig(configPath)
+	srvCfg := parseServerConfig()
 	ar := getAccessRepository()
-	ar.NewConnection(Cfg.GetString("app.accessRepository.endpoint"), Cfg.GetString("app.accessRepository.token"))
-	ph := initPermissionHandler(&ar) //TODO: discuss and think about it.
+	ar.NewConnection(
+		Cfg.GetString("app.accessRepository.endpoint"),
+		Cfg.GetString("app.accessRepository.token"))
+	ph := initPermissionHandler(&ar)
 
-	srv := getServer(ph)
+	srv := getServer(ph, &srvCfg)
 
 	wait := sync.WaitGroup{}
 
@@ -56,14 +60,18 @@ func Run(configPath string) {
 	wait.Add(delta)
 
 	go func() {
-		err := srv.Serve(&wait, Cfg.GetString("app.server.port"))
+		err := srv.Serve(&wait)
 		if err != nil {
 			glog.Fatal("Could not start serving: ", err)
 		}
 	}()
 
 	if srvKind == "grpc" {
-		webSrv, err := NewServerBuilder().WithFramework("grpcweb").WithPermissionHandler(ph).Build()
+		webSrv, err := NewServerBuilder().
+			WithFramework("grpcweb").
+			WithPermissionHandler(ph).
+			WithServerConfig(&srvCfg).
+			Build()
 		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
 			glog.Fatal("Could not start serving grpc & web using grpc gateway: ", err)
@@ -71,7 +79,8 @@ func Run(configPath string) {
 		}
 
 		go func() {
-			err := webSrv.Serve(&wait, Cfg.GetString("app.server.grpc-web-httpPort"), Cfg.GetString("app.server.grpc-web-httpsPort"))
+			err := webSrv.
+				Serve(&wait)
 			if err != nil {
 				glog.Fatal("Could not start serving grpc webserver: ", err)
 
@@ -82,14 +91,28 @@ func Run(configPath string) {
 	wait.Wait()
 }
 
+func parseServerConfig() appcfg.ServerConfig {
+	kind := Cfg.GetString("app.server.kind")
+	return appcfg.ServerConfig{
+		Kind:             kind,
+		MainPort:         Cfg.GetString("app.server.port"),
+		GrpcWebHttpPort:  Cfg.GetString("app.server.grpc-web-httpPort"),
+		GrpcWebHttpsPort: Cfg.GetString("app.server.grpc-web-httpsPort"),
+	}
+}
+
 // init permissionhandler with repo.
 func initPermissionHandler(ar *contracts.AccessRepository) *handler.PermissionHandler {
 	permissionHandler := handler.PermissionHandler{}
 	return permissionHandler.NewPermissionHandler(ar)
 }
 
-func getServer(h *handler.PermissionHandler) apicontracts.Server {
-	srv, err := NewServerBuilder().WithFramework(Cfg.GetString("app.server.kind")).WithPermissionHandler(h).Build()
+func getServer(h *handler.PermissionHandler, serverConfig *appcfg.ServerConfig) apicontracts.Server {
+	srv, err := NewServerBuilder().
+		WithFramework(Cfg.GetString("app.server.kind")).
+		WithPermissionHandler(h).
+		WithServerConfig(serverConfig).
+		Build()
 
 	if err != nil {
 		glog.Fatal("Could not initialize server: ", err)
@@ -98,7 +121,10 @@ func getServer(h *handler.PermissionHandler) apicontracts.Server {
 }
 
 func getAccessRepository() contracts.AccessRepository {
-	r, err := NewAccessRepositoryBuilder().WithImplementation(Cfg.GetString("app.accessRepository.kind")).Build()
+	r, err := NewAccessRepositoryBuilder().
+		WithImplementation(Cfg.GetString("app.accessRepository.kind")).
+		Build()
+
 	if err != nil {
 		glog.Fatal("Could not initialize access repository: ", err)
 	}
