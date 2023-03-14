@@ -15,10 +15,11 @@ import (
 // GinServer underlying struct
 type GinServer struct {
 	PermissionHandler *handler.PermissionHandler
+	SeatHandler       *handler.SeatHandler
 	ServerConfig      *config.ServerConfig
 }
 
-// Serve starts a gin server with a wrapped http Handler from the domain layer.
+// Serve starts a gin server with a wrapped http GrpcCheckService from the domain layer.
 func (g *GinServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 	router := gin.Default()

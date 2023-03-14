@@ -16,6 +16,7 @@ import (
 // EchoServer underlying struct
 type EchoServer struct {
 	PermissionHandler *handler.PermissionHandler
+	SeatHandler       *handler.SeatHandler
 	ServerConfig      *config.ServerConfig
 }
 
@@ -24,7 +25,7 @@ func (e *EchoServer) GetName() string {
 	return "echo"
 }
 
-// Serve starts a gin server with a wrapped http Handler from the domain layer.
+// Serve starts a gin server with a wrapped http GrpcCheckService from the domain layer.
 func (e *EchoServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 

@@ -11,6 +11,7 @@ import (
 type ServerBuilder struct {
 	framework         string
 	PermissionHandler *handler.PermissionHandler
+	SeatHandler       *handler.SeatHandler
 	ServerConfig      *config.ServerConfig
 }
 
@@ -26,8 +27,14 @@ func (s *ServerBuilder) WithFramework(fw string) *ServerBuilder {
 }
 
 // WithPermissionHandler sets the PermissionHandler for the server
-func (s *ServerBuilder) WithPermissionHandler(h *handler.PermissionHandler) *ServerBuilder {
-	s.PermissionHandler = h
+func (s *ServerBuilder) WithPermissionHandler(ph *handler.PermissionHandler) *ServerBuilder {
+	s.PermissionHandler = ph
+	return s
+}
+
+// WithSeatHandler sets the SeatHandler for the server
+func (s *ServerBuilder) WithSeatHandler(sh *handler.SeatHandler) *ServerBuilder {
+	s.SeatHandler = sh
 	return s
 }
 

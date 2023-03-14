@@ -16,15 +16,16 @@ import (
 
 // GrpcWebServer serves a HTTP api based on the generated grpc gateway code
 type GrpcWebServer struct {
-	ServerConfig *config.ServerConfig
-	Handler      core.CheckPermissionServer
+	ServerConfig     *config.ServerConfig
+	GrpcCheckService core.CheckPermissionServer
+	GrpcSeatsService core.SeatsServiceServer
 }
 
 // Serve starts serving
 func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(w.Handler)
+	mux, err := createMultiplexer(w.GrpcCheckService, w.GrpcSeatsService)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
@@ -57,9 +58,14 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 	return nil
 }
 
-// SetHandler sets the handler for reference to grpc
-func (w *GrpcWebServer) SetHandler(h core.CheckPermissionServer) {
-	w.Handler = h
+// SetCheckRef sets the reference to the grpc CheckPermissionService
+func (w *GrpcWebServer) SetCheckRef(h core.CheckPermissionServer) {
+	w.GrpcCheckService = h
+}
+
+// SetSeatRef sets the reference to the grp SeatsServerService
+func (w *GrpcWebServer) SetSeatRef(s core.SeatsServiceServer) {
+	w.GrpcSeatsService = s
 }
 
 // NewServer creates a new Server object to use.
@@ -74,10 +80,14 @@ func (w *GrpcWebServer) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(handler core.CheckPermissionServer) (*runtime.ServeMux, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.SeatsServiceServer) (*runtime.ServeMux, error) {
 	mux := runtime.NewServeMux()
 
-	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, handler); err != nil {
+	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
+		return nil, err
+	}
+
+	if err := core.RegisterSeatsServiceHandlerServer(context.Background(), mux, h2); err != nil {
 		return nil, err
 	}
 
