@@ -44,8 +44,8 @@ func Run(configPath string) {
 		Cfg.GetString("app.accessRepository.endpoint"),
 		Cfg.GetString("app.accessRepository.token"))
 	ph := initPermissionHandler(&ar)
-
-	srv := getServer(ph, &srvCfg)
+	sh := initSeatHandler(&ar)
+	srv := getServer(ph, sh, &srvCfg)
 
 	wait := sync.WaitGroup{}
 
@@ -72,7 +72,7 @@ func Run(configPath string) {
 			WithPermissionHandler(ph).
 			WithServerConfig(&srvCfg).
 			Build()
-		webSrv.(*server.GrpcWebServer).SetHandler(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
+		webSrv.(*server.GrpcWebServer).SetCheckRef(srv.(*server.GrpcGatewayServer)) //ugly typeassertion hack.
 		if err != nil {
 			glog.Fatal("Could not start serving grpc & web using grpc gateway: ", err)
 
@@ -101,16 +101,20 @@ func parseServerConfig() appcfg.ServerConfig {
 	}
 }
 
-// init permissionhandler with repo.
 func initPermissionHandler(ar *contracts.AccessRepository) *handler.PermissionHandler {
 	permissionHandler := handler.PermissionHandler{}
 	return permissionHandler.NewPermissionHandler(ar)
 }
 
-func getServer(h *handler.PermissionHandler, serverConfig *appcfg.ServerConfig) apicontracts.Server {
+func initSeatHandler(ar *contracts.AccessRepository) *handler.SeatHandler {
+	seatHandler := handler.SeatHandler{}
+	return seatHandler.NewSeatHandler(ar)
+}
+
+func getServer(ph *handler.PermissionHandler, sh *handler.SeatHandler, serverConfig *appcfg.ServerConfig) apicontracts.Server {
 	srv, err := NewServerBuilder().
 		WithFramework(Cfg.GetString("app.server.kind")).
-		WithPermissionHandler(h).
+		WithPermissionHandler(ph).
 		WithServerConfig(serverConfig).
 		Build()
 

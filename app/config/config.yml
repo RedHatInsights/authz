@@ -1,7 +1,7 @@
 app:
   server:
-    kind: "echo"
-    port: "8080"
+    kind: "grpc"
+    port: "50051"
     grpc-web-httpPort: "8080" # only needed for grpc kind
     grpc-web-httpsPort: "8443" # only needed for grpc kind (for now)
   accessRepository:

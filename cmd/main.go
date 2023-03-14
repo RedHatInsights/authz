@@ -47,22 +47,16 @@ func serve(cmd *cobra.Command, _ []string) {
 	app.Run(configPath)
 }
 
-// mustGetDefinedString attempts to get a non-empty string flag from the provided flag set or panic
+// nonEmptyStringFlag attempts to get a non-empty string flag from the provided flag set or panic
 func nonEmptyStringFlag(flagName string, flags *pflag.FlagSet) string {
-	flagVal := mustGetString(flagName, flags)
+	flagVal, err := flags.GetString(flagName)
+	if err != nil {
+		glog.Fatalf(notFoundMessage(flagName, err))
+	}
 
 	//also check for leading/trailing whitespaces
 	if strings.TrimSpace(flagVal) == "" {
 		glog.Fatal(undefinedValueMessage(flagName))
-	}
-	return flagVal
-}
-
-// mustGetString attempts to get a string flag from the provided flag set or panic
-func mustGetString(flagName string, flags *pflag.FlagSet) string {
-	flagVal, err := flags.GetString(flagName)
-	if err != nil {
-		glog.Fatalf(notFoundMessage(flagName, err))
 	}
 	return flagVal
 }

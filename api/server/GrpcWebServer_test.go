@@ -65,7 +65,7 @@ func runRequest(req *http.Request) *http.Response {
 	h := handler.PermissionHandler{}
 	accessRepo := mockAccessRepository()
 	srv := GrpcGatewayServer{PermissionHandler: h.NewPermissionHandler(&accessRepo)}
-	mux, _ := createMultiplexer(&srv)
+	mux, _ := createMultiplexer(&srv, &srv)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 

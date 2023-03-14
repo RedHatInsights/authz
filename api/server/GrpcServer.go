@@ -24,7 +24,26 @@ import (
 // GrpcGatewayServer represents a GrpcServer host service
 type GrpcGatewayServer struct {
 	PermissionHandler *handler.PermissionHandler
+	SeatHandler       *handler.SeatHandler
 	ServerConfig      *config.ServerConfig
+}
+
+func (r *GrpcGatewayServer) CreateSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	err := r.SeatHandler.AddSeats("TODO") //illustrative purposes
+	if err != nil {
+		return nil, err
+	}
+	return &core.ModifySeatsResponse{}, err
+}
+
+func (r *GrpcGatewayServer) DeleteSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *GrpcGatewayServer) GetSeats(ctx context.Context, request *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // NewServer creates a new Server object to use.
@@ -62,6 +81,7 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup) error {
 
 	srv := grpc.NewServer(grpc.Creds(creds))
 	core.RegisterCheckPermissionServer(srv, r)
+	core.RegisterSeatsServiceServer(srv, r)
 	err = srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)

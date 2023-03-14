@@ -9,6 +9,9 @@ import (
 	"context"
 )
 
+// Empty interface tp use for Handlers. no idea if this is idiomatic.
+type Handler interface{}
+
 // PermissionHandler the handler for permission related endpoints.
 type PermissionHandler struct {
 	accessRepo *contracts.AccessRepository
