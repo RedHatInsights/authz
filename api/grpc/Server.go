@@ -1,12 +1,10 @@
-package server
+package grpc
 
 import (
-	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
-	"authz/api/handler"
-	"authz/app/config"
+	"authz/application"
+	"authz/bootstrap/config"
 	"authz/domain/model"
-	vo "authz/domain/valueobjects"
 	"context"
 	"errors"
 	"net"
@@ -21,41 +19,41 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// GrpcGatewayServer represents a GrpcServer host service
-type GrpcGatewayServer struct {
-	PermissionHandler *handler.PermissionHandler
-	SeatHandler       *handler.SeatHandler
-	ServerConfig      *config.ServerConfig
+// Server represents a Server host service
+type Server struct {
+	AccessAppService *application.AccessAppService
+	SeatHandler      *application.SeatAppService
+	ServerConfig     *config.ServerConfig
 }
 
-func (r *GrpcGatewayServer) CreateSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
-	err := r.SeatHandler.AddSeats("TODO") //illustrative purposes
+func (s *Server) CreateSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	err := s.SeatHandler.AddSeats("TODO") //illustrative purposes
 	if err != nil {
 		return nil, err
 	}
 	return &core.ModifySeatsResponse{}, err
 }
 
-func (r *GrpcGatewayServer) DeleteSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+func (s *Server) DeleteSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *GrpcGatewayServer) GetSeats(ctx context.Context, request *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+func (s *Server) GetSeats(ctx context.Context, request *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
 // NewServer creates a new Server object to use.
-func (r *GrpcGatewayServer) NewServer(h handler.PermissionHandler, c config.ServerConfig) apicontracts.Server {
-	return &GrpcGatewayServer{PermissionHandler: &h, ServerConfig: &c}
+func NewServer(h application.AccessAppService, c config.ServerConfig) *Server {
+	return &Server{AccessAppService: &h, ServerConfig: &c}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup) error {
+func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+r.ServerConfig.MainPort)
+	ls, err := net.Listen("tcp", ":"+s.ServerConfig.MainPort)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -76,12 +74,12 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s",
-			r.ServerConfig.MainPort)
+			s.ServerConfig.MainPort)
 	}
 
 	srv := grpc.NewServer(grpc.Creds(creds))
-	core.RegisterCheckPermissionServer(srv, r)
-	core.RegisterSeatsServiceServer(srv, r)
+	core.RegisterCheckPermissionServer(srv, s)
+	core.RegisterSeatsServiceServer(srv, s)
 	err = srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)
@@ -91,24 +89,14 @@ func (r *GrpcGatewayServer) Serve(wait *sync.WaitGroup) error {
 }
 
 // GetName returns the impl name
-func (r *GrpcGatewayServer) GetName() string {
+func (s *Server) GetName() string {
 	return "grpc"
 }
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
-func (r *GrpcGatewayServer) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
+func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
 
-	result, err := r.check(ctx, rpcReq)
-
-	if err != nil {
-		return nil, convertDomainErrorToGrpc(err)
-	}
-
-	return &core.CheckPermissionResponse{Result: bool(result)}, nil
-}
-
-func (r *GrpcGatewayServer) check(ctx context.Context, rpcReq *core.CheckPermissionRequest) (vo.AccessDecision, error) {
-	req := handler.CheckRequest{
+	req := application.CheckRequest{
 		Requestor:    getRequestorIdentityFromGrpcContext(ctx),
 		Subject:      rpcReq.Subject,
 		Operation:    rpcReq.Operation,
@@ -116,8 +104,13 @@ func (r *GrpcGatewayServer) check(ctx context.Context, rpcReq *core.CheckPermiss
 		ResourceID:   rpcReq.Resourceid,
 	}
 
-	result, err := r.PermissionHandler.Check(req)
-	return result, err
+	result, err := s.AccessAppService.Check(req)
+
+	if err != nil {
+		return nil, convertDomainErrorToGrpc(err)
+	}
+
+	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
 func getRequestorIdentityFromGrpcContext(ctx context.Context) model.Principal {
