@@ -3,11 +3,10 @@ package config
 
 // ServerConfig contains all server-related configuration.
 type ServerConfig struct {
-	Kind             string
-	MainPort         string
-	GrpcWebHttpPort  string
-	GrpcWebHttpsPort string
-	TlsConfig        TlsConfig
+	GrpcPort  string
+	HttpPort  string
+	HttpsPort string
+	TlsConfig TlsConfig
 }
 
 type TlsConfig struct {
