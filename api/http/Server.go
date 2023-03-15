@@ -32,10 +32,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServerConfig.GrpcWebHttpsPort)
+				s.ServerConfig.HttpsPort)
 
 			err = http.ListenAndServeTLS(
-				":"+s.ServerConfig.GrpcWebHttpsPort,
+				":"+s.ServerConfig.HttpsPort,
 				"/etc/tls/tls.crt", //TODO: Needs sanity checking and get from config.
 				"/etc/tls/tls.key", mux)
 			if err != nil {
@@ -45,8 +45,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServerConfig.GrpcWebHttpPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.GrpcWebHttpPort, mux)
+			s.ServerConfig.HttpPort)
+		err = http.ListenAndServe(":"+s.ServerConfig.HttpPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)

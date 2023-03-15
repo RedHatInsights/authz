@@ -41,16 +41,14 @@ func Run(configPath string) {
 	srvCfg := parseServerConfig()
 	ar := getAccessRepository()
 	ar.NewConnection(
-		Cfg.GetString("bootstrap.accessRepository.endpoint"),
-		Cfg.GetString("bootstrap.accessRepository.token"))
+		Cfg.GetString("app.accessRepository.endpoint"),
+		Cfg.GetString("app.accessRepository.token"))
 	aas := initAccessAppService(&ar)
 	sas := initSeatAppService(&ar)
 
 	wait := sync.WaitGroup{}
 
-	delta := 2
-
-	wait.Add(delta)
+	wait.Add(2)
 
 	srv := getGrpcServer(aas, sas, &srvCfg)
 
@@ -77,12 +75,10 @@ func Run(configPath string) {
 }
 
 func parseServerConfig() appcfg.ServerConfig {
-	kind := Cfg.GetString("bootstrap.server.kind")
 	return appcfg.ServerConfig{
-		Kind:             kind,
-		MainPort:         Cfg.GetString("bootstrap.server.port"),
-		GrpcWebHttpPort:  Cfg.GetString("bootstrap.server.grpc-web-httpPort"),
-		GrpcWebHttpsPort: Cfg.GetString("bootstrap.server.grpc-web-httpsPort"),
+		GrpcPort:  Cfg.GetString("app.server.grpcPort"),
+		HttpPort:  Cfg.GetString("app.server.httpPort"),
+		HttpsPort: Cfg.GetString("app.server.httpsPort"),
 	}
 }
 
@@ -122,7 +118,7 @@ func getHttpServer(serverConfig *appcfg.ServerConfig) *http.Server {
 
 func getAccessRepository() contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
-		WithImplementation(Cfg.GetString("bootstrap.accessRepository.kind")).Build()
+		WithImplementation(Cfg.GetString("app.accessRepository.kind")).Build()
 
 	if err != nil {
 		glog.Fatal("Could not initialize access repository: ", err)
