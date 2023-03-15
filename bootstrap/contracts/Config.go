@@ -1,6 +1,6 @@
-// Package contracts inside the app package defines interfaces
+// Package contracts inside the bootstrap package defines interfaces
 // for technical implementations that are not necessary for the domain itself,
-// but for the actual runtime, so the app itself is not coupled to technical implementations.
+// but for the actual runtime, so the bootstrap itself is not coupled to technical implementations.
 package contracts
 
 import "time"

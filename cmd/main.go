@@ -1,8 +1,8 @@
-// Package main starts the app from the app package.
+// Package main starts the bootstrap from the bootstrap package.
 package main
 
 import (
-	"authz/app"
+	"authz/bootstrap"
 	"flag"
 	"fmt"
 	"strings"
@@ -44,7 +44,7 @@ func serve(cmd *cobra.Command, _ []string) {
 	configPath := nonEmptyStringFlag("config", cmd.Flags())
 	glog.Infof("Starting authz service with config from: %v", configPath)
 
-	app.Run(configPath)
+	bootstrap.Run(configPath)
 }
 
 // nonEmptyStringFlag attempts to get a non-empty string flag from the provided flag set or panic

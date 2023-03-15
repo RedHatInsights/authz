@@ -1,2 +1,0 @@
-# api/server package
-The server package contains multiple technical implementations of a serving/routing framework hosting our service. The actual handlers should be defined in the handler package, with as-minimal-as-possible wrappers for the actual server implementation. You can see the idea (illustrative purposes, not a real impl) in EchoServer (L40).

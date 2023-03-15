@@ -1,7 +1,7 @@
 package config
 
 import (
-	"authz/app/contracts"
+	"authz/bootstrap/contracts"
 	"time"
 
 	"github.com/spf13/viper"

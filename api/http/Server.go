@@ -1,10 +1,8 @@
-package server
+package http
 
 import (
-	apicontracts "authz/api/contracts"
 	core "authz/api/gen/v1alpha"
-	"authz/api/handler"
-	"authz/app/config"
+	"authz/bootstrap/config"
 	"context"
 	"net/http"
 	"os"
@@ -14,18 +12,18 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
-// GrpcWebServer serves a HTTP api based on the generated grpc gateway code
-type GrpcWebServer struct {
+// Server serves a HTTP api based on the generated grpc gateway code
+type Server struct {
 	ServerConfig     *config.ServerConfig
 	GrpcCheckService core.CheckPermissionServer
 	GrpcSeatsService core.SeatsServiceServer
 }
 
 // Serve starts serving
-func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
+func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(w.GrpcCheckService, w.GrpcSeatsService)
+	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcSeatsService)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
@@ -34,10 +32,10 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
 		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				w.ServerConfig.GrpcWebHttpsPort)
+				s.ServerConfig.GrpcWebHttpsPort)
 
 			err = http.ListenAndServeTLS(
-				":"+w.ServerConfig.GrpcWebHttpsPort,
+				":"+s.ServerConfig.GrpcWebHttpsPort,
 				"/etc/tls/tls.crt", //TODO: Needs sanity checking and get from config.
 				"/etc/tls/tls.key", mux)
 			if err != nil {
@@ -47,8 +45,8 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			w.ServerConfig.GrpcWebHttpPort)
-		err = http.ListenAndServe(":"+w.ServerConfig.GrpcWebHttpPort, mux)
+			s.ServerConfig.GrpcWebHttpPort)
+		err = http.ListenAndServe(":"+s.ServerConfig.GrpcWebHttpPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -59,24 +57,24 @@ func (w *GrpcWebServer) Serve(wait *sync.WaitGroup) error {
 }
 
 // SetCheckRef sets the reference to the grpc CheckPermissionService
-func (w *GrpcWebServer) SetCheckRef(h core.CheckPermissionServer) {
-	w.GrpcCheckService = h
+func (s *Server) SetCheckRef(h core.CheckPermissionServer) {
+	s.GrpcCheckService = h
 }
 
 // SetSeatRef sets the reference to the grp SeatsServerService
-func (w *GrpcWebServer) SetSeatRef(s core.SeatsServiceServer) {
-	w.GrpcSeatsService = s
+func (s *Server) SetSeatRef(ss core.SeatsServiceServer) {
+	s.GrpcSeatsService = ss
 }
 
 // NewServer creates a new Server object to use.
-func (w *GrpcWebServer) NewServer(_ handler.PermissionHandler, c config.ServerConfig) apicontracts.Server {
-	return &GrpcWebServer{
+func NewServer(c config.ServerConfig) *Server {
+	return &Server{
 		ServerConfig: &c,
 	}
 }
 
 // GetName returns the Name of the impl
-func (w *GrpcWebServer) GetName() string {
+func (s *Server) GetName() string {
 	return "grpcweb"
 }
 

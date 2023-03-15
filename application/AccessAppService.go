@@ -1,5 +1,5 @@
 // Package handler contains all handlers untangled from the server implementation.
-package handler
+package application
 
 import (
 	"authz/domain/contracts"
@@ -12,8 +12,8 @@ import (
 // Empty interface tp use for Handlers. no idea if this is idiomatic.
 type Handler interface{}
 
-// PermissionHandler the handler for permission related endpoints.
-type PermissionHandler struct {
+// AccessAppService the handler for permission related endpoints.
+type AccessAppService struct {
 	accessRepo *contracts.AccessRepository
 	ctx        context.Context
 }
@@ -28,15 +28,15 @@ type CheckRequest struct {
 }
 
 // NewPermissionHandler returns a new instance of the permissionhandler.
-func (p *PermissionHandler) NewPermissionHandler(accessRepo *contracts.AccessRepository) *PermissionHandler {
-	return &PermissionHandler{
+func (p *AccessAppService) NewPermissionHandler(accessRepo *contracts.AccessRepository) *AccessAppService {
+	return &AccessAppService{
 		accessRepo: accessRepo,
 		ctx:        context.Background(),
 	}
 }
 
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
-func (p *PermissionHandler) Check(req CheckRequest) (vo.AccessDecision, error) {
+func (p *AccessAppService) Check(req CheckRequest) (vo.AccessDecision, error) {
 	event := model.CheckEvent{
 		Request: model.Request{
 			Requestor: req.Requestor,
