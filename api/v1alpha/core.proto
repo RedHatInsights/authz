@@ -8,6 +8,10 @@ option go_package = "github.com/RedHatInsights/authz/proto/gen/go/core/v1alpha;c
 
 // Service & message definitions go here
 
+service CheckPermission {
+  rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse) {}
+}
+
 message CheckPermissionRequest {
   string subject = 1;
   string operation = 2;
@@ -16,57 +20,58 @@ message CheckPermissionRequest {
 }
 
 message CheckPermissionResponse {
-    bool result = 1;
-    string description = 2;
+  bool result = 1;
+  string description = 2;
 }
 
-service CheckPermission {
-    rpc CheckPermission (CheckPermissionRequest) returns (CheckPermissionResponse) {}
+// TODO: Use right http status codes - see https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/
+service LicenseService {
+  rpc GetLicense (GetLicenseRequest) returns (GetLicenseResponse) {}
+  rpc ModifySeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
+  rpc GetSeats (GetSeatsRequest) returns (GetSeatsResponse) {}
 }
 
-// CreateSeatsRequest assuming we get the userId etc from the requestor in the authorization header to validate if an "admin" can actually add licenses.
+
+message GetLicenseRequest {
+  string orgId = 1; // The id of an license-able organization.
+  string serviceId = 2; // A "serviceId" is an arbitrary identifier for a service with limited access that may be granted to an organization.
+}
+
+message GetLicenseResponse {
+  sint32 seatsTotal = 1; // Total number of seats assignable.
+  sint32 seatsAvailable = 2; // Current number of available seats which can be assigned.
+}
+
+// ModifySeatsRequest assuming we get the userId etc from the requester in the authorization header to validate if an "admin" can actually add licenses.
 message ModifySeatsRequest {
-  string tenantId = 1; //tenantId of subjects
-  repeated string subjects = 2; //list of subjects to add
-  string serviceId = 3; //id of service to add subjects to as "licensed users"
+  string orgId = 1; // The id of an license-able organization.
+  string serviceId = 2; // A "serviceId" is an arbitrary identifier for a service with limited access that may be granted to an organization.
+  repeated string assign = 3; // User IDs to assign to the license.
+  repeated string unassign = 4; // User IDs to remove from the license.
 }
 
 message ModifySeatsResponse {
 }
 
-enum SeatFilterType {
-  licensed = 0;
-  unlicensed = 1;
+message GetSeatsRequest {
+  string orgId = 1; // The id of an license-able organization.
+  string serviceId = 2; // A "serviceId" is an arbitrary identifier for a service with limited access that may be granted to an organization.
+  optional bool includeUsers = 3; // true: include enriched user representation. false: do not include (only IDs). Default: true.
+  optional SeatFilterType filter = 4; // filter, either assigned or assignable users returned. Default: assigned.
 }
 
-message GetSeatsRequest {
-  string tenantId = 1; //tenant to get seats for
-  string serviceId=2; //service/productlicense to get seats for
-  optional bool includeUsers=3; //true: include encriched user representation. false: do not include. Default: true.
-  optional SeatFilterType filter=4; //filter, either licensed or unlicensed users returned. Default: licensed. Note: Default values are not supported anymore in proto3, check serverside i guess.
-  optional bool includeLicenseInfo=5; //include available and max seats of license. Default: True.
+enum SeatFilterType {
+  assigned = 0;
+  assignable = 1;
 }
 
 message GetSeatsResponse {
-  repeated GetSeatsUserRepresentation users = 1; //empty if includeUsers = false, filled if includeUsers=true
-  GetSeatsCountResponse licenseInfo = 2; //returns total and assigned seats for the given tenant & service, if includeLicenseInfo is true in request
+  repeated GetSeatsUserRepresentation users = 1; // Just user IDs, unless "includeUsers" = true.
 }
 
 //we may return more userinfo, this is a starting point.
 message GetSeatsUserRepresentation {
   string displayName = 1;
-  string id=2;
-  bool isLicenseActive = 3;
-}
-
-message GetSeatsCountResponse {
-  sint32 seatsTotal = 1; //total seats.
-  sint32 seatsAvailable = 2; //currently available seats.
-}
-
-// TODO: Use right http status codes - see https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/
-service SeatsService {
-  rpc CreateSeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
-  rpc DeleteSeats(ModifySeatsRequest) returns (ModifySeatsResponse) {}
-  rpc GetSeats(GetSeatsRequest) returns (GetSeatsResponse) {}
+  string id = 2;
+  bool assigned = 3;
 }

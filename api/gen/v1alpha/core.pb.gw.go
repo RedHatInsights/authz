@@ -65,41 +65,79 @@ func local_request_CheckPermission_CheckPermission_0(ctx context.Context, marsha
 
 }
 
-func request_SeatsService_CreateSeats_0(ctx context.Context, marshaler runtime.Marshaler, client SeatsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ModifySeatsRequest
+func request_LicenseService_GetLicense_0(ctx context.Context, marshaler runtime.Marshaler, client LicenseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetLicenseRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
 	}
 
-	msg, err := client.CreateSeats(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
+
+	msg, err := client.GetLicense(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SeatsService_CreateSeats_0(ctx context.Context, marshaler runtime.Marshaler, server SeatsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ModifySeatsRequest
+func local_request_LicenseService_GetLicense_0(ctx context.Context, marshaler runtime.Marshaler, server LicenseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetLicenseRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
 	}
 
-	msg, err := server.CreateSeats(ctx, &protoReq)
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
+
+	msg, err := server.GetLicense(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_SeatsService_DeleteSeats_0(ctx context.Context, marshaler runtime.Marshaler, client SeatsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_LicenseService_ModifySeats_0(ctx context.Context, marshaler runtime.Marshaler, client LicenseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ModifySeatsRequest
 	var metadata runtime.ServerMetadata
 
@@ -111,12 +149,39 @@ func request_SeatsService_DeleteSeats_0(ctx context.Context, marshaler runtime.M
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.DeleteSeats(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
+	}
+
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
+
+	msg, err := client.ModifySeats(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_SeatsService_DeleteSeats_0(ctx context.Context, marshaler runtime.Marshaler, server SeatsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_LicenseService_ModifySeats_0(ctx context.Context, marshaler runtime.Marshaler, server LicenseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ModifySeatsRequest
 	var metadata runtime.ServerMetadata
 
@@ -128,23 +193,77 @@ func local_request_SeatsService_DeleteSeats_0(ctx context.Context, marshaler run
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.DeleteSeats(ctx, &protoReq)
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
+	}
+
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
+
+	msg, err := server.ModifySeats(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_SeatsService_GetSeats_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_LicenseService_GetSeats_0 = &utilities.DoubleArray{Encoding: map[string]int{"orgId": 0, "serviceId": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
 )
 
-func request_SeatsService_GetSeats_0(ctx context.Context, marshaler runtime.Marshaler, client SeatsServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_LicenseService_GetSeats_0(ctx context.Context, marshaler runtime.Marshaler, client LicenseServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetSeatsRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
+	}
+
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SeatsService_GetSeats_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_LicenseService_GetSeats_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -153,14 +272,41 @@ func request_SeatsService_GetSeats_0(ctx context.Context, marshaler runtime.Mars
 
 }
 
-func local_request_SeatsService_GetSeats_0(ctx context.Context, marshaler runtime.Marshaler, server SeatsServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_LicenseService_GetSeats_0(ctx context.Context, marshaler runtime.Marshaler, server LicenseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetSeatsRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["orgId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "orgId")
+	}
+
+	protoReq.OrgId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "orgId", err)
+	}
+
+	val, ok = pathParams["serviceId"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "serviceId")
+	}
+
+	protoReq.ServiceId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "serviceId", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_SeatsService_GetSeats_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_LicenseService_GetSeats_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -183,7 +329,7 @@ func RegisterCheckPermissionHandlerServer(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.CheckPermission/CheckPermission", runtime.WithHTTPPathPattern("/v1alpha/permissions/check"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.CheckPermission/CheckPermission", runtime.WithHTTPPathPattern("/v1alpha/check"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -203,13 +349,13 @@ func RegisterCheckPermissionHandlerServer(ctx context.Context, mux *runtime.Serv
 	return nil
 }
 
-// RegisterSeatsServiceHandlerServer registers the http handlers for service SeatsService to "mux".
-// UnaryRPC     :call SeatsServiceServer directly.
+// RegisterLicenseServiceHandlerServer registers the http handlers for service LicenseService to "mux".
+// UnaryRPC     :call LicenseServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSeatsServiceHandlerFromEndpoint instead.
-func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SeatsServiceServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterLicenseServiceHandlerFromEndpoint instead.
+func RegisterLicenseServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server LicenseServiceServer) error {
 
-	mux.Handle("POST", pattern_SeatsService_CreateSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_LicenseService_GetLicense_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -217,12 +363,12 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.SeatsService/CreateSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.LicenseService/GetLicense", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SeatsService_CreateSeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_LicenseService_GetLicense_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -230,11 +376,11 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_SeatsService_CreateSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_GetLicense_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_SeatsService_DeleteSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_LicenseService_ModifySeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -242,12 +388,12 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.SeatsService/DeleteSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.LicenseService/ModifySeats", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SeatsService_DeleteSeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_LicenseService_ModifySeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -255,11 +401,11 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_SeatsService_DeleteSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_ModifySeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SeatsService_GetSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_LicenseService_GetSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -267,12 +413,12 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.SeatsService/GetSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/api.v1alpha.LicenseService/GetSeats", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}/seats"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_SeatsService_GetSeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_LicenseService_GetSeats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -280,7 +426,7 @@ func RegisterSeatsServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_SeatsService_GetSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_GetSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -331,7 +477,7 @@ func RegisterCheckPermissionHandlerClient(ctx context.Context, mux *runtime.Serv
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.CheckPermission/CheckPermission", runtime.WithHTTPPathPattern("/v1alpha/permissions/check"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.CheckPermission/CheckPermission", runtime.WithHTTPPathPattern("/v1alpha/check"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -351,16 +497,16 @@ func RegisterCheckPermissionHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_CheckPermission_CheckPermission_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha", "permissions", "check"}, ""))
+	pattern_CheckPermission_CheckPermission_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1alpha", "check"}, ""))
 )
 
 var (
 	forward_CheckPermission_CheckPermission_0 = runtime.ForwardResponseMessage
 )
 
-// RegisterSeatsServiceHandlerFromEndpoint is same as RegisterSeatsServiceHandler but
+// RegisterLicenseServiceHandlerFromEndpoint is same as RegisterLicenseServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterSeatsServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterLicenseServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
@@ -380,85 +526,85 @@ func RegisterSeatsServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.S
 		}()
 	}()
 
-	return RegisterSeatsServiceHandler(ctx, mux, conn)
+	return RegisterLicenseServiceHandler(ctx, mux, conn)
 }
 
-// RegisterSeatsServiceHandler registers the http handlers for service SeatsService to "mux".
+// RegisterLicenseServiceHandler registers the http handlers for service LicenseService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterSeatsServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterSeatsServiceHandlerClient(ctx, mux, NewSeatsServiceClient(conn))
+func RegisterLicenseServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterLicenseServiceHandlerClient(ctx, mux, NewLicenseServiceClient(conn))
 }
 
-// RegisterSeatsServiceHandlerClient registers the http handlers for service SeatsService
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "SeatsServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SeatsServiceClient"
+// RegisterLicenseServiceHandlerClient registers the http handlers for service LicenseService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "LicenseServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "LicenseServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "SeatsServiceClient" to call the correct interceptors.
-func RegisterSeatsServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SeatsServiceClient) error {
+// "LicenseServiceClient" to call the correct interceptors.
+func RegisterLicenseServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client LicenseServiceClient) error {
 
-	mux.Handle("POST", pattern_SeatsService_CreateSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_LicenseService_GetLicense_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.SeatsService/CreateSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.LicenseService/GetLicense", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SeatsService_CreateSeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_LicenseService_GetLicense_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SeatsService_CreateSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_GetLicense_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_SeatsService_DeleteSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_LicenseService_ModifySeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.SeatsService/DeleteSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.LicenseService/ModifySeats", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SeatsService_DeleteSeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_LicenseService_ModifySeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SeatsService_DeleteSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_ModifySeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_SeatsService_GetSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_LicenseService_GetSeats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.SeatsService/GetSeats", runtime.WithHTTPPathPattern("/v1alpha/license/seats"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/api.v1alpha.LicenseService/GetSeats", runtime.WithHTTPPathPattern("/v1alpha/orgs/{orgId}/licenses/{serviceId}/seats"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_SeatsService_GetSeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_LicenseService_GetSeats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_SeatsService_GetSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LicenseService_GetSeats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -466,17 +612,17 @@ func RegisterSeatsServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_SeatsService_CreateSeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha", "license", "seats"}, ""))
+	pattern_LicenseService_GetLicense_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1alpha", "orgs", "orgId", "licenses", "serviceId"}, ""))
 
-	pattern_SeatsService_DeleteSeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha", "license", "seats"}, ""))
+	pattern_LicenseService_ModifySeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1alpha", "orgs", "orgId", "licenses", "serviceId"}, ""))
 
-	pattern_SeatsService_GetSeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1alpha", "license", "seats"}, ""))
+	pattern_LicenseService_GetSeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1alpha", "orgs", "orgId", "licenses", "serviceId", "seats"}, ""))
 )
 
 var (
-	forward_SeatsService_CreateSeats_0 = runtime.ForwardResponseMessage
+	forward_LicenseService_GetLicense_0 = runtime.ForwardResponseMessage
 
-	forward_SeatsService_DeleteSeats_0 = runtime.ForwardResponseMessage
+	forward_LicenseService_ModifySeats_0 = runtime.ForwardResponseMessage
 
-	forward_SeatsService_GetSeats_0 = runtime.ForwardResponseMessage
+	forward_LicenseService_GetSeats_0 = runtime.ForwardResponseMessage
 )
