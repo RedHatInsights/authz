@@ -17,7 +17,7 @@ import (
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/permissions/check", "other system",
+	resp := runRequest(post("/v1alpha/check", "other system",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assert.Equal(t, 403, resp.StatusCode)
@@ -25,7 +25,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/permissions/check", "",
+	resp := runRequest(post("/v1alpha/check", "",
 		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assert.Equal(t, 401, resp.StatusCode)
@@ -33,7 +33,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/permissions/check", "system",
+	resp := runRequest(post("/v1alpha/check", "system",
 		`{"subject": "okay", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
@@ -41,7 +41,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/permissions/check", "system",
+	resp := runRequest(post("/v1alpha/check", "system",
 		`{"subject": "bad", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)

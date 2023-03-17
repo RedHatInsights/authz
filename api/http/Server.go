@@ -16,7 +16,7 @@ import (
 type Server struct {
 	ServerConfig     *config.ServerConfig
 	GrpcCheckService core.CheckPermissionServer
-	GrpcSeatsService core.SeatsServiceServer
+	GrpcSeatsService core.LicenseServiceServer
 }
 
 // Serve starts serving
@@ -62,7 +62,7 @@ func (s *Server) SetCheckRef(h core.CheckPermissionServer) {
 }
 
 // SetSeatRef sets the reference to the grp SeatsServerService
-func (s *Server) SetSeatRef(ss core.SeatsServiceServer) {
+func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
 	s.GrpcSeatsService = ss
 }
 
@@ -78,14 +78,14 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(h1 core.CheckPermissionServer, h2 core.SeatsServiceServer) (*runtime.ServeMux, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (*runtime.ServeMux, error) {
 	mux := runtime.NewServeMux()
 
 	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
 		return nil, err
 	}
 
-	if err := core.RegisterSeatsServiceHandlerServer(context.Background(), mux, h2); err != nil {
+	if err := core.RegisterLicenseServiceHandlerServer(context.Background(), mux, h2); err != nil {
 		return nil, err
 	}
 

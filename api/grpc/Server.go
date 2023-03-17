@@ -26,15 +26,12 @@ type Server struct {
 	ServerConfig     *config.ServerConfig
 }
 
-func (s *Server) CreateSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
-	err := s.SeatHandler.AddSeats("TODO") //illustrative purposes
-	if err != nil {
-		return nil, err
-	}
-	return &core.ModifySeatsResponse{}, err
+func (s *Server) GetLicense(ctx context.Context, request *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
-func (s *Server) DeleteSeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+func (s *Server) ModifySeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -79,7 +76,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	srv := grpc.NewServer(grpc.Creds(creds))
 	core.RegisterCheckPermissionServer(srv, s)
-	core.RegisterSeatsServiceServer(srv, s)
+	core.RegisterLicenseServiceServer(srv, s)
 	err = srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)
