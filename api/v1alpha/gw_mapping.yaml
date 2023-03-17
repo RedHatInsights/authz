@@ -5,13 +5,12 @@ config_version: 3
 http:
   rules:
     - selector: api.v1alpha.CheckPermission.CheckPermission
-      post: /v1alpha/permissions/check
+      post: /v1alpha/check
       body: "*"
-    - selector: api.v1alpha.SeatsService.CreateSeats
-      post: /v1alpha/license/seats
+    - selector: api.v1alpha.LicenseService.GetLicense
+      get: /v1alpha/orgs/{orgId}/licenses/{serviceId}
+    - selector: api.v1alpha.LicenseService.ModifySeats
+      post: /v1alpha/orgs/{orgId}/licenses/{serviceId}
       body: "*"
-    - selector: api.v1alpha.SeatsService.DeleteSeats
-      delete: /v1alpha/license/seats
-      body: "*"
-    - selector: api.v1alpha.SeatsService.GetSeats
-      get: /v1alpha/license/seats
+    - selector: api.v1alpha.LicenseService.GetSeats
+      get: /v1alpha/orgs/{orgId}/licenses/{serviceId}/seats
