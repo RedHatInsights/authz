@@ -22,9 +22,9 @@ func Run(endpoint string, token string, store string) {
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
-		HttpPort:  "8080",
-		HttpsPort: "8443",
-		TlsConfig: api.TlsConfig{},
+		HTTPPort:  "8080",
+		HTTPSPort: "8443",
+		TLSConfig: api.TLSConfig{},
 	}
 	aas := initAccessAppService(&ar)
 	sas := initSeatAppService(&ar)
@@ -42,7 +42,7 @@ func Run(endpoint string, token string, store string) {
 		}
 	}()
 
-	webSrv := getHttpServer(&srvCfg)
+	webSrv := getHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
 
 	go func() {
@@ -80,10 +80,10 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.SeatAppSe
 	return srv
 }
 
-func getHttpServer(serverConfig *api.ServerConfig) *http.Server {
+func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	srv, err := NewServerBuilder().
 		WithServerConfig(serverConfig).
-		BuildHttp()
+		BuildHTTP()
 
 	if err != nil {
 		glog.Fatal("Could not initialize http server: ", err)

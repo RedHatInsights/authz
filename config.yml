@@ -1,9 +1,0 @@
-app:
-  server:
-    grpcPort: "50051"
-    httpPort: "8080"
-    httpsPort: "8443"
-  accessRepository:
-    kind: "stub"
-    endpoint: "http://localhost:50052" # spiceDB Endpoint
-    token: "foobar" # spiceDB token

@@ -27,9 +27,9 @@ func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operatio
 	trace := false
 
 	body := openfga.CheckRequest{TupleKey: openfga.TupleKey{
-		Object:   openfga.PtrString("foo"),
-		Relation: openfga.PtrString("bar"),
-		User:     openfga.PtrString("baz"),
+		Object:   openfga.PtrString(resource.ID),
+		Relation: openfga.PtrString(operation),
+		User:     openfga.PtrString(principal.ID),
 	}, ContextualTuples: nil, AuthorizationModelId: openfga.PtrString("foo"), Trace: &trace}
 
 	result, _, err := openfgaConn.client.OpenFgaApi.Check(context.Background()).Body(body).Execute()

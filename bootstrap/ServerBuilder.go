@@ -9,7 +9,6 @@ import (
 
 // ServerBuilder is the builder containing the config for building technical implementations of the server
 type ServerBuilder struct {
-	framework         string
 	PermissionHandler *application.AccessAppService
 	SeatHandler       *application.SeatAppService
 	ServerConfig      *api.ServerConfig
@@ -38,10 +37,12 @@ func (s *ServerBuilder) WithServerConfig(c *api.ServerConfig) *ServerBuilder {
 	return s
 }
 
+// BuildGrpc builds the grpc-server of the grpc gateway
 func (s *ServerBuilder) BuildGrpc() (srv *grpc.Server, err error) {
 	return grpc.NewServer(*s.PermissionHandler, *s.ServerConfig), nil
 }
 
-func (s *ServerBuilder) BuildHttp() (srv *http.Server, err error) {
+// BuildHTTP builds the HTTP Server of the grpc gateway
+func (s *ServerBuilder) BuildHTTP() (srv *http.Server, err error) {
 	return http.NewServer(*s.ServerConfig), nil
 }

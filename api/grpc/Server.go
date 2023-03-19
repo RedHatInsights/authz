@@ -1,3 +1,4 @@
+// Package grpc implements the grpc server of the grpc gateway
 package grpc
 
 import (
@@ -26,17 +27,20 @@ type Server struct {
 	ServerConfig     *api.ServerConfig
 }
 
-func (s *Server) GetLicense(ctx context.Context, request *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
+// GetLicense ToDo
+func (s *Server) GetLicense(_ context.Context, _ *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Server) ModifySeats(ctx context.Context, request *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+// ModifySeats ToDo
+func (s *Server) ModifySeats(_ context.Context, _ *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Server) GetSeats(ctx context.Context, request *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+// GetSeats ToDo
+func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }

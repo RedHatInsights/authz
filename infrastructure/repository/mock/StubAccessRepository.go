@@ -18,7 +18,7 @@ func (s *StubAccessRepository) NewConnection(_ string, _ string, _ bool) {
 }
 
 // CheckAccess returns true if the subject has been specified to have access, otherwise false.
-func (s *StubAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
+func (s *StubAccessRepository) CheckAccess(principal model.Principal, _ string, _ model.Resource) (vo.AccessDecision, error) {
 	if hasAccess, ok := s.Data[principal.ID]; ok {
 		return vo.AccessDecision(hasAccess), nil
 	}

@@ -1,4 +1,4 @@
-// Package handler contains all handlers untangled from the server implementation.
+// Package application contains application services, untangled from communication details.
 package application
 
 import (
@@ -8,9 +8,6 @@ import (
 	vo "authz/domain/valueobjects"
 	"context"
 )
-
-// Empty interface tp use for Handlers. no idea if this is idiomatic.
-type Handler interface{}
 
 // AccessAppService the handler for permission related endpoints.
 type AccessAppService struct {

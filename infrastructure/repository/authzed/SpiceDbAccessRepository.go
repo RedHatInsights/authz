@@ -5,8 +5,9 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
-	"github.com/golang/glog"
 	"log"
+
+	"github.com/golang/glog"
 
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
@@ -39,7 +40,7 @@ func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operati
 	//TODO: Implement.
 	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
 		Resource:   o2,
-		Permission: "whatever",
+		Permission: operation,
 		Subject:    s2,
 	})
 
