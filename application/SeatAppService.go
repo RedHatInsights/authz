@@ -20,6 +20,6 @@ func (s *SeatAppService) NewSeatAppService(accessRepo *contracts.AccessRepositor
 }
 
 // AddSeats TODO
-func (s *SeatAppService) AddSeats(addSeatsRequest string) error {
+func (s *SeatAppService) AddSeats(_ string) error {
 	return nil
 }

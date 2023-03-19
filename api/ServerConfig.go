@@ -1,15 +1,16 @@
-// Package config contains the typed configuration for different parts of the application.
+// Package api is for communication purposes
 package api
 
 // ServerConfig contains all server-related configuration.
 type ServerConfig struct {
 	GrpcPort  string
-	HttpPort  string
-	HttpsPort string
-	TlsConfig TlsConfig
+	HTTPPort  string
+	HTTPSPort string
+	TLSConfig TLSConfig
 }
 
-type TlsConfig struct {
+// TLSConfig includes a possible TLS configuration.
+type TLSConfig struct {
 	CertPath string
 	CertName string //default: tls.crt
 	KeyPath  string

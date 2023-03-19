@@ -41,7 +41,7 @@ func runSpiceDBTestServer(t *testing.T) (port string, err error) {
 //
 // The test server gives each set of a credentials its own isolated datastore
 // so that tests can be ran in parallel.
-func spicedbTestClient(t *testing.T, port string) (*authzed.Client, error) {
+func spicedbTestClient(_ *testing.T, port string) (*authzed.Client, error) {
 	// Generate a random credential to isolate this client from any others.
 	buf := make([]byte, 20)
 	if _, err := rand.Read(buf); err != nil {
