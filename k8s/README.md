@@ -66,7 +66,7 @@ the result should look like this:
 
 ```bash
 NAME            READY   STATUS    RESTARTS   AGE
-pod/authz-bootstrap   1/1     Running   0          24s
+pod/authz-app   1/1     Running   0          24s
 
 NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
 service/authz-service   ClusterIP   10.96.29.111   <none>        8080/TCP   70s
