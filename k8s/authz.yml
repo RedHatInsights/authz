@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: authz-bootstrap
+  name: authz-app
   labels:
     app: authz
 spec:
   containers:
-    - name: authz-bootstrap
+    - name: authz-app
       image: quay.io/ciam_authz/authz:latest
       resources:
         requests:
