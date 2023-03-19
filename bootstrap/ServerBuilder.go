@@ -10,7 +10,7 @@ import (
 // ServerBuilder is the builder containing the config for building technical implementations of the server
 type ServerBuilder struct {
 	PermissionHandler *application.AccessAppService
-	SeatHandler       *application.SeatAppService
+	LicenseHandler    *application.LicenseAppService
 	ServerConfig      *api.ServerConfig
 }
 
@@ -25,9 +25,9 @@ func (s *ServerBuilder) WithAccessAppService(ph *application.AccessAppService) *
 	return s
 }
 
-// WithSeatAppService sets the SeatHandler for the server
-func (s *ServerBuilder) WithSeatAppService(sh *application.SeatAppService) *ServerBuilder {
-	s.SeatHandler = sh
+// WithLicenseAppService sets the LicenseHandler for the server
+func (s *ServerBuilder) WithLicenseAppService(sh *application.LicenseAppService) *ServerBuilder {
+	s.LicenseHandler = sh
 	return s
 }
 

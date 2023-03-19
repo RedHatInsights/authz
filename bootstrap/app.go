@@ -62,15 +62,15 @@ func initAccessAppService(ar *contracts.AccessRepository) *application.AccessApp
 	return permissionHandler.NewPermissionHandler(ar)
 }
 
-func initSeatAppService(ar *contracts.AccessRepository) *application.SeatAppService {
-	seatHandler := application.SeatAppService{}
-	return seatHandler.NewSeatAppService(ar)
+func initSeatAppService(ar *contracts.AccessRepository) *application.LicenseAppService {
+	seatHandler := application.LicenseAppService{}
+	return seatHandler.NewLicenseAppService(ar)
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.SeatAppService, serverConfig *api.ServerConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
-		WithSeatAppService(sas).
+		WithLicenseAppService(sas).
 		WithServerConfig(serverConfig).
 		BuildGrpc()
 

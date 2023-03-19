@@ -32,8 +32,6 @@ func main() {
 		Run:   serve,
 	}
 
-	rootCmd.PersistentFlags().StringP("config", "c", "", "path to config.yml")
-
 	rootCmd.Flags().String("endpoint", "", "endpoint")
 	rootCmd.Flags().String("token", "", "token")
 	rootCmd.Flags().String("store", "stub", "stub or spicedb")
