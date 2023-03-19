@@ -1,8 +1,8 @@
 package http
 
 import (
+	"authz/api"
 	core "authz/api/gen/v1alpha"
-	"authz/bootstrap/config"
 	"context"
 	"net/http"
 	"os"
@@ -14,7 +14,7 @@ import (
 
 // Server serves a HTTP api based on the generated grpc gateway code
 type Server struct {
-	ServerConfig     *config.ServerConfig
+	ServerConfig     *api.ServerConfig
 	GrpcCheckService core.CheckPermissionServer
 	GrpcSeatsService core.LicenseServiceServer
 }
@@ -67,7 +67,7 @@ func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(c config.ServerConfig) *Server {
+func NewServer(c api.ServerConfig) *Server {
 	return &Server{
 		ServerConfig: &c,
 	}

@@ -1,5 +1,5 @@
 // Package config contains the typed configuration for different parts of the application.
-package config
+package api
 
 // ServerConfig contains all server-related configuration.
 type ServerConfig struct {

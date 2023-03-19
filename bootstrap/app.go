@@ -2,47 +2,30 @@
 package bootstrap
 
 import (
+	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
-	appcfg "authz/bootstrap/config"
-	appcontracts "authz/bootstrap/contracts"
 	"authz/domain/contracts"
-	"authz/infrastructure/config"
 	"sync"
 
 	"github.com/golang/glog"
 )
 
-// Cfg holds the config from yaml. package private for now.
-var Cfg appcontracts.Config
-
-// getConfig uses the interface to load the config based on the technical implementation "viper".
-func getConfig(configPath string) appcontracts.Config {
-	cfg, err := config.NewBuilder().
-		ConfigName("config").
-		ConfigType("yaml").
-		ConfigPaths(
-			configPath,
-		).
-		Defaults(map[string]interface{}{}).
-		Options().
-		Build()
-
-	if err != nil {
-		glog.Fatal("Could not initialize config: ", err)
-	}
-	return cfg
-}
-
 // Run configures and runs the actual bootstrap.
-func Run(configPath string) {
-	Cfg = getConfig(configPath)
-	srvCfg := parseServerConfig()
-	ar := getAccessRepository()
+func Run(endpoint string, token string, store string) {
+	ar := getAccessRepository(store)
 	ar.NewConnection(
-		Cfg.GetString("app.accessRepository.endpoint"),
-		Cfg.GetString("app.accessRepository.token"))
+		endpoint,
+		token,
+		false)
+
+	srvCfg := api.ServerConfig{ //TODO: Discuss config.
+		GrpcPort:  "50051",
+		HttpPort:  "8080",
+		HttpsPort: "8443",
+		TlsConfig: api.TlsConfig{},
+	}
 	aas := initAccessAppService(&ar)
 	sas := initSeatAppService(&ar)
 
@@ -74,14 +57,6 @@ func Run(configPath string) {
 	wait.Wait()
 }
 
-func parseServerConfig() appcfg.ServerConfig {
-	return appcfg.ServerConfig{
-		GrpcPort:  Cfg.GetString("app.server.grpcPort"),
-		HttpPort:  Cfg.GetString("app.server.httpPort"),
-		HttpsPort: Cfg.GetString("app.server.httpsPort"),
-	}
-}
-
 func initAccessAppService(ar *contracts.AccessRepository) *application.AccessAppService {
 	permissionHandler := application.AccessAppService{}
 	return permissionHandler.NewPermissionHandler(ar)
@@ -92,7 +67,7 @@ func initSeatAppService(ar *contracts.AccessRepository) *application.SeatAppServ
 	return seatHandler.NewSeatAppService(ar)
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.SeatAppService, serverConfig *appcfg.ServerConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.SeatAppService, serverConfig *api.ServerConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithSeatAppService(sas).
@@ -105,7 +80,7 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.SeatAppSe
 	return srv
 }
 
-func getHttpServer(serverConfig *appcfg.ServerConfig) *http.Server {
+func getHttpServer(serverConfig *api.ServerConfig) *http.Server {
 	srv, err := NewServerBuilder().
 		WithServerConfig(serverConfig).
 		BuildHttp()
@@ -116,9 +91,9 @@ func getHttpServer(serverConfig *appcfg.ServerConfig) *http.Server {
 	return srv
 }
 
-func getAccessRepository() contracts.AccessRepository {
+func getAccessRepository(store string) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
-		WithImplementation(Cfg.GetString("app.accessRepository.kind")).Build()
+		WithImplementation(store).Build()
 
 	if err != nil {
 		glog.Fatal("Could not initialize access repository: ", err)

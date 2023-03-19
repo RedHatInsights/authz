@@ -5,6 +5,7 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
+	"github.com/golang/glog"
 	"log"
 
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
@@ -28,6 +29,14 @@ var authzedConn *authzedClient
 // CheckAccess -
 func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	s2, o2 := createSubjectObjectTuple("user", principal.ID, resource.Type, resource.ID)
+
+	//TODO remove me, just for checking it is used (will return an err)
+	_, err := authzedConn.client.ReadSchema(authzedConn.ctx, &v1.ReadSchemaRequest{})
+	if err != nil {
+		glog.Infof("Could not reach spiceDB! Error: %v", err)
+	}
+
+	//TODO: Implement.
 	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
 		Resource:   o2,
 		Permission: "whatever",
@@ -46,12 +55,19 @@ func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operati
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
-func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string) {
-	client, err := authzed.NewClient(
-		spiceDbEndpoint,
+func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking bool) {
+	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpcutil.WithInsecureBearerToken(token),
-		grpc.WithBlock(),
+	}
+
+	if isBlocking {
+		opts = append(opts, grpc.WithBlock())
+	}
+
+	client, err := authzed.NewClient(
+		spiceDbEndpoint,
+		opts...,
 	)
 
 	if err != nil {
