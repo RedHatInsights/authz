@@ -1,9 +1,9 @@
 package grpc
 
 import (
+	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/application"
-	"authz/bootstrap/config"
 	"authz/domain/model"
 	"context"
 	"errors"
@@ -23,7 +23,7 @@ import (
 type Server struct {
 	AccessAppService *application.AccessAppService
 	SeatHandler      *application.SeatAppService
-	ServerConfig     *config.ServerConfig
+	ServerConfig     *api.ServerConfig
 }
 
 func (s *Server) GetLicense(ctx context.Context, request *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
@@ -42,7 +42,7 @@ func (s *Server) GetSeats(ctx context.Context, request *core.GetSeatsRequest) (*
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(h application.AccessAppService, c config.ServerConfig) *Server {
+func NewServer(h application.AccessAppService, c api.ServerConfig) *Server {
 	return &Server{AccessAppService: &h, ServerConfig: &c}
 }
 

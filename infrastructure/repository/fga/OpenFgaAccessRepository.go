@@ -42,7 +42,7 @@ func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operatio
 }
 
 // NewConnection initializes a new openfga client
-func (o OpenFgaAccessRepository) NewConnection(endpoint string, token string) {
+func (o OpenFgaAccessRepository) NewConnection(endpoint string, token string, _ bool) {
 
 	configuration, err := openfga.NewConfiguration(openfga.Configuration{
 		ApiScheme: "http", //TODO: derive from endpoint or cfg

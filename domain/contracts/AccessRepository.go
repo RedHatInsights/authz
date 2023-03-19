@@ -10,5 +10,5 @@ import (
 // AccessRepository - the contract for the access repository
 type AccessRepository interface {
 	CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error)
-	NewConnection(endpoint string, token string)
+	NewConnection(endpoint string, token string, isBlocking bool) //TODO: Remove from interface.don't think it is needed here.
 }

@@ -1,10 +1,10 @@
 package bootstrap
 
 import (
+	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
-	"authz/bootstrap/config"
 )
 
 // ServerBuilder is the builder containing the config for building technical implementations of the server
@@ -12,7 +12,7 @@ type ServerBuilder struct {
 	framework         string
 	PermissionHandler *application.AccessAppService
 	SeatHandler       *application.SeatAppService
-	ServerConfig      *config.ServerConfig
+	ServerConfig      *api.ServerConfig
 }
 
 // NewServerBuilder returns a new ServerBuilder instance
@@ -33,7 +33,7 @@ func (s *ServerBuilder) WithSeatAppService(sh *application.SeatAppService) *Serv
 }
 
 // WithServerConfig sets the ServerConfig configuration for the used server.
-func (s *ServerBuilder) WithServerConfig(c *config.ServerConfig) *ServerBuilder {
+func (s *ServerBuilder) WithServerConfig(c *api.ServerConfig) *ServerBuilder {
 	s.ServerConfig = c
 	return s
 }

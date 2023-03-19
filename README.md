@@ -2,10 +2,10 @@
 
 # Start up
 
-run `go run cmd/main.go -c <path-to-config.yaml>`
+## stub access repository:
+run `go run cmd/main.go --store=stub`
 
-or `go run cmd/main.go --config <path-to-config.yaml>`
-
-for now, the file has to be named `config.yml`
+## spicedb access repository:
+run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb`
 
 
