@@ -23,7 +23,7 @@ import (
 // Server represents a Server host service
 type Server struct {
 	AccessAppService *application.AccessAppService
-	SeatHandler      *application.SeatAppService
+	SeatHandler      *application.LicenseAppService
 	ServerConfig     *api.ServerConfig
 }
 
