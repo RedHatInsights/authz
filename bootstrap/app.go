@@ -27,7 +27,7 @@ func Run(endpoint string, token string, store string) {
 		TLSConfig: api.TLSConfig{},
 	}
 	aas := initAccessAppService(&ar)
-	sas := initSeatAppService(&ar)
+	sas := initLicenseAppService(&ar)
 
 	wait := sync.WaitGroup{}
 
@@ -58,13 +58,13 @@ func Run(endpoint string, token string, store string) {
 }
 
 func initAccessAppService(ar *contracts.AccessRepository) *application.AccessAppService {
-	permissionHandler := application.AccessAppService{}
-	return permissionHandler.NewPermissionHandler(ar)
+	accessAppService := application.AccessAppService{}
+	return accessAppService.NewAccessAppService(ar)
 }
 
-func initSeatAppService(ar *contracts.AccessRepository) *application.LicenseAppService {
-	seatHandler := application.LicenseAppService{}
-	return seatHandler.NewLicenseAppService(ar)
+func initLicenseAppService(ar *contracts.AccessRepository) *application.LicenseAppService {
+	licenseAppService := application.LicenseAppService{}
+	return licenseAppService.NewLicenseAppService(ar)
 }
 
 func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {

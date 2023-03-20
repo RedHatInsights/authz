@@ -19,7 +19,7 @@ func (s *LicenseAppService) NewLicenseAppService(accessRepo *contracts.AccessRep
 	}
 }
 
-// AddSeats TODO
-func (s *LicenseAppService) AddSeats(_ string) error {
+// ModifySeats TODO
+func (s *LicenseAppService) ModifySeats(_ string) error {
 	return nil
 }

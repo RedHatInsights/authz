@@ -22,24 +22,27 @@ import (
 
 // Server represents a Server host service
 type Server struct {
-	AccessAppService *application.AccessAppService
-	SeatHandler      *application.LicenseAppService
-	ServerConfig     *api.ServerConfig
+	AccessAppService  *application.AccessAppService
+	LicenseAppService *application.LicenseAppService
+	ServerConfig      *api.ServerConfig
 }
 
-// GetLicense ToDo
+// GetLicense ToDo - just a stub for now.
 func (s *Server) GetLicense(_ context.Context, _ *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-// ModifySeats ToDo
+// ModifySeats ToDo - just a stub for now.
 func (s *Server) ModifySeats(_ context.Context, _ *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	err := s.LicenseAppService.ModifySeats("TODO")
+	if err != nil {
+		glog.Warningf("NOT IMPLEMENTED YET! TODO!")
+	}
+	return &core.ModifySeatsResponse{}, nil
 }
 
-// GetSeats ToDo
+// GetSeats ToDo - just a stub for now.
 func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
 	//TODO implement me
 	panic("implement me")

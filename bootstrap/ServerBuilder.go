@@ -9,8 +9,8 @@ import (
 
 // ServerBuilder is the builder containing the config for building technical implementations of the server
 type ServerBuilder struct {
-	PermissionHandler *application.AccessAppService
-	LicenseHandler    *application.LicenseAppService
+	AccessAppService  *application.AccessAppService
+	LicenseAppService *application.LicenseAppService
 	ServerConfig      *api.ServerConfig
 }
 
@@ -19,15 +19,15 @@ func NewServerBuilder() *ServerBuilder {
 	return &ServerBuilder{}
 }
 
-// WithAccessAppService sets the PermissionHandler for the server
+// WithAccessAppService sets the AccessAppService for the server
 func (s *ServerBuilder) WithAccessAppService(ph *application.AccessAppService) *ServerBuilder {
-	s.PermissionHandler = ph
+	s.AccessAppService = ph
 	return s
 }
 
-// WithLicenseAppService sets the LicenseHandler for the server
+// WithLicenseAppService sets the LicenseAppService for the server
 func (s *ServerBuilder) WithLicenseAppService(sh *application.LicenseAppService) *ServerBuilder {
-	s.LicenseHandler = sh
+	s.LicenseAppService = sh
 	return s
 }
 
@@ -39,7 +39,7 @@ func (s *ServerBuilder) WithServerConfig(c *api.ServerConfig) *ServerBuilder {
 
 // BuildGrpc builds the grpc-server of the grpc gateway
 func (s *ServerBuilder) BuildGrpc() (srv *grpc.Server, err error) {
-	return grpc.NewServer(*s.PermissionHandler, *s.ServerConfig), nil
+	return grpc.NewServer(*s.AccessAppService, *s.ServerConfig), nil
 }
 
 // BuildHTTP builds the HTTP Server of the grpc gateway

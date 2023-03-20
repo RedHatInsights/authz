@@ -15,16 +15,16 @@ import (
 
 // Server serves a HTTP api based on the generated grpc gateway code
 type Server struct {
-	ServerConfig     *api.ServerConfig
-	GrpcCheckService core.CheckPermissionServer
-	GrpcSeatsService core.LicenseServiceServer
+	ServerConfig       *api.ServerConfig
+	GrpcCheckService   core.CheckPermissionServer
+	GrpcLicenseService core.LicenseServiceServer
 }
 
 // Serve starts serving
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcSeatsService)
+	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcLicenseService)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
@@ -64,7 +64,7 @@ func (s *Server) SetCheckRef(h core.CheckPermissionServer) {
 
 // SetSeatRef sets the reference to the grp SeatsServerService
 func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
-	s.GrpcSeatsService = ss
+	s.GrpcLicenseService = ss
 }
 
 // NewServer creates a new Server object to use.
