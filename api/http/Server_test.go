@@ -65,7 +65,7 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 func runRequest(req *http.Request) *http.Response {
 	h := application.AccessAppService{}
 	accessRepo := mockAccessRepository()
-	srv := grpc.Server{AccessAppService: h.NewPermissionHandler(&accessRepo)}
+	srv := grpc.Server{AccessAppService: h.NewAccessAppService(&accessRepo)}
 	mux, _ := createMultiplexer(&srv, &srv)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
