@@ -1,10 +1,17 @@
-# Authz Service
+# Authz service
 
-# Build Commands
-`make binary`
+# Start up
 
-# Run 
-## For using stub store
-`./authz serve --endpoint=<endpoint>:50051 --token=<token> --store=stub`
-## For using spicedb store
-`./authz serve --endpoint=<endpoint>:50051 --token=<token> --store=spicedb`
+## Start using stub access repository:
+run `go run cmd/main.go --store=stub`
+
+## Start using spicedb access repository:
+run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb`
+
+# Testing
+
+run `go test ./...` (use -count=1 to avoid caching)
+
+# Building
+
+run `go build -o authz cmd/main.go` or `make binary`
