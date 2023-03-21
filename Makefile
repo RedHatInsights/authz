@@ -20,7 +20,7 @@ SHELL = bash
 
 .PHONY: binary
 binary:
-	$(GO) build .
+	$(GO) build -o authz cmd/main.go
 
 .PHONY: kind-create
 kind-create:
