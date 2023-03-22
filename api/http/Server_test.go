@@ -19,7 +19,7 @@ import (
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "bad",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -27,7 +27,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assert.Equal(t, 401, resp.StatusCode)
 }
@@ -35,7 +35,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -43,14 +43,14 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "bad", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "bad", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
 		`{
 			"assign": [
 			  "okay"
@@ -62,7 +62,7 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
 		`{
 			"unassign": [
 			  "okay"
@@ -78,12 +78,12 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 
 	//The user isn't licensed initially, use is denied
 	resp := runRequestWithServer(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "wisdom"}`), srv)
+		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "smarts"}`), srv)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
 	//Grant a license
-	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
 		`{
 			"assign": [
 			  "okay"
@@ -94,7 +94,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 
 	//Should be allowed now
 	resp = runRequestWithServer(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "wisdom"}`), srv)
+		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "smarts"}`), srv)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -162,7 +162,7 @@ func mockAccessRepository() contracts.AccessRepository {
 func mockPrincipalRepository() contracts.PrincipalRepository {
 	return &mock.StubPrincipalRepository{
 		Principals: map[string]model.Principal{
-			"system": model.NewPrincipal("system", "wisdom"),
+			"system": model.NewPrincipal("system", "smarts"),
 			"okay":   model.NewPrincipal("okay", "aspian"),
 			"bad":    model.NewPrincipal("bad", "aspian"),
 		},

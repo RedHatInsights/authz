@@ -94,7 +94,7 @@ func modifyLicRequestFromVars(requestorID string, requestorOrg string, subjectOr
 			Requestor: model.NewPrincipal(requestorID, requestorOrg),
 		},
 		Org:     model.Organization{ID: subjectOrg},
-		Service: model.Service{ID: "wisdom"},
+		Service: model.Service{ID: "smarts"},
 	}
 
 	evt.Assign = make([]model.Principal, len(assign))
