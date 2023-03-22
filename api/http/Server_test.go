@@ -115,9 +115,8 @@ func createTestServer() *grpc.Server {
 	principalRepo := mockPrincipalRepository()
 
 	return &grpc.Server{
-		AccessAppService:  application.NewAccessAppService(&accessRepo),
+		AccessAppService:  application.NewAccessAppService(&accessRepo, principalRepo),
 		LicenseAppService: application.NewLicenseAppService(accessRepo, licenseRepo, principalRepo),
-		PrincipalRepo:     principalRepo,
 	}
 }
 

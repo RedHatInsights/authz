@@ -16,7 +16,7 @@ type LicenseAppService struct {
 }
 
 type ModifySeatAssignmentRequest struct {
-	Requestor model.Principal
+	Requestor string
 	OrgId     string
 	ServiceId string
 	Assign    []string
@@ -36,14 +36,16 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 // ModifySeats TODO
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	evt := model.ModifySeatAssignmentEvent{
-		Request: model.Request{
-			Requestor: req.Requestor,
-		},
 		Org:     model.Organization{Id: req.OrgId},
 		Service: model.Service{Id: req.ServiceId},
 	}
 
 	var err error
+	evt.Requestor, err = s.principalRepo.GetByID(req.Requestor)
+	if err != nil {
+		return err
+	}
+
 	evt.Assign, err = s.principalRepo.GetByIDs(req.Assign)
 	if err != nil {
 		return err

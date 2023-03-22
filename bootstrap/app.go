@@ -28,7 +28,7 @@ func Run(endpoint string, token string, store string) {
 		HTTPSPort: "8443",
 		TLSConfig: api.TLSConfig{},
 	}
-	aas := application.NewAccessAppService(&ar)
+	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(ar, sr, pr)
 
 	wait := sync.WaitGroup{}
@@ -63,7 +63,6 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAp
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
-		WithPrincipalRepository(pr).
 		WithServerConfig(serverConfig).
 		BuildGrpc()
 

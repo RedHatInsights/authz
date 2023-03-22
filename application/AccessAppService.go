@@ -11,13 +11,14 @@ import (
 
 // AccessAppService the handler for permission related endpoints.
 type AccessAppService struct {
-	accessRepo *contracts.AccessRepository
-	ctx        context.Context
+	accessRepo    *contracts.AccessRepository
+	principalRepo contracts.PrincipalRepository
+	ctx           context.Context
 }
 
 // CheckRequest is an actual request to check for permissions.
 type CheckRequest struct {
-	Requestor    model.Principal
+	Requestor    string
 	Subject      string
 	ResourceType string
 	ResourceID   string
@@ -25,26 +26,29 @@ type CheckRequest struct {
 }
 
 // NewAccessAppService returns a new instance of the permissionhandler.
-func NewAccessAppService(accessRepo *contracts.AccessRepository) *AccessAppService {
+func NewAccessAppService(accessRepo *contracts.AccessRepository, principalRepo contracts.PrincipalRepository) *AccessAppService {
 	return &AccessAppService{
-		accessRepo: accessRepo,
-		ctx:        context.Background(),
+		accessRepo:    accessRepo,
+		principalRepo: principalRepo,
+		ctx:           context.Background(),
 	}
 }
 
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
 func (p *AccessAppService) Check(req CheckRequest) (vo.AccessDecision, error) {
 	event := model.CheckEvent{
-		Request: model.Request{
-			Requestor: req.Requestor,
-		},
 		Subject:   model.Principal{ID: req.Subject},
 		Operation: req.Operation,
 		Resource:  model.Resource{Type: req.ResourceType, ID: req.ResourceID},
 	}
 
+	var err error
+	event.Requestor, err = p.principalRepo.GetByID(req.Requestor)
+	if err != nil {
+		return vo.AccessDecision(false), err
+	}
+
 	checkResult := services.NewAccessService(*p.accessRepo)
 
-	result, err := checkResult.Check(event)
-	return result, err
+	return checkResult.Check(event)
 }

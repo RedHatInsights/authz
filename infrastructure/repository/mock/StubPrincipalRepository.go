@@ -10,6 +10,10 @@ type StubPrincipalRepository struct {
 }
 
 func (s *StubPrincipalRepository) GetByID(id string) (model.Principal, error) {
+	if id == "" {
+		return model.NewAnonymousPrincipal(), nil
+	}
+
 	if principal, ok := s.Principals[id]; ok {
 		return principal, nil
 	} else {
@@ -28,8 +32,4 @@ func (s *StubPrincipalRepository) GetByIDs(ids []string) ([]model.Principal, err
 	}
 
 	return principals, nil
-}
-
-func (s *StubPrincipalRepository) GetByToken(token string) (model.Principal, error) { //TODO: this may be more of an application-layer concern
-	return s.GetByID(token)
 }

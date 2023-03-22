@@ -5,7 +5,6 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/application"
-	"authz/domain/contracts"
 	"authz/domain/model"
 	"context"
 	"errors"
@@ -23,7 +22,6 @@ import (
 
 // Server represents a Server host service
 type Server struct {
-	PrincipalRepo     contracts.PrincipalRepository
 	AccessAppService  *application.AccessAppService
 	LicenseAppService *application.LicenseAppService
 	ServerConfig      *api.ServerConfig
@@ -65,8 +63,8 @@ func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.Get
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(h application.AccessAppService, l application.LicenseAppService, p contracts.PrincipalRepository, c api.ServerConfig) *Server {
-	return &Server{AccessAppService: &h, ServerConfig: &c, LicenseAppService: &l, PrincipalRepo: p}
+func NewServer(h application.AccessAppService, l application.LicenseAppService, c api.ServerConfig) *Server {
+	return &Server{AccessAppService: &h, ServerConfig: &c, LicenseAppService: &l}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
@@ -137,17 +135,21 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
-func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (model.Principal, error) {
+func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (string, error) {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := md.Get(name)
 			if len(headers) > 0 {
-				return s.PrincipalRepo.GetByToken(headers[0])
+				return convertTokenToPrincipalId(headers[0])
 			}
 		}
 	}
 
-	return model.NewAnonymousPrincipal(), nil
+	return "", nil
+}
+
+func convertTokenToPrincipalId(token string) (string, error) {
+	return token, nil //Placeholder for token introspection
 }
 
 func convertDomainErrorToGrpc(err error) error {
