@@ -42,8 +42,8 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 
 	req := application.ModifySeatAssignmentRequest{
 		Requestor: requestor,
-		OrgId:     grpcReq.OrgId,
-		ServiceId: grpcReq.ServiceId,
+		OrgID:     grpcReq.OrgId,
+		ServiceID: grpcReq.ServiceId,
 		Assign:    grpcReq.Assign,
 		Unassign:  grpcReq.Unassign,
 	}
@@ -140,7 +140,7 @@ func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (strin
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := md.Get(name)
 			if len(headers) > 0 {
-				return convertTokenToPrincipalId(headers[0])
+				return convertTokenToPrincipalID(headers[0])
 			}
 		}
 	}
@@ -148,7 +148,7 @@ func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (strin
 	return "", nil
 }
 
-func convertTokenToPrincipalId(token string) (string, error) {
+func convertTokenToPrincipalID(token string) (string, error) {
 	return token, nil //Placeholder for token introspection
 }
 

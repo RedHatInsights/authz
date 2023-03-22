@@ -30,18 +30,20 @@ func (s *StubAccessRepository) CheckAccess(principal model.Principal, operation 
 	return vo.AccessDecision(false), nil //Unknown principal, implicitly not authorized
 }
 
+// AssignSeat assigns the given principal a seat for the given service
 func (s *StubAccessRepository) AssignSeat(principal model.Principal, svc model.Service) error {
 	if lics, ok := s.LicensedSeats[principal.ID]; ok {
-		lics[svc.Id] = true
+		lics[svc.ID] = true
 	} else {
-		s.LicensedSeats[principal.ID] = map[string]bool{svc.Id: true}
+		s.LicensedSeats[principal.ID] = map[string]bool{svc.ID: true}
 	}
 	return nil
 }
 
+// UnAssignSeat removes the seat assignment for the given principal for the given service
 func (s *StubAccessRepository) UnAssignSeat(principal model.Principal, svc model.Service) error {
 	if lics, ok := s.LicensedSeats[principal.ID]; ok {
-		lics[svc.Id] = false
+		lics[svc.ID] = false
 	}
 
 	return nil

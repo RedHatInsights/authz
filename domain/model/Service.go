@@ -1,9 +1,12 @@
 package model
 
+// Service represents a service/application in the larger environment
 type Service struct {
-	Id string
+	// ID is the unique name/id of the service
+	ID string
 }
 
+// AsResource converts the Service into a Resource that can be used for access checks
 func (s Service) AsResource() Resource {
-	return Resource{Type: "service", ID: s.Id}
+	return Resource{Type: "service", ID: s.ID}
 }

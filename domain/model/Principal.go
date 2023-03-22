@@ -14,8 +14,8 @@ func (p Principal) IsAnonymous() bool {
 }
 
 // NewPrincipal constructs a new principal with the given identifier.
-func NewPrincipal(id string, orgId string) Principal {
-	return Principal{ID: id, OrgID: orgId}
+func NewPrincipal(id string, orgID string) Principal {
+	return Principal{ID: id, OrgID: orgID}
 }
 
 // NewAnonymousPrincipal constructs a new principal without an identity.

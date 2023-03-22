@@ -15,10 +15,11 @@ type LicenseAppService struct {
 	ctx           context.Context
 }
 
+// ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
 type ModifySeatAssignmentRequest struct {
 	Requestor string
-	OrgId     string
-	ServiceId string
+	OrgID     string
+	ServiceID string
 	Assign    []string
 	Unassign  []string
 }
@@ -36,8 +37,8 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 // ModifySeats TODO
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	evt := model.ModifySeatAssignmentEvent{
-		Org:     model.Organization{Id: req.OrgId},
-		Service: model.Service{Id: req.ServiceId},
+		Org:     model.Organization{ID: req.OrgID},
+		Service: model.Service{ID: req.ServiceID},
 	}
 
 	var err error
