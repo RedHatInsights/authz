@@ -35,7 +35,7 @@ func Run(endpoint string, token string, store string) {
 
 	wait.Add(2)
 
-	srv := getGrpcServer(aas, sas, pr, &srvCfg)
+	srv := getGrpcServer(aas, sas, &srvCfg)
 
 	go func() {
 		err := srv.Serve(&wait)
@@ -59,7 +59,7 @@ func Run(endpoint string, token string, store string) {
 	wait.Wait()
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, pr contracts.PrincipalRepository, serverConfig *api.ServerConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
