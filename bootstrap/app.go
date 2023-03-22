@@ -15,6 +15,8 @@ import (
 // Run configures and runs the actual bootstrap.
 func Run(endpoint string, token string, store string) {
 	ar := getAccessRepository(store)
+	sr := getSeatRepository(store, ar)
+	pr := getPrincipalRepository(store)
 	ar.NewConnection(
 		endpoint,
 		token,
@@ -26,14 +28,14 @@ func Run(endpoint string, token string, store string) {
 		HTTPSPort: "8443",
 		TLSConfig: api.TLSConfig{},
 	}
-	aas := initAccessAppService(&ar)
-	sas := initLicenseAppService(&ar)
+	aas := application.NewAccessAppService(&ar)
+	sas := application.NewLicenseAppService(ar, sr, pr)
 
 	wait := sync.WaitGroup{}
 
 	wait.Add(2)
 
-	srv := getGrpcServer(aas, sas, &srvCfg)
+	srv := getGrpcServer(aas, sas, pr, &srvCfg)
 
 	go func() {
 		err := srv.Serve(&wait)
@@ -57,20 +59,11 @@ func Run(endpoint string, token string, store string) {
 	wait.Wait()
 }
 
-func initAccessAppService(ar *contracts.AccessRepository) *application.AccessAppService {
-	accessAppService := application.AccessAppService{}
-	return accessAppService.NewAccessAppService(ar)
-}
-
-func initLicenseAppService(ar *contracts.AccessRepository) *application.LicenseAppService {
-	licenseAppService := application.LicenseAppService{}
-	return licenseAppService.NewLicenseAppService(ar)
-}
-
-func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, pr contracts.PrincipalRepository, serverConfig *api.ServerConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
+		WithPrincipalRepository(pr).
 		WithServerConfig(serverConfig).
 		BuildGrpc()
 
@@ -91,6 +84,15 @@ func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
+func getSeatRepository(store string, potentialStub interface{}) contracts.SeatLicenseRepository {
+	b := NewSeatLicenseRepositoryBuilder()
+	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
+		b.WithStub(stub)
+	}
+
+	return b.WithStore(store).Build()
+}
+
 func getAccessRepository(store string) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
 		WithImplementation(store).Build()
@@ -99,4 +101,8 @@ func getAccessRepository(store string) contracts.AccessRepository {
 		glog.Fatal("Could not initialize access repository: ", err)
 	}
 	return r
+}
+
+func getPrincipalRepository(store string) contracts.PrincipalRepository {
+	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
 }

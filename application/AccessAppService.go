@@ -25,7 +25,7 @@ type CheckRequest struct {
 }
 
 // NewAccessAppService returns a new instance of the permissionhandler.
-func (p *AccessAppService) NewAccessAppService(accessRepo *contracts.AccessRepository) *AccessAppService {
+func NewAccessAppService(accessRepo *contracts.AccessRepository) *AccessAppService {
 	return &AccessAppService{
 		accessRepo: accessRepo,
 		ctx:        context.Background(),

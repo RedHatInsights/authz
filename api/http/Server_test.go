@@ -4,6 +4,7 @@ import (
 	"authz/api/grpc"
 	"authz/application"
 	"authz/domain/contracts"
+	"authz/domain/model"
 	"authz/infrastructure/repository/mock"
 	"io"
 	"net/http"
@@ -17,8 +18,8 @@ import (
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/check", "other system",
-		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+	resp := runRequest(post("/v1alpha/check", "bad",
+		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -26,7 +27,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "",
-		`{"subject": "good", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assert.Equal(t, 401, resp.StatusCode)
 }
@@ -34,7 +35,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -42,13 +43,90 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "bad", "operation": "use", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
+		`{"subject": "bad", "operation": "op", "resourcetype": "Feature", "resourceid": "Wisdom"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
+func TestAssignLicenseReturnsSuccess(t *testing.T) {
+	t.Parallel()
+	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+		`{
+			"assign": [
+			  "okay"
+			]
+		  }`))
+
+	assertJSONResponse(t, resp, 200, `{}`)
+}
+
+func TestUnassignLicenseReturnsSuccess(t *testing.T) {
+	t.Parallel()
+	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+		`{
+			"unassign": [
+			  "okay"
+			]
+		}`))
+
+	assertJSONResponse(t, resp, 200, `{}`)
+}
+
+func TestGrantedLicenseAllowsUse(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	//The user isn't licensed initially, use is denied
+	resp := runRequestWithServer(post("/v1alpha/check", "system",
+		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "wisdom"}`), srv)
+
+	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
+
+	//Grant a license
+	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/wisdom", "okay",
+		`{
+			"assign": [
+			  "okay"
+			]
+		  }`), srv)
+
+	assertJSONResponse(t, resp, 200, `{}`)
+
+	//Should be allowed now
+	resp = runRequestWithServer(post("/v1alpha/check", "system",
+		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "wisdom"}`), srv)
+
+	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
+}
+
 func post(uri string, token string, body string) *http.Request {
 	return reqWithBody(http.MethodPost, uri, token, body)
+}
+
+func runRequest(req *http.Request) *http.Response {
+	srv := createTestServer()
+
+	return runRequestWithServer(req, srv)
+}
+
+func createTestServer() *grpc.Server {
+	accessRepo := mockAccessRepository()
+	licenseRepo, _ := accessRepo.(contracts.SeatLicenseRepository)
+	principalRepo := mockPrincipalRepository()
+
+	return &grpc.Server{
+		AccessAppService:  application.NewAccessAppService(&accessRepo),
+		LicenseAppService: application.NewLicenseAppService(accessRepo, licenseRepo, principalRepo),
+		PrincipalRepo:     principalRepo,
+	}
+}
+
+func runRequestWithServer(req *http.Request, srv *grpc.Server) *http.Response {
+	mux, _ := createMultiplexer(srv, srv)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+
+	return rec.Result()
 }
 
 func reqWithBody(method string, uri string, token string, body string) *http.Request {
@@ -59,18 +137,6 @@ func reqWithBody(method string, uri string, token string, body string) *http.Req
 		req.Header.Set("Authorization", token)
 	}
 	return req
-}
-
-// runRequest connects a mock HTTP front-end to a mock Store back-end using the generated proxy code and real gRPC implementation to test that integration
-func runRequest(req *http.Request) *http.Response {
-	h := application.AccessAppService{}
-	accessRepo := mockAccessRepository()
-	srv := grpc.Server{AccessAppService: h.NewAccessAppService(&accessRepo)}
-	mux, _ := createMultiplexer(&srv, &srv)
-	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, req)
-
-	return rec.Result()
 }
 
 func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
@@ -91,5 +157,15 @@ func mockAccessRepository() contracts.AccessRepository {
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}}
+	}, LicensedSeats: map[string]map[string]bool{}}
+}
+
+func mockPrincipalRepository() contracts.PrincipalRepository {
+	return &mock.StubPrincipalRepository{
+		Principals: map[string]model.Principal{
+			"system": model.NewPrincipal("system", "wisdom"),
+			"okay":   model.NewPrincipal("okay", "aspian"),
+			"bad":    model.NewPrincipal("bad", "aspian"),
+		},
+	}
 }
