@@ -27,13 +27,13 @@ func (e *AccessRepositoryBuilder) WithImplementation(implID string) *AccessRepos
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	switch e.impl {
 	case "stub":
-		return &mock.StubAccessRepository{Data: getMockData()}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[string]bool{}}, nil
 	case "spicedb":
 		return &authzed.SpiceDbAccessRepository{}, nil
 	case "openfga":
 		return &fga.OpenFgaAccessRepository{}, nil
 	default:
-		return &mock.StubAccessRepository{Data: getMockData()}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[string]bool{}}, nil
 	}
 }
 

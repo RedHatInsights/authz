@@ -7,3 +7,6 @@ var ErrNotAuthorized = errors.New("NotAuthorized")
 
 // ErrNotAuthenticated is returned when anonymously invoking an endpoint that requires an identity
 var ErrNotAuthenticated = errors.New("NotAuthenticated")
+
+// ErrInvalidRequest is returned when some part of the request is incompatible with another part.
+var ErrInvalidRequest = errors.New("InvalidRequest")

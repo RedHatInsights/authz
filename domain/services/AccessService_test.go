@@ -73,5 +73,5 @@ func mockAuthzRepository() contracts.AccessRepository {
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}}
+	}, LicensedSeats: map[string]map[string]bool{}}
 }
