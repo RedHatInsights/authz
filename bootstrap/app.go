@@ -26,7 +26,12 @@ func Run(endpoint string, token string, store string) {
 		GrpcPort:  "50051",
 		HTTPPort:  "8080",
 		HTTPSPort: "8443",
-		TLSConfig: api.TLSConfig{},
+		TLSConfig: api.TLSConfig{
+			CertPath: "/etc/tls/tls.crt",
+			CertName: "",
+			KeyPath:  "/etc/tls/tls.key",
+			KeyName:  "",
+		},
 	}
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(ar, sr, pr)
