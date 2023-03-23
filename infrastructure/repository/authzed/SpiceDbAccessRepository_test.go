@@ -56,6 +56,10 @@ func spicedbTestClient(_ *testing.T, port string) (*authzed.Client, error) {
 }
 
 func TestSpiceDB(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	port, err := runSpiceDBTestServer(t)
 	if err != nil {
 		t.Fatal(err)

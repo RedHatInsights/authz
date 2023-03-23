@@ -10,7 +10,9 @@ run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb`
 
 # Testing
 
-run `go test ./...` (use -count=1 to avoid caching)
+For complete tests, run `go test ./...` (use -count=1 to avoid caching)
+For abbreviated tests, run `go test -short ./...`
+
 
 # Building
 
