@@ -34,10 +34,24 @@ func (s *Server) GetLicense(_ context.Context, _ *core.GetLicenseRequest) (*core
 }
 
 // ModifySeats ToDo - just a stub for now.
-func (s *Server) ModifySeats(_ context.Context, _ *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
-	err := s.LicenseAppService.ModifySeats("TODO")
+func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
 	if err != nil {
-		glog.Warningf("NOT IMPLEMENTED YET! TODO!")
+		return nil, err
+	}
+
+	req := application.ModifySeatAssignmentRequest{
+		Requestor: requestor,
+		OrgID:     grpcReq.OrgId,
+		ServiceID: grpcReq.ServiceId,
+		Assign:    grpcReq.Assign,
+		Unassign:  grpcReq.Unassign,
+	}
+
+	err = s.LicenseAppService.ModifySeats(req)
+
+	if err != nil {
+		return nil, convertDomainErrorToGrpc(err)
 	}
 	return &core.ModifySeatsResponse{}, nil
 }
@@ -49,8 +63,8 @@ func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.Get
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(h application.AccessAppService, c api.ServerConfig) *Server {
-	return &Server{AccessAppService: &h, ServerConfig: &c}
+func NewServer(h application.AccessAppService, l application.LicenseAppService, c api.ServerConfig) *Server {
+	return &Server{AccessAppService: &h, ServerConfig: &c, LicenseAppService: &l}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
@@ -99,9 +113,13 @@ func (s *Server) GetName() string {
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	req := application.CheckRequest{
-		Requestor:    getRequestorIdentityFromGrpcContext(ctx),
+		Requestor:    requestor,
 		Subject:      rpcReq.Subject,
 		Operation:    rpcReq.Operation,
 		ResourceType: rpcReq.Resourcetype,
@@ -117,17 +135,21 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
-func getRequestorIdentityFromGrpcContext(ctx context.Context) model.Principal {
+func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (string, error) {
 	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
 			headers := md.Get(name)
 			if len(headers) > 0 {
-				return model.NewPrincipal(headers[0])
+				return convertTokenToPrincipalID(headers[0])
 			}
 		}
 	}
 
-	return model.NewAnonymousPrincipal()
+	return "", nil
+}
+
+func convertTokenToPrincipalID(token string) (string, error) {
+	return token, nil //Placeholder for token introspection
 }
 
 func convertDomainErrorToGrpc(err error) error {
