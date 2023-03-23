@@ -80,11 +80,11 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	var creds credentials.TransportCredentials
 
-	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
-		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in TLS mode
+	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
+		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("TLS cert and Key found  - Starting gRPC server in secure TLS mode")
 
-			creds, err = credentials.NewServerTLSFromFile("/etc/tls/tls.crt", "/etc/tls/tls.key")
+			creds, err = credentials.NewServerTLSFromFile(s.ServerConfig.TLSConfig.CertPath, s.ServerConfig.TLSConfig.KeyPath)
 			if err != nil {
 				glog.Errorf("Error loading certs: %s", err)
 				return err

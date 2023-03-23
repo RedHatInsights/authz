@@ -30,15 +30,15 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 
-	if _, err = os.Stat("/etc/tls/tls.crt"); err == nil {
-		if _, err := os.Stat("/etc/tls/tls.key"); err == nil { //Cert and key exists start server in HTTPS mode
+	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
+		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
 				s.ServerConfig.HTTPSPort)
 
 			err = http.ListenAndServeTLS(
 				":"+s.ServerConfig.HTTPSPort,
-				"/etc/tls/tls.crt", //TODO: Needs sanity checking and get from config.
-				"/etc/tls/tls.key", mux)
+				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
+				s.ServerConfig.TLSConfig.KeyPath, mux)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
