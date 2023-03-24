@@ -10,7 +10,7 @@ import (
 type StubAccessRepository struct {
 	//The internal authorization state. The keys are subject IDs, and the values are the results. The results are the same per subject regardless of operation and resource.
 	Data          map[string]bool
-	LicensedSeats map[string]map[string]bool
+	LicensedSeats map[string]map[string]model.License
 }
 
 // NewConnection Stub impl
@@ -22,7 +22,10 @@ func (s *StubAccessRepository) NewConnection(_ string, _ string, _ bool) {
 func (s *StubAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	if authz, ok := s.Data[principal.ID]; ok {
 		if authz && operation == "use" {
-			return vo.AccessDecision(s.LicensedSeats[principal.ID][resource.ID]), nil //Authorized, so return license status
+			if lic, ok := s.LicensedSeats[principal.OrgID][resource.ID]; ok {
+				return vo.AccessDecision((&lic).IsAssigned(principal.ID)), nil //Authorized and license present, return license status
+			}
+			return vo.AccessDecision(false), nil //Authorized but no license, so return false
 		}
 		return vo.AccessDecision(authz), nil //No licensing required, passthrough authz status
 	}
@@ -30,20 +33,20 @@ func (s *StubAccessRepository) CheckAccess(principal model.Principal, operation 
 	return vo.AccessDecision(false), nil //Unknown principal, implicitly not authorized
 }
 
-// AssignSeat assigns the given principal a seat for the given service
-func (s *StubAccessRepository) AssignSeat(principal model.Principal, svc model.Service) error {
-	if lics, ok := s.LicensedSeats[principal.ID]; ok {
-		lics[svc.ID] = true
-	} else {
-		s.LicensedSeats[principal.ID] = map[string]bool{svc.ID: true}
+// GetLicense retrieves the stored license for the given organization and service, if any.
+func (s *StubAccessRepository) GetLicense(orgID string, serviceID string) (*model.License, error) {
+	if lic, ok := s.LicensedSeats[orgID][serviceID]; ok {
+		return &lic, nil
 	}
-	return nil
+	return nil, nil
 }
 
-// UnAssignSeat removes the seat assignment for the given principal for the given service
-func (s *StubAccessRepository) UnAssignSeat(principal model.Principal, svc model.Service) error {
-	if lics, ok := s.LicensedSeats[principal.ID]; ok {
-		lics[svc.ID] = false
+// UpdateLicense saves updated license state
+func (s *StubAccessRepository) UpdateLicense(lic *model.License) error {
+	if lics, ok := s.LicensedSeats[lic.OrgID]; ok {
+		lics[lic.ServiceID] = *lic
+	} else {
+		s.LicensedSeats[lic.OrgID] = map[string]model.License{lic.ServiceID: *lic}
 	}
 
 	return nil

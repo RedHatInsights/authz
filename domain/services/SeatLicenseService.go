@@ -21,17 +21,22 @@ func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) er
 		return model.ErrInvalidRequest
 	}
 
-	//TODO: consistency? Atm, if an error occurs part-way through, this will partially save.
+	lic, err := l.seats.GetLicense(evt.Org.ID, evt.Service.ID)
+	if err != nil {
+		return err
+	}
+
 	for _, principal := range evt.UnAssign {
-		if err := l.seats.UnAssignSeat(principal, evt.Service); err != nil {
-			return err
-		}
+		lic.UnAssign(principal.ID)
 	}
 
 	for _, principal := range evt.Assign {
-		if err := l.seats.AssignSeat(principal, evt.Service); err != nil {
-			return err
-		}
+		lic.Assign(principal.ID)
+	}
+
+	err = l.seats.UpdateLicense(lic)
+	if err != nil {
+		return err
 	}
 
 	return nil

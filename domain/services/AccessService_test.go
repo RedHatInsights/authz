@@ -69,9 +69,13 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 }
 
 func mockAuthzRepository() contracts.AccessRepository {
-	return &mock.StubAccessRepository{Data: map[string]bool{
+	mock := mock.StubAccessRepository{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}, LicensedSeats: map[string]map[string]bool{}}
+	}, LicensedSeats: map[string]map[string]model.License{}}
+
+	mock.UpdateLicense(model.NewLicense("aspian", "smarts", 1, []string{}))
+
+	return &mock
 }

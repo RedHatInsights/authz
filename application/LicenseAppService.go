@@ -24,6 +24,13 @@ type ModifySeatAssignmentRequest struct {
 	Unassign  []string
 }
 
+type GetSeatAssignmentRequest struct {
+	Requestor    string
+	OrgID        string
+	ServiceID    string
+	IncludeUsers bool
+}
+
 // NewLicenseAppService ctor.
 func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contracts.SeatLicenseRepository, principalRepo contracts.PrincipalRepository) *LicenseAppService {
 	return &LicenseAppService{
@@ -34,7 +41,33 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 	}
 }
 
-// ModifySeats TODO
+func (s *LicenseAppService) GetSeatAssignmentCounts(orgID string, serviceID string) (current uint, max uint, err error) {
+	lic, err := s.seatRepo.GetLicense(orgID, serviceID)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	current = lic.InUse()
+	max = lic.MaxSeats
+	err = nil
+	return
+}
+
+func (s *LicenseAppService) GetAssignedSeats(req GetSeatAssignmentRequest) ([]model.Principal, error) {
+	lic, err := s.seatRepo.GetLicense(req.OrgID, req.ServiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := lic.GetAssigned()
+	principals, err := s.principalRepo.GetByIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+
+	return principals, nil
+}
+
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	evt := model.ModifySeatAssignmentEvent{
 		Org:     model.Organization{ID: req.OrgID},
@@ -43,9 +76,6 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 
 	var err error
 	evt.Requestor, err = s.principalRepo.GetByID(req.Requestor)
-	if err != nil {
-		return err
-	}
 
 	evt.Assign, err = s.principalRepo.GetByIDs(req.Assign)
 	if err != nil {

@@ -28,9 +28,16 @@ type Server struct {
 }
 
 // GetLicense ToDo - just a stub for now.
-func (s *Server) GetLicense(_ context.Context, _ *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *Server) GetLicense(_ context.Context, req *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
+	current, max, err := s.LicenseAppService.GetSeatAssignmentCounts(req.OrgId, req.ServiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.GetLicenseResponse{
+		SeatsTotal:     int32(current),
+		SeatsAvailable: int32(max),
+	}, nil
 }
 
 // ModifySeats ToDo - just a stub for now.
@@ -57,9 +64,44 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 }
 
 // GetSeats ToDo - just a stub for now.
-func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var includeUsers bool
+	if grpcReq.IncludeUsers != nil {
+		includeUsers = *grpcReq.IncludeUsers
+	} else {
+		includeUsers = true
+	}
+
+	req := application.GetSeatAssignmentRequest{
+		Requestor:    requestor,
+		OrgID:        grpcReq.OrgId,
+		ServiceID:    grpcReq.ServiceId,
+		IncludeUsers: includeUsers,
+	}
+
+	principals, err := s.LicenseAppService.GetAssignedSeats(req)
+	if err != nil {
+		return nil, err
+	}
+
+	representations := make([]*core.GetSeatsUserRepresentation, len(principals))
+
+	for i, p := range principals {
+		representations[i] = &core.GetSeatsUserRepresentation{
+			DisplayName: p.ID, //Need a DisplayName field
+			Id:          p.ID,
+			Assigned:    true,
+		}
+	}
+
+	return &core.GetSeatsResponse{
+		Users: representations,
+	}, nil
 }
 
 // NewServer creates a new Server object to use.

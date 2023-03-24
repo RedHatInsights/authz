@@ -37,13 +37,17 @@ func NewAccessAppService(accessRepo *contracts.AccessRepository, principalRepo c
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
 func (p *AccessAppService) Check(req CheckRequest) (vo.AccessDecision, error) {
 	event := model.CheckEvent{
-		Subject:   model.Principal{ID: req.Subject},
 		Operation: req.Operation,
 		Resource:  model.Resource{Type: req.ResourceType, ID: req.ResourceID},
 	}
 
 	var err error
 	event.Requestor, err = p.principalRepo.GetByID(req.Requestor)
+	if err != nil {
+		return vo.AccessDecision(false), err
+	}
+
+	event.Subject, err = p.principalRepo.GetByID(req.Subject)
 	if err != nil {
 		return vo.AccessDecision(false), err
 	}

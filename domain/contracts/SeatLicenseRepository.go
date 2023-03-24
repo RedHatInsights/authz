@@ -4,10 +4,10 @@ import "authz/domain/model"
 
 // SeatLicenseRepository is a contract that describes the required operations for accessing and manipulating per-seat license data
 type SeatLicenseRepository interface {
-	// AssignSeat assigns the given principal a seat for the given service
-	AssignSeat(principal model.Principal, svc model.Service) error
-	// UnAssignSeat removes the seat assignment for the given principal for the given service
-	UnAssignSeat(principal model.Principal, svc model.Service) error
+	// GetLicense retrieves the stored license for the given organization and service, if any.
+	GetLicense(orgID string, serviceID string) (*model.License, error)
+	// UpdateLicense saves updated license state
+	UpdateLicense(lic *model.License) error
 }
 
 // TODO

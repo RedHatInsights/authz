@@ -19,7 +19,7 @@ import (
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "bad",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -27,7 +27,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
 
 	assert.Equal(t, 401, resp.StatusCode)
 }
@@ -152,11 +152,15 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func mockAccessRepository() contracts.AccessRepository {
-	return &mock.StubAccessRepository{Data: map[string]bool{
+	mock := &mock.StubAccessRepository{Data: map[string]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}, LicensedSeats: map[string]map[string]bool{}}
+	}, LicensedSeats: map[string]map[string]model.License{}}
+
+	mock.UpdateLicense(model.NewLicense("aspian", "smarts", 1, []string{}))
+
+	return mock
 }
 
 func mockPrincipalRepository() contracts.PrincipalRepository {
