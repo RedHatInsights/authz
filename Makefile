@@ -26,8 +26,12 @@ binary:
 kind-create:
 	@kind create cluster --name=authz --config=k8s/kind.yml
 	@kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-	@echo "Wait for ingress with: kubectl get pods --namespace ingress-nginx"
-	@echo "See k8s/README.md for more info."
+	# make kind-deploy (below) fails (admission controller fails on ingress) unless nginx controller pod is ready.
+	@echo "Waiting for nginx to become available..."
+	@kubectl wait --for condition=Available=True deployment.apps/ingress-nginx-controller -n ingress-nginx --timeout 20s
+	@kubectl wait --for=condition=complete job/ingress-nginx-admission-create -n ingress-nginx --timeout 60s
+	@kubectl wait --for=condition=complete job/ingress-nginx-admission-patch -n ingress-nginx --timeout 60s
+	@kubectl wait --for condition=Ready=True pod -l app.kubernetes.io/component=controller -n ingress-nginx --timeout 120s
 
 .PHONY: kind-deploy
 kind-deploy:

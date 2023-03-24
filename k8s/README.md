@@ -75,7 +75,7 @@ service/kubernetes      ClusterIP   10.96.0.1      <none>        443/TCP    9m6s
 ```
 ## Step 5: Call the service
 
-Navigate to http://localhost:8080/authz/whoever%20is%20reading%20this or run a curl to the http://localhost:8080/authz endpoint to see the service runs and returns a greeting as expected. 
+Navigate to http://localhost:8080/whoever%20is%20reading%20this or run a curl to the http://localhost:8080/ endpoint to see the service runs and returns a greeting as expected. 
 
 ## Step 6: Remove everything
 
