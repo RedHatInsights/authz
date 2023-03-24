@@ -39,6 +39,10 @@ kind-deploy:
 	@echo "Wait for pods with: kubectl get pods,svc"
 	@echo "See k8s/README.md for more info."
 
+kind-create-schema-configmap:
+	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_schema.yaml
+.PHONY: kind-create-schema-configmap
+
 .PHONY: kind-delete
 kind-delete:
 	@kind delete cluster --name=authz
