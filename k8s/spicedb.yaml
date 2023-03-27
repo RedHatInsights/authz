@@ -1,22 +1,29 @@
-# Spicedb basic deployment
+# This file contains an example configuration of SpiceDB in Kubernetes.
 #
-# It runs with the following:
-#   - a single node deployment
-#   - default ports (gRPC 50051, dashboard 8080)
-#   - no TLS
-#   - debug logging
-#   - in-memory datastore
+# This configuration is not an accurate representation of a production
+# deployment or an ideal candidate for benchmarking performance.
+#
+# It creates the following:
+#   - A single node deployment with no persistence (in-memory datastore)
+#   - Ports for the gRPC and HTTP APIs
+#   - Ports for internal dispatching and metrics
+#   - TLS is NOT securing any connections
+#   - Logging configured at the debug log-level
 #
 # To apply this configuration execute the following:
 # kubectl -n $YOUR_NAMESPACE create secret generic spicedb --from-literal=SPICEDB_GRPC_PRESHARED_KEY=$YOUR_SECRET
-# kubectl -n $YOUR_NAMESPACE apply -f spicedb.yaml
+# kubectl -n $YOUR_NAMESPACE create -f example.yaml
 ---
 apiVersion: "v1"
 kind: "Service"
 metadata:
   name: "spicedb"
   labels:
-    app: "spicedb"
+    app.kubernetes.io/name: "spicedb"
+    app.kubernetes.io/version: "latest"
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
 spec:
   selector:
     app: "spicedb"
@@ -26,56 +33,116 @@ spec:
       port: 50051
       protocol: "TCP"
       targetPort: 50051
-    - name: "internal"
+    - name: "http"
+      port: 8443
+      protocol: "TCP"
+      targetPort: 8443
+    - name: "dispatch"
       port: 50053
       protocol: "TCP"
       targetPort: 50053
+    - name: "prometheus"
+      port: 9090
+      protocol: "TCP"
+      targetPort: 9090
 ---
 apiVersion: "apps/v1"
 kind: "Deployment"
 metadata:
   name: "spicedb"
+  labels:
+    app.kubernetes.io/name: "spicedb"
+    app.kubernetes.io/version: "latest"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: "spicedb"
+      app.kubernetes.io/name: "spicedb"
+      app.kubernetes.io/version: "latest"
   strategy:
+    type: "RollingUpdate"
     rollingUpdate:
       maxSurge: "25%"
       maxUnavailable: "25%"
-    type: "RollingUpdate"
   progressDeadlineSeconds: 600
   template:
     metadata:
       labels:
-        app: "spicedb"
+        app.kubernetes.io/name: "spicedb"
+        app.kubernetes.io/version: "latest"
     spec:
       dnsPolicy: "ClusterFirst"
       restartPolicy: "Always"
       terminationGracePeriodSeconds: 30
+      #serviceAccountName: "spicedb"
       containers:
         - name: "spicedb"
-          image: "quay.io/authzed/spicedb:v1.16.2"
-          imagePullPolicy: "IfNotPresent"
+          image: "quay.io/authzed/spicedb:latest"
+          imagePullPolicy: "Always"
           command: ["spicedb", "serve"]
           env:
-            - name: "SPICEDB_GRPC_NO_TLS"
+            # These flags are used to enable TLS for the gRPC and HTTP ports:
+            #
+            # - name: "SPICEDB_GRPC_TLS_KEY_PATH"
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: "spicedb"
+            #       key: "SPICEDB_GRPC_KEY_PATH"
+            # - name: "SPICEDB_GRPC_TLS_CERT_PATH"
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: "spicedb"
+            #       key: "SPICEDB_GRPC_CERT_PATH"
+            # - name: "SPICEDB_HTTP_TLS_KEY_PATH"
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: "spicedb"
+            #       key: "SPICEDB_HTTP_KEY_PATH"
+            # - name: "SPICEDB_HTTP_TLS_CERT_PATH"
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: "spicedb"
+            #       key: "SPICEDB_HTTP_TLS_CERT_PATH"
+            #
+            # These flags are used to enable a persistent datastore along
+            # with cluster dispatching. For more info see:
+            # https://docs.authzed.com/spicedb/selecting-a-datastore
+            #
+            # - name: "SPICEDB_DATASTORE_ENGINE"
+            #   value: "cockroachdb"
+            # - name: "SPICEDB_DATASTORE_CONN_URI"
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: "spicedb"
+            #       key: "SPICEDB_DATASTORE_CONN_URI"
+            # - name: "SPICEDB_DISPATCH_CLUSTER_ENABLED"
+            #   value: "true"
+            # - name: "SPICEDB_DISPATCH_UPSTREAM_ADDR"
+            #   value: "kubernetes:///spicedb:dispatch"
+            - name: "SPICEDB_LOG_LEVEL"
+              value: "debug"
+            - name: "SPICEDB_HTTP_ENABLED"
               value: "true"
             - name: "SPICEDB_GRPC_SHUTDOWN_GRACE_PERIOD"
               value: "1s"
-            - name: "SPICEDB_LOG_LEVEL"
-              value: "debug"
             - name: "SPICEDB_GRPC_PRESHARED_KEY"
               valueFrom:
                 secretKeyRef:
                   name: "spicedb"
                   key: "SPICEDB_GRPC_PRESHARED_KEY"
+            - name: "SPICEDB_DATASTORE_BOOTSTRAP_FILES"
+              value: "/mnt/spicedb_bootstrap.yaml"
+          volumeMounts:
+            - mountPath: /mnt
+              name: spicedb-schema
           ports:
             - name: "grpc"
               containerPort: 50051
               protocol: "TCP"
-            - name: "internal"
+            - name: "http"
+              containerPort: 8443
+              protocol: "TCP"
+            - name: "dispatch"
               containerPort: 50053
               protocol: "TCP"
             - name: "prometheus"
@@ -88,3 +155,7 @@ spec:
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 5
+      volumes:
+        - name: spicedb-schema
+          configMap:
+            name: spicedb-schema

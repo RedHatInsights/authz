@@ -50,3 +50,6 @@ api/gen/v1alpha/README.md
 # Ignore IDE files
 .idea
 .vscode
+
+# Secrets for local development environment
+.secrets
