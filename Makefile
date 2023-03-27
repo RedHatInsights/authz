@@ -44,7 +44,7 @@ kind-create-schema-configmap:
 .PHONY: kind-create-schema-configmap
 
 kind-spicedb-deploy:
-	@kubectl create secret generic spicedb --from-literal=SPICEDB_GRPC_PRESHARED_KEY=not_a_secret
+	@kubectl create secret generic spicedb --from-file=SPICEDB_GRPC_PRESHARED_KEY=.secrets/spice-db-local
 	@kubectl apply -f k8s/spicedb.yaml
 .PHONY: kind-spicedb-deploy
 
