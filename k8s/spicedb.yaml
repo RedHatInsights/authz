@@ -20,7 +20,7 @@ metadata:
   name: "spicedb"
   labels:
     app.kubernetes.io/name: "spicedb"
-    app.kubernetes.io/version: "example"
+    app.kubernetes.io/version: "latest"
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9090"
@@ -52,13 +52,13 @@ metadata:
   name: "spicedb"
   labels:
     app.kubernetes.io/name: "spicedb"
-    app.kubernetes.io/version: "example"
+    app.kubernetes.io/version: "latest"
 spec:
   replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: "spicedb"
-      app.kubernetes.io/version: "example"
+      app.kubernetes.io/version: "latest"
   strategy:
     type: "RollingUpdate"
     rollingUpdate:
@@ -69,7 +69,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: "spicedb"
-        app.kubernetes.io/version: "example"
+        app.kubernetes.io/version: "latest"
     spec:
       dnsPolicy: "ClusterFirst"
       restartPolicy: "Always"
