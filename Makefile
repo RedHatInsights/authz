@@ -40,7 +40,7 @@ kind-deploy:
 	@echo "See k8s/README.md for more info."
 
 kind-create-schema-configmap:
-	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_schema.yaml
+	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_bootstrap.yaml
 .PHONY: kind-create-schema-configmap
 
 .PHONY: kind-delete
