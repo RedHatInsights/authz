@@ -43,6 +43,11 @@ kind-create-schema-configmap:
 	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_bootstrap.yaml
 .PHONY: kind-create-schema-configmap
 
+kind-spicedb-deploy:
+	@kubectl create secret generic spicedb --from-literal=SPICEDB_GRPC_PRESHARED_KEY=not_a_secret
+	@kubectl apply -f k8s/spicedb.yaml
+.PHONY: kind-spicedb-deploy
+
 .PHONY: kind-delete
 kind-delete:
 	@kind delete cluster --name=authz
