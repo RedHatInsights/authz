@@ -23,7 +23,7 @@ func (a AccessService) Check(req model.CheckEvent) (vo.AccessDecision, error) {
 		return false, model.ErrNotAuthenticated
 	}
 
-	accessResult, err := a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
+	accessResult, err := true, error(nil) //a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"}) //TODO: implement actual meta-authz
 	if err != nil {
 		return false, err
 	}

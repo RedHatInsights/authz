@@ -8,20 +8,3 @@ type ModifySeatAssignmentEvent struct {
 	Org      Organization
 	Service  Service
 }
-
-// IsValid performs some validation on the event to ensure internal consistency
-func (m ModifySeatAssignmentEvent) IsValid() bool {
-	for _, principal := range m.Assign {
-		if principal.OrgID != m.Org.ID {
-			return false
-		}
-	}
-
-	for _, principal := range m.UnAssign {
-		if principal.OrgID != m.Org.ID {
-			return false
-		}
-	}
-
-	return true
-}

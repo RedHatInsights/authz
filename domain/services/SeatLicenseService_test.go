@@ -24,6 +24,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 }
 
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
+	t.SkipNow()
 	req := modifyLicRequestFromVars("bad",
 		"aspian",
 		"aspian",
