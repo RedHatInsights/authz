@@ -2,7 +2,6 @@ package mock
 
 import (
 	"authz/domain/model"
-	"errors"
 )
 
 // StubPrincipalRepository represents an in-memory store of principal data
@@ -21,7 +20,7 @@ func (s *StubPrincipalRepository) GetByID(id string) (model.Principal, error) {
 		return principal, nil
 	}
 
-	return principal, errors.New("not found") //Nil instead of error?
+	return s.createAndAddMissingPrincipal(id)
 }
 
 // GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
@@ -36,4 +35,12 @@ func (s *StubPrincipalRepository) GetByIDs(ids []string) ([]model.Principal, err
 	}
 
 	return principals, nil
+}
+
+func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id string) (model.Principal, error) {
+	p := model.Principal{ID: id}
+
+	s.Principals[id] = p
+
+	return p, nil
 }

@@ -39,21 +39,6 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 	assert.ErrorIs(t, err, model.ErrNotAuthorized)
 }
 
-func TestLicensingUnAssignSeatsErrorsWhenSubjectAndRequestOrgsMismatched(t *testing.T) {
-	req := modifyLicRequestFromVars("okay",
-		"aspian",
-		"bspian",
-		[]string{"okay"},
-		[]string{})
-
-	store := mockAuthzRepository()
-	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
-
-	err := lic.ModifySeats(req)
-
-	assert.ErrorIs(t, err, model.ErrInvalidRequest)
-}
-
 func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 	addReq := modifyLicRequestFromVars("okay",
 		"aspian",

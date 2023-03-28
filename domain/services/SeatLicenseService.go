@@ -13,23 +13,19 @@ type SeatLicenseService struct {
 
 // ModifySeats handles ModifySeatAssignmentEvents to assign and unassign seats
 func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) error {
-	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor, evt.Org); err != nil {
+	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return err
-	}
-
-	if !evt.IsValid() {
-		return model.ErrInvalidRequest
 	}
 
 	//TODO: consistency? Atm, if an error occurs part-way through, this will partially save.
 	for _, principal := range evt.UnAssign {
-		if err := l.seats.UnAssignSeat(principal, evt.Service); err != nil {
+		if err := l.seats.UnAssignSeat(principal, evt.Org.ID, evt.Service); err != nil {
 			return err
 		}
 	}
 
 	for _, principal := range evt.Assign {
-		if err := l.seats.AssignSeat(principal, evt.Service); err != nil {
+		if err := l.seats.AssignSeat(principal, evt.Org.ID, evt.Service); err != nil {
 			return err
 		}
 	}
@@ -42,7 +38,7 @@ func NewSeatLicenseService(seats contracts.SeatLicenseRepository, authz contract
 	return &SeatLicenseService{seats: seats, authz: authz}
 }
 
-func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor model.Principal, org model.Organization) error {
+func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor model.Principal) error {
 	if requestor.IsAnonymous() {
 		return model.ErrNotAuthenticated
 	}

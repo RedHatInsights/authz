@@ -31,7 +31,7 @@ func (s *StubAccessRepository) CheckAccess(principal model.Principal, operation 
 }
 
 // AssignSeat assigns the given principal a seat for the given service
-func (s *StubAccessRepository) AssignSeat(principal model.Principal, svc model.Service) error {
+func (s *StubAccessRepository) AssignSeat(principal model.Principal, orgID string, svc model.Service) error {
 	if lics, ok := s.LicensedSeats[principal.ID]; ok {
 		lics[svc.ID] = true
 	} else {
@@ -41,7 +41,7 @@ func (s *StubAccessRepository) AssignSeat(principal model.Principal, svc model.S
 }
 
 // UnAssignSeat removes the seat assignment for the given principal for the given service
-func (s *StubAccessRepository) UnAssignSeat(principal model.Principal, svc model.Service) error {
+func (s *StubAccessRepository) UnAssignSeat(principal model.Principal, orgID string, svc model.Service) error {
 	if lics, ok := s.LicensedSeats[principal.ID]; ok {
 		lics[svc.ID] = false
 	}
