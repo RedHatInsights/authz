@@ -23,13 +23,13 @@ type OpenFgaClient struct {
 var openfgaConn *OpenFgaClient
 
 // CheckAccess -
-func (o OpenFgaAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
+func (o OpenFgaAccessRepository) CheckAccess(subjectID vo.SubjectID, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	trace := false
 
 	body := openfga.CheckRequest{TupleKey: openfga.TupleKey{
 		Object:   openfga.PtrString(resource.ID),
 		Relation: openfga.PtrString(operation),
-		User:     openfga.PtrString(principal.ID),
+		User:     openfga.PtrString(string(subjectID)),
 	}, ContextualTuples: nil, AuthorizationModelId: openfga.PtrString("foo"), Trace: &trace}
 
 	result, _, err := openfgaConn.client.OpenFgaApi.Check(context.Background()).Body(body).Execute()

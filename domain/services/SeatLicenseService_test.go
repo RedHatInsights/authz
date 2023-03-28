@@ -3,6 +3,7 @@ package services
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,6 @@ import (
 
 func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 	req := modifyLicRequestFromVars("",
-		"aspian",
 		"aspian",
 		[]string{"okay"},
 		[]string{})
@@ -27,7 +27,6 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 	t.SkipNow()
 	req := modifyLicRequestFromVars("bad",
 		"aspian",
-		"aspian",
 		[]string{"okay"},
 		[]string{})
 
@@ -41,7 +40,6 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 
 func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 	addReq := modifyLicRequestFromVars("okay",
-		"aspian",
 		"aspian",
 		[]string{"okay"},
 		[]string{})
@@ -62,7 +60,6 @@ func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 
 	remReq := modifyLicRequestFromVars("okay",
 		"aspian",
-		"aspian",
 		[]string{},
 		[]string{"okay"})
 
@@ -74,23 +71,23 @@ func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 	assert.False(t, bool(authz), "Should not have been authorized without license.")
 }
 
-func modifyLicRequestFromVars(requestorID string, requestorOrg string, subjectOrg string, assign []string, unassign []string) model.ModifySeatAssignmentEvent {
+func modifyLicRequestFromVars(requestorID string, subjectOrg string, assign []string, unassign []string) model.ModifySeatAssignmentEvent {
 	evt := model.ModifySeatAssignmentEvent{
 		Request: model.Request{
-			Requestor: model.NewPrincipal(requestorID, requestorOrg),
+			Requestor: vo.SubjectID(requestorID),
 		},
 		Org:     model.Organization{ID: subjectOrg},
 		Service: model.Service{ID: "smarts"},
 	}
 
-	evt.Assign = make([]model.Principal, len(assign))
+	evt.Assign = make([]vo.SubjectID, len(assign))
 	for i, id := range assign {
-		evt.Assign[i] = model.NewPrincipal(id, requestorOrg)
+		evt.Assign[i] = vo.SubjectID(id)
 	}
 
-	evt.UnAssign = make([]model.Principal, len(unassign))
+	evt.UnAssign = make([]vo.SubjectID, len(unassign))
 	for i, id := range unassign {
-		evt.UnAssign[i] = model.NewPrincipal(id, requestorOrg)
+		evt.UnAssign[i] = vo.SubjectID(id)
 	}
 
 	return evt

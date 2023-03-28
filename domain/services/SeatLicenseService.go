@@ -3,6 +3,7 @@ package services
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 )
 
 // SeatLicenseService performs operations related to per-seat licensing
@@ -38,8 +39,8 @@ func NewSeatLicenseService(seats contracts.SeatLicenseRepository, authz contract
 	return &SeatLicenseService{seats: seats, authz: authz}
 }
 
-func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor model.Principal) error {
-	if requestor.IsAnonymous() {
+func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor vo.SubjectID) error {
+	if !requestor.HasIdentity() {
 		return model.ErrNotAuthenticated
 	}
 
