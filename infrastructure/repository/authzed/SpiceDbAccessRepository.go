@@ -16,6 +16,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// SubjectType user
+const SubjectType = "user"
+
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct{}
 
@@ -27,32 +30,27 @@ type authzedClient struct {
 
 var authzedConn *authzedClient
 
-// CheckAccess -
+// CheckAccess - verify permission with subject type "user"
 func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation string, resource model.Resource) (vo.AccessDecision, error) {
-	s2, o2 := createSubjectObjectTuple("user", string(subjectID), resource.Type, resource.ID)
+	subject, object := createSubjectObjectTuple(SubjectType, string(subjectID), resource.Type, resource.ID)
 
-	//TODO remove me, just for checking it is used (will return an err)
-	_, err := authzedConn.client.ReadSchema(authzedConn.ctx, &v1.ReadSchemaRequest{})
-	if err != nil {
-		glog.Infof("Could not reach spiceDB! Error: %v", err)
-	}
-
-	//TODO: Implement.
-	r, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
-		Resource:   o2,
+	result, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
+		Resource:   object,
 		Permission: operation,
-		Subject:    s2,
+		Subject:    subject,
 	})
 
 	if err != nil {
+		glog.Errorf("Failed to check permission :%v", err.Error())
 		return false, err
 	}
 
-	if r.Permissionship != v1.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION {
-		return false, nil
+	if result.Permissionship == v1.CheckPermissionResponse_PERMISSIONSHIP_HAS_PERMISSION {
+		return true, nil
 	}
 
-	return true, nil
+	//DENIED BY DEFAULT
+	return false, nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
@@ -87,9 +85,9 @@ func createSubjectObjectTuple(subjectType string, subjectValue string, objectTyp
 		ObjectId:   subjectValue,
 	}}
 
-	t1 := &v1.ObjectReference{
+	object := &v1.ObjectReference{
 		ObjectType: objectType,
 		ObjectId:   objectValue,
 	}
-	return subject, t1
+	return subject, object
 }
