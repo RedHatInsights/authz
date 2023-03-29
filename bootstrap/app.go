@@ -51,6 +51,7 @@ func Run(endpoint string, token string, store string) {
 
 	webSrv := getHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
+	webSrv.SetSeatRef(srv)
 
 	go func() {
 		err := webSrv.
