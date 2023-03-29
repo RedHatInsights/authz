@@ -10,8 +10,8 @@ import (
 
 // LicenseAppService the handler for seat related endpoints.
 type LicenseAppService struct {
-	accessRepo    contracts.AccessRepository
-	seatRepo      contracts.SeatLicenseRepository
+	accessRepo    *contracts.AccessRepository
+	seatRepo      *contracts.SeatLicenseRepository
 	principalRepo contracts.PrincipalRepository
 	ctx           context.Context
 }
@@ -26,7 +26,7 @@ type ModifySeatAssignmentRequest struct {
 }
 
 // NewLicenseAppService ctor.
-func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contracts.SeatLicenseRepository, principalRepo contracts.PrincipalRepository) *LicenseAppService {
+func NewLicenseAppService(accessRepo *contracts.AccessRepository, seatRepo *contracts.SeatLicenseRepository, principalRepo contracts.PrincipalRepository) *LicenseAppService {
 	return &LicenseAppService{
 		accessRepo:    accessRepo,
 		seatRepo:      seatRepo,
@@ -54,7 +54,7 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 		evt.UnAssign[i] = vo.SubjectID(id)
 	}
 
-	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
+	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
 	return seatService.ModifySeats(evt)
 }

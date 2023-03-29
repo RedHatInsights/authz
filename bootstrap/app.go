@@ -34,7 +34,7 @@ func Run(endpoint string, token string, store string) {
 		},
 	}
 	aas := application.NewAccessAppService(&ar, pr)
-	sas := application.NewLicenseAppService(ar, sr, pr)
+	sas := application.NewLicenseAppService(&ar, &sr, pr)
 
 	wait := sync.WaitGroup{}
 
@@ -51,6 +51,7 @@ func Run(endpoint string, token string, store string) {
 
 	webSrv := getHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
+	webSrv.SetSeatRef(srv)
 
 	go func() {
 		err := webSrv.

@@ -5,6 +5,7 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/golang/glog"
@@ -18,6 +19,9 @@ import (
 
 // SubjectType user
 const SubjectType = "user"
+
+// LicenseSeatObjectType license_seats
+const LicenseSeatObjectType = "license_seats"
 
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct{}
@@ -51,6 +55,54 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation 
 
 	//DENIED BY DEFAULT
 	return false, nil
+}
+
+// AssignSeat create the relation
+func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error {
+	subject, object := createSubjectObjectTuple(SubjectType, string(subjectID), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
+	var relationshipUpdates = []*v1.RelationshipUpdate{
+		{Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
+			Subject:  subject,
+			Resource: object,
+			Relation: "assigned",
+		}},
+	}
+
+	result, err := authzedConn.client.WriteRelationships(authzedConn.ctx, &v1.WriteRelationshipsRequest{
+		Updates: relationshipUpdates,
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to assign relation :%v", err.Error())
+		return err
+	}
+
+	glog.Infof("Assigned operation :%v", result)
+
+	return nil
+}
+
+// UnAssignSeat delete the relation
+func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, _ string, _ model.Service) error {
+	result, err := authzedConn.client.DeleteRelationships(authzedConn.ctx, &v1.DeleteRelationshipsRequest{
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:     LicenseSeatObjectType,
+			OptionalRelation: "assigned",
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       SubjectType,
+				OptionalSubjectId: string(subjectID),
+			},
+		},
+	})
+
+	glog.Infof("Deleted relation :%v", result)
+
+	if err != nil {
+		glog.Errorf("Failed to delete relation :%v", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
