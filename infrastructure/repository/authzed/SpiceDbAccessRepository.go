@@ -5,8 +5,9 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
-	"github.com/golang/glog"
 	"log"
+
+	"github.com/golang/glog"
 
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// SubjectType user
 const SubjectType = "user"
 
 // SpiceDbAccessRepository -
