@@ -33,17 +33,11 @@ type ModifySeatAssignmentRequest struct {
 	Unassign  []string
 }
 
+// GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
 type GetSeatAssignmentCountsRequest struct {
 	Requestor string
 	OrgID     string
 	ServiceID string
-}
-
-type GetSeatDetailsRequest struct {
-	Requestor         string
-	OrgID             string
-	ServiceID         string
-	includeUserDetail bool
 }
 
 // NewLicenseAppService ctor.
@@ -56,6 +50,7 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 	}
 }
 
+// GetSeatAssignmentCounts gets the seat limit and current allocation for a license
 func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (current int, max int, err error) {
 	evt := model.GetLicenseEvent{
 		OrgID:     req.OrgID,
@@ -77,6 +72,7 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 	return
 }
 
+// GetSeatAssignments gets the subjects assigned to seats in a license
 func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]model.Principal, error) {
 	evt := model.GetLicenseEvent{
 		OrgID:     req.OrgID,
@@ -94,13 +90,13 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 	if req.IncludeUsers {
 		return s.principalRepo.GetByIDs(assigned)
-	} else {
-		principals := make([]model.Principal, len(assigned))
-		for i, id := range assigned {
-			principals[i] = model.NewPrincipal(id)
-		}
-		return principals, nil
 	}
+
+	principals := make([]model.Principal, len(assigned))
+	for i, id := range assigned {
+		principals[i] = model.NewPrincipal(id)
+	}
+	return principals, nil
 }
 
 // ModifySeats TODO

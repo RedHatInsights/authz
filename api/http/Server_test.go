@@ -112,7 +112,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"users": []}`)
 
 	//Grant a license
-	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	_ = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
 		`{
 			"assign": [
 			  "okay"

@@ -93,6 +93,9 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	}
 
 	principals, err := s.LicenseAppService.GetSeatAssignments(req)
+	if err != nil {
+		return nil, err
+	}
 
 	resp := &core.GetSeatsResponse{Users: make([]*core.GetSeatsUserRepresentation, len(principals))}
 	for i, p := range principals {

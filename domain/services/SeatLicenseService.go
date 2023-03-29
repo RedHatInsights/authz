@@ -34,6 +34,7 @@ func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) er
 	return nil
 }
 
+// GetLicense gets the License for the provided information
 func (l *SeatLicenseService) GetLicense(evt model.GetLicenseEvent) (*model.License, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return nil, err
@@ -42,6 +43,7 @@ func (l *SeatLicenseService) GetLicense(evt model.GetLicenseEvent) (*model.Licen
 	return l.seats.GetLicense(evt.OrgID, evt.ServiceID)
 }
 
+// GetAssignedSeats gets the subjects assigned to the given license
 func (l *SeatLicenseService) GetAssignedSeats(evt model.GetLicenseEvent) ([]vo.SubjectID, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return nil, err
