@@ -2,16 +2,16 @@ package mock
 
 import (
 	"authz/domain/model"
-	"errors"
+	vo "authz/domain/valueobjects"
 )
 
 // StubPrincipalRepository represents an in-memory store of principal data
 type StubPrincipalRepository struct {
-	Principals map[string]model.Principal
+	Principals map[vo.SubjectID]model.Principal
 }
 
 // GetByID retrieves a principal for the given ID. If no ID is provided (ex: empty string), it returns an anonymous principal. If any error occurs, it's returned.
-func (s *StubPrincipalRepository) GetByID(id string) (model.Principal, error) {
+func (s *StubPrincipalRepository) GetByID(id vo.SubjectID) (model.Principal, error) {
 	if id == "" {
 		return model.NewAnonymousPrincipal(), nil
 	}
@@ -21,11 +21,11 @@ func (s *StubPrincipalRepository) GetByID(id string) (model.Principal, error) {
 		return principal, nil
 	}
 
-	return principal, errors.New("not found") //Nil instead of error?
+	return s.createAndAddMissingPrincipal(id)
 }
 
 // GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
-func (s *StubPrincipalRepository) GetByIDs(ids []string) ([]model.Principal, error) {
+func (s *StubPrincipalRepository) GetByIDs(ids []vo.SubjectID) ([]model.Principal, error) {
 	principals := make([]model.Principal, len(ids))
 
 	for i, id := range ids {
@@ -36,4 +36,12 @@ func (s *StubPrincipalRepository) GetByIDs(ids []string) ([]model.Principal, err
 	}
 
 	return principals, nil
+}
+
+func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id vo.SubjectID) (model.Principal, error) {
+	p := model.Principal{ID: id}
+
+	s.Principals[id] = p
+
+	return p, nil
 }

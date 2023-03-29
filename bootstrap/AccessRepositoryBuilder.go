@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/domain/contracts"
+	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/authzed"
 	"authz/infrastructure/repository/fga"
 	"authz/infrastructure/repository/mock"
@@ -27,18 +28,18 @@ func (e *AccessRepositoryBuilder) WithImplementation(implID string) *AccessRepos
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	switch e.impl {
 	case "stub":
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[string]bool{}}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[vo.SubjectID]map[string]bool{}}, nil
 	case "spicedb":
 		return &authzed.SpiceDbAccessRepository{}, nil
 	case "openfga":
 		return &fga.OpenFgaAccessRepository{}, nil
 	default:
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[string]bool{}}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[vo.SubjectID]map[string]bool{}}, nil
 	}
 }
 
-func getMockData() map[string]bool {
-	return map[string]bool{
+func getMockData() map[vo.SubjectID]bool {
+	return map[vo.SubjectID]bool{
 		"token": true,
 		"alice": true,
 		"bob":   true,

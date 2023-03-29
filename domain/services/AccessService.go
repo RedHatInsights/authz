@@ -19,11 +19,11 @@ func NewAccessService(accessRepository contracts.AccessRepository) AccessService
 
 // Check processes a CheckEvent and returns true or false if successful, otherwise error
 func (a AccessService) Check(req model.CheckEvent) (vo.AccessDecision, error) {
-	if req.Requestor.IsAnonymous() {
+	if !req.Requestor.HasIdentity() {
 		return false, model.ErrNotAuthenticated
 	}
 
-	accessResult, err := a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
+	accessResult, err := true, error(nil) //a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"}) //TODO: implement actual meta-authz
 	if err != nil {
 		return false, err
 	}
@@ -32,5 +32,5 @@ func (a AccessService) Check(req model.CheckEvent) (vo.AccessDecision, error) {
 		return false, model.ErrNotAuthorized
 	}
 
-	return a.accessRepository.CheckAccess(req.Subject, req.Operation, req.Resource)
+	return a.accessRepository.CheckAccess(req.SubjectID, req.Operation, req.Resource)
 }

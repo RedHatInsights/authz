@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"authz/domain/contracts"
 	"authz/domain/model"
+	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/mock"
 )
 
@@ -32,11 +33,11 @@ func (b *PrincipalRepositoryBuilder) Build() contracts.PrincipalRepository {
 	}
 }
 
-func getMockPrincipalData() map[string]model.Principal {
-	return map[string]model.Principal{
-		"token": model.NewPrincipal("token", "aspian"),
-		"alice": model.NewPrincipal("alice", "aspian"),
-		"bob":   model.NewPrincipal("bob", "aspian"),
-		"chuck": model.NewPrincipal("chuck", "aspian"),
+func getMockPrincipalData() map[vo.SubjectID]model.Principal {
+	return map[vo.SubjectID]model.Principal{
+		"token": model.NewPrincipal("token"),
+		"alice": model.NewPrincipal("alice"),
+		"bob":   model.NewPrincipal("bob"),
+		"chuck": model.NewPrincipal("chuck"),
 	}
 }

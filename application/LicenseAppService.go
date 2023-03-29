@@ -4,6 +4,7 @@ import (
 	"authz/domain/contracts"
 	"authz/domain/model"
 	"authz/domain/services"
+	vo "authz/domain/valueobjects"
 	"context"
 )
 
@@ -41,20 +42,16 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 		Service: model.Service{ID: req.ServiceID},
 	}
 
-	var err error
-	evt.Requestor, err = s.principalRepo.GetByID(req.Requestor)
-	if err != nil {
-		return err
+	evt.Requestor = vo.SubjectID(req.Requestor)
+
+	evt.Assign = make([]vo.SubjectID, len(req.Assign))
+	for i, id := range req.Assign {
+		evt.Assign[i] = vo.SubjectID(id)
 	}
 
-	evt.Assign, err = s.principalRepo.GetByIDs(req.Assign)
-	if err != nil {
-		return err
-	}
-
-	evt.UnAssign, err = s.principalRepo.GetByIDs(req.Unassign)
-	if err != nil {
-		return err
+	evt.UnAssign = make([]vo.SubjectID, len(req.Unassign))
+	for i, id := range req.Unassign {
+		evt.UnAssign[i] = vo.SubjectID(id)
 	}
 
 	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)

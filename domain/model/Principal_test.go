@@ -13,7 +13,7 @@ func TestPrincipalIsAnonymousTrueForAnonymousPrincipal(t *testing.T) {
 }
 
 func TestPrincipalIsAnonymousFalseForSpecificPrincipal(t *testing.T) {
-	p := NewPrincipal("alice", "aspian")
+	p := NewPrincipal("alice")
 
 	assert.False(t, p.IsAnonymous(), "Should NOT have been anonymous.")
 }
