@@ -34,6 +34,22 @@ func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) er
 	return nil
 }
 
+func (l *SeatLicenseService) GetLicense(evt model.GetLicenseEvent) (*model.License, error) {
+	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
+		return nil, err
+	}
+
+	return l.seats.GetLicense(evt.OrgID, evt.ServiceID)
+}
+
+func (l *SeatLicenseService) GetAssignedSeats(evt model.GetLicenseEvent) ([]vo.SubjectID, error) {
+	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
+		return nil, err
+	}
+
+	return l.seats.GetAssigned(evt.OrgID, evt.ServiceID)
+}
+
 // NewSeatLicenseService constructs a new SeatLicenseService
 func NewSeatLicenseService(seats contracts.SeatLicenseRepository, authz contracts.AccessRepository) *SeatLicenseService {
 	return &SeatLicenseService{seats: seats, authz: authz}

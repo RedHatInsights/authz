@@ -101,8 +101,40 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
 
+func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	//No one is licensed initially, expect a fixed count and none in use
+	resp := runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 0}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"users": []}`)
+
+	//Grant a license
+	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+		`{
+			"assign": [
+			  "okay"
+			]
+		  }`), srv)
+
+	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 1}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Display Name","id":"okay"}]}`)
+}
+
 func post(uri string, token string, body string) *http.Request {
 	return reqWithBody(http.MethodPost, uri, token, body)
+}
+
+func get(uri string, token string) *http.Request {
+	req := httptest.NewRequest(http.MethodGet, uri, strings.NewReader(""))
+	if token != "" {
+		req.Header.Add("Authorization", token)
+	}
+	return req
 }
 
 func runRequest(req *http.Request) *http.Response {
@@ -158,7 +190,12 @@ func mockAccessRepository() contracts.AccessRepository {
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}, LicensedSeats: map[vo.SubjectID]map[string]bool{}}
+	},
+		LicensedSeats: map[string]map[vo.SubjectID]bool{},
+		Licenses: map[string]model.License{
+			"smarts": *model.NewLicense("aspian", "smarts", 20, 0),
+		},
+	}
 }
 
 func mockPrincipalRepository() contracts.PrincipalRepository {

@@ -28,9 +28,26 @@ type Server struct {
 }
 
 // GetLicense ToDo - just a stub for now.
-func (s *Server) GetLicense(_ context.Context, _ *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := application.GetSeatAssignmentCountsRequest{
+		Requestor: requestor,
+		OrgID:     grpcReq.OrgId,
+		ServiceID: grpcReq.ServiceId,
+	}
+	current, max, err := s.LicenseAppService.GetSeatAssignmentCounts(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.GetLicenseResponse{
+		SeatsTotal:     int32(current),
+		SeatsAvailable: int32(max),
+	}, nil
 }
 
 // ModifySeats ToDo - just a stub for now.
@@ -57,9 +74,36 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 }
 
 // GetSeats ToDo - just a stub for now.
-func (s *Server) GetSeats(_ context.Context, _ *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	includeUsers := true
+	if grpcReq.IncludeUsers != nil {
+		includeUsers = *grpcReq.IncludeUsers
+	}
+
+	req := application.GetSeatAssignmentRequest{
+		Requestor:    requestor,
+		OrgID:        grpcReq.OrgId,
+		ServiceID:    grpcReq.ServiceId,
+		IncludeUsers: includeUsers,
+	}
+
+	principals, err := s.LicenseAppService.GetSeatAssignments(req)
+
+	resp := &core.GetSeatsResponse{Users: make([]*core.GetSeatsUserRepresentation, len(principals))}
+	for i, p := range principals {
+		resp.Users[i] = &core.GetSeatsUserRepresentation{
+			DisplayName: "Display Name",
+			Id:          string(p.ID),
+			Assigned:    true,
+		}
+	}
+
+	return resp, nil
 }
 
 // NewServer creates a new Server object to use.
