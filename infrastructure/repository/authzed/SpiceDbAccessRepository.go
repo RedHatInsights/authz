@@ -28,8 +28,8 @@ type authzedClient struct {
 var authzedConn *authzedClient
 
 // CheckAccess -
-func (s *SpiceDbAccessRepository) CheckAccess(principal model.Principal, operation string, resource model.Resource) (vo.AccessDecision, error) {
-	s2, o2 := createSubjectObjectTuple("user", principal.ID, resource.Type, resource.ID)
+func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation string, resource model.Resource) (vo.AccessDecision, error) {
+	s2, o2 := createSubjectObjectTuple("user", string(subjectID), resource.Type, resource.ID)
 
 	//TODO remove me, just for checking it is used (will return an err)
 	_, err := authzedConn.client.ReadSchema(authzedConn.ctx, &v1.ReadSchemaRequest{})
