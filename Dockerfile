@@ -17,7 +17,7 @@ RUN make binary
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal:9.1
 
-COPY --from=builder /workspace/authz /usr/local/bin/
+COPY --from=builder /workspace/bin/authz /usr/local/bin/
 RUN mkdir -p /schema
 COPY --from=builder /workspace/schema/spicedb_bootstrap.yaml  /schema/
 
