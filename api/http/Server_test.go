@@ -207,5 +207,6 @@ func mockPrincipalRepository() contracts.PrincipalRepository {
 			"okay":   model.NewPrincipal("okay", "Okay User", "aspian"),
 			"bad":    model.NewPrincipal("bad", "Bad User", "aspian"),
 		},
+		DefaultOrg: "aspian",
 	}
 }
