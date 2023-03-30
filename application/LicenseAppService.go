@@ -51,7 +51,7 @@ func NewLicenseAppService(accessRepo *contracts.AccessRepository, seatRepo *cont
 }
 
 // GetSeatAssignmentCounts gets the seat limit and current allocation for a license
-func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (current int, max int, err error) {
+func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (limit int, available int, err error) {
 	evt := model.GetLicenseEvent{
 		OrgID:     req.OrgID,
 		ServiceID: req.ServiceID,
@@ -66,8 +66,8 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 		return 0, 0, err
 	}
 
-	current = lic.InUse
-	max = lic.MaxSeats
+	limit = lic.MaxSeats
+	available = lic.GetAvailableSeats()
 	err = nil
 	return
 }

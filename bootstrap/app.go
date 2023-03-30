@@ -13,7 +13,7 @@ import (
 )
 
 // Run configures and runs the actual bootstrap.
-func Run(endpoint string, token string, store string) {
+func Run(endpoint string, token string, store string, useTLS bool) {
 	ar := getAccessRepository(store)
 	sr := getSeatRepository(store, ar)
 	pr := getPrincipalRepository(store)
@@ -21,7 +21,7 @@ func Run(endpoint string, token string, store string) {
 		endpoint,
 		token,
 		false,
-		true)
+		useTLS)
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",

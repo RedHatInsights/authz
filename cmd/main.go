@@ -35,7 +35,7 @@ func main() {
 	rootCmd.Flags().String("endpoint", "", "endpoint")
 	rootCmd.Flags().String("token", "", "token")
 	rootCmd.Flags().String("store", "stub", "stub or spicedb")
-
+	rootCmd.Flags().Bool("useTLS", false, "false for no tls (local dev) and true for TLS")
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
 	}
@@ -46,8 +46,9 @@ func serve(cmd *cobra.Command, _ []string) {
 	endpoint := mustGetString("endpoint", cmd.Flags())
 	token := mustGetString("token", cmd.Flags())
 	store := nonEmptyStringFlag("store", cmd.Flags())
+	useTLS := mustGetBool("useTLS", cmd.Flags())
 
-	bootstrap.Run(endpoint, token, store)
+	bootstrap.Run(endpoint, token, store, useTLS)
 }
 
 // nonEmptyStringFlag attempts to get a non-empty string flag from the provided flag set or panic
@@ -75,4 +76,12 @@ func undefinedValueMessage(flagName string) string {
 
 func notFoundMessage(flagName string, err error) string { //TODO: evaluate if needed.
 	return fmt.Sprintf("could not get flag %s from flag set: %s", flagName, err.Error())
+}
+
+func mustGetBool(flagName string, flags *pflag.FlagSet) bool {
+	flagVal, err := flags.GetBool(flagName)
+	if err != nil {
+		glog.Fatalf(notFoundMessage(flagName, err))
+	}
+	return flagVal
 }
