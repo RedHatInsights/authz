@@ -191,7 +191,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 			return nil, err
 		}
 
-		ids = append(ids, vo.SubjectID(next.String()))
+		ids = append(ids, vo.SubjectID(next.SubjectObjectId))
 	}
 	return ids, nil
 }
