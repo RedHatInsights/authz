@@ -6,7 +6,10 @@ import (
 	vo "authz/domain/valueobjects"
 	"context"
 	"fmt"
+	"io"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 
@@ -22,6 +25,9 @@ const SubjectType = "user"
 
 // LicenseSeatObjectType license_seats
 const LicenseSeatObjectType = "license_seats"
+
+// LicenseObjectType - License object
+const LicenseObjectType = "license"
 
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct{}
@@ -103,6 +109,65 @@ func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, _ string,
 	}
 
 	return nil
+}
+
+// GetLicense - Get the current license infoarmation
+func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*model.License, error) {
+	var license model.License
+	resp, err := authzedConn.client.ReadRelationships(authzedConn.ctx, &v1.ReadRelationshipsRequest{
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:       LicenseObjectType,
+			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),
+		},
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to read License relation :%v", err.Error())
+		return nil, err
+	}
+
+	for {
+		v, err := resp.Recv()
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			glog.Errorf("Failed iterate License read response :%v", err.Error())
+			return nil, err
+		}
+		// The Max relation is read to extract the MAx count of the license
+		if v.Relationship.Relation == "max" {
+			glog.Infof("License - Max count: %v", v.Relationship.Subject.Object.ObjectId)
+			license.MaxSeats, err = strconv.Atoi(v.Relationship.Subject.Object.ObjectId)
+
+			if err != nil {
+				return nil, err
+			}
+		}
+		// The version is of the form: <Versionstring>/currentassignedseatscount
+		if v.Relationship.Relation == "version" {
+			glog.Infof("License - Version : %v", v.Relationship.Subject.Object.ObjectId)
+			//spilt with "/" and the second part of the string is the current assigned count
+			versionStrArr := strings.Split(v.Relationship.Subject.Object.ObjectId, "/")
+			if len(versionStrArr) != 2 {
+				return nil, fmt.Errorf("invalid license version %s", v.Relationship.Subject.Object.ObjectId)
+			}
+			currentAssignedCount, err := strconv.Atoi(versionStrArr[1])
+			if err != nil {
+				return nil, err
+			}
+			license.InUse = currentAssignedCount
+		}
+		license.OrgID = orgID
+		license.ServiceID = serviceID
+	}
+
+	return &license, nil
+}
+
+// GetAssigned - todo implementation
+func (s *SpiceDbAccessRepository) GetAssigned(_ string, _ string) ([]vo.SubjectID, error) {
+	return nil, nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
