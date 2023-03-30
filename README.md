@@ -6,7 +6,7 @@
 run `go run cmd/main.go --store=stub`
 
 ## Start using spicedb access repository:
-run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb`
+run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb --useTLS=false`
 
 # Testing
 
