@@ -11,6 +11,10 @@ type SeatLicenseRepository interface {
 	AssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error
 	// UnAssignSeat removes the seat assignment for the given principal for the given service
 	UnAssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error
+	// GetLicense retrieves the stored license for the given organization and service, if any.
+	GetLicense(orgID string, serviceID string) (*model.License, error)
+	// GetAssigned retrieves the IDs of the subjects assigned seats in the current license
+	GetAssigned(orgID string, serviceID string) ([]vo.SubjectID, error)
 }
 
 // TODO
