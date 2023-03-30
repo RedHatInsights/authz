@@ -3,10 +3,12 @@ package mock
 import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
+	"fmt"
 )
 
 // StubPrincipalRepository represents an in-memory store of principal data
 type StubPrincipalRepository struct {
+	DefaultOrg string
 	Principals map[vo.SubjectID]model.Principal
 }
 
@@ -38,8 +40,23 @@ func (s *StubPrincipalRepository) GetByIDs(ids []vo.SubjectID) ([]model.Principa
 	return principals, nil
 }
 
+// GetByOrgID retrieves all members of the given organization
+func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]vo.SubjectID, error) {
+	ids := make([]vo.SubjectID, 0)
+	for _, p := range s.Principals {
+		if p.OrgID == orgID {
+			ids = append(ids, p.ID)
+		}
+	}
+	return ids, nil
+}
+
 func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id vo.SubjectID) (model.Principal, error) {
-	p := model.Principal{ID: id}
+	p := model.Principal{
+		ID:          id,
+		DisplayName: fmt.Sprintf("User %s", id),
+		OrgID:       s.DefaultOrg,
+	}
 
 	s.Principals[id] = p
 

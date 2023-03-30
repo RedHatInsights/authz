@@ -122,7 +122,9 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":19, "seatsTotal": 20}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Display Name","id":"okay"}]}`)
+	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Okay User","id":"okay"}]}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats?filter=assignable", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"users":[{"assigned":false,"displayName":"Bad User","id":"bad"}]}`)
 }
 
 func post(uri string, token string, body string) *http.Request {
@@ -201,9 +203,9 @@ func mockAccessRepository() contracts.AccessRepository {
 func mockPrincipalRepository() contracts.PrincipalRepository {
 	return &mock.StubPrincipalRepository{
 		Principals: map[vo.SubjectID]model.Principal{
-			"system": model.NewPrincipal("system"),
-			"okay":   model.NewPrincipal("okay"),
-			"bad":    model.NewPrincipal("bad"),
+			"system": model.NewPrincipal("system", "System User", "smarts"),
+			"okay":   model.NewPrincipal("okay", "Okay User", "aspian"),
+			"bad":    model.NewPrincipal("bad", "Bad User", "aspian"),
 		},
 	}
 }

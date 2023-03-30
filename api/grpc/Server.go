@@ -85,11 +85,23 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 		includeUsers = *grpcReq.IncludeUsers
 	}
 
+	assigned := true
+	if grpcReq.Filter != nil {
+		filter := *grpcReq.Filter
+		switch filter {
+		case core.SeatFilterType_assigned:
+			assigned = true
+		case core.SeatFilterType_assignable:
+			assigned = false
+		}
+	}
+
 	req := application.GetSeatAssignmentRequest{
 		Requestor:    requestor,
 		OrgID:        grpcReq.OrgId,
 		ServiceID:    grpcReq.ServiceId,
 		IncludeUsers: includeUsers,
+		Assigned:     assigned,
 	}
 
 	principals, err := s.LicenseAppService.GetSeatAssignments(req)
@@ -100,9 +112,9 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	resp := &core.GetSeatsResponse{Users: make([]*core.GetSeatsUserRepresentation, len(principals))}
 	for i, p := range principals {
 		resp.Users[i] = &core.GetSeatsUserRepresentation{
-			DisplayName: "Display Name",
+			DisplayName: p.DisplayName,
 			Id:          string(p.ID),
-			Assigned:    true,
+			Assigned:    assigned,
 		}
 	}
 
