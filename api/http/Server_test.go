@@ -107,7 +107,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	//No one is licensed initially, expect a fixed count and none in use
 	resp := runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 0}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"users": []}`)
 
@@ -120,7 +120,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 		  }`), srv)
 
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 1}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":19, "seatsTotal": 20}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Display Name","id":"okay"}]}`)
 }

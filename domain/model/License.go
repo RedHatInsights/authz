@@ -17,3 +17,8 @@ func NewLicense(orgID string, serviceID string, maxSeats int, assigned int) *Lic
 		InUse:     assigned,
 	}
 }
+
+// GetAvailableSeats - Get available seats Max - InUSe
+func (l *License) GetAvailableSeats() int {
+	return l.MaxSeats - l.InUse
+}

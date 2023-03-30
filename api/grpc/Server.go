@@ -39,14 +39,14 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 		OrgID:     grpcReq.OrgId,
 		ServiceID: grpcReq.ServiceId,
 	}
-	current, max, err := s.LicenseAppService.GetSeatAssignmentCounts(req)
+	limit, available, err := s.LicenseAppService.GetSeatAssignmentCounts(req)
 	if err != nil {
 		return nil, err
 	}
 
 	return &core.GetLicenseResponse{
-		SeatsTotal:     int32(current),
-		SeatsAvailable: int32(max),
+		SeatsTotal:     int32(limit),
+		SeatsAvailable: int32(available),
 	}, nil
 }
 
