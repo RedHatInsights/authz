@@ -22,6 +22,7 @@ type GetSeatAssignmentRequest struct {
 	OrgID        string
 	ServiceID    string
 	IncludeUsers bool
+	Assigned     bool
 }
 
 // ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
@@ -88,13 +89,25 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 		return nil, err
 	}
 
-	if req.IncludeUsers {
-		return s.principalRepo.GetByIDs(assigned)
+	var resultIds []vo.SubjectID
+	if req.Assigned {
+		resultIds = assigned
+	} else {
+		allUsers, err := s.principalRepo.GetByOrgID(req.OrgID)
+		if err != nil {
+			return nil, err
+		}
+
+		resultIds = subtract(allUsers, assigned)
 	}
 
-	principals := make([]model.Principal, len(assigned))
-	for i, id := range assigned {
-		principals[i] = model.NewPrincipal(id)
+	if req.IncludeUsers {
+		return s.principalRepo.GetByIDs(resultIds)
+	}
+
+	principals := make([]model.Principal, len(resultIds))
+	for i, id := range resultIds {
+		principals[i] = model.Principal{ID: id}
 	}
 	return principals, nil
 }
@@ -121,4 +134,23 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
 	return seatService.ModifySeats(evt)
+}
+
+func subtract(first []vo.SubjectID, second []vo.SubjectID) []vo.SubjectID { //Move to a SubjectSet or something?
+	subtrahend := map[vo.SubjectID]interface{}{} //idiomatic set
+	for _, id := range second {
+		subtrahend[id] = struct{}{}
+	}
+
+	result := make([]vo.SubjectID, 0, len(first))
+
+	for _, id := range first {
+		if _, ok := subtrahend[id]; ok {
+			continue
+		}
+
+		result = append(result, id)
+	}
+
+	return result
 }

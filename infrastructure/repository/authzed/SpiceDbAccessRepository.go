@@ -5,6 +5,7 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -166,8 +167,35 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*m
 }
 
 // GetAssigned - todo implementation
-func (s *SpiceDbAccessRepository) GetAssigned(_ string, _ string) ([]vo.SubjectID, error) {
-	return nil, nil
+func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]vo.SubjectID, error) {
+	result, err := authzedConn.client.LookupResources(authzedConn.ctx, &v1.LookupResourcesRequest{
+		Subject: &v1.SubjectReference{
+			Object: &v1.ObjectReference{
+				ObjectType: LicenseObjectType,
+				ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
+			},
+		},
+		Permission:         "access",
+		ResourceObjectType: SubjectType,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]vo.SubjectID, 0)
+	for {
+		next, err := result.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, vo.SubjectID(next.String()))
+	}
+	return ids, nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
