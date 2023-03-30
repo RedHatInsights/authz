@@ -20,6 +20,7 @@ func Run(endpoint string, token string, store string) {
 	ar.NewConnection(
 		endpoint,
 		token,
+		false,
 		true)
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
