@@ -16,6 +16,14 @@ type LicenseAppService struct {
 	ctx           context.Context
 }
 
+// GetSeatAssignmentRequest represents a request to get the users assigned seats on a license
+type GetSeatAssignmentRequest struct {
+	Requestor    string
+	OrgID        string
+	ServiceID    string
+	IncludeUsers bool
+}
+
 // ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
 type ModifySeatAssignmentRequest struct {
 	Requestor string
@@ -23,6 +31,13 @@ type ModifySeatAssignmentRequest struct {
 	ServiceID string
 	Assign    []string
 	Unassign  []string
+}
+
+// GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
+type GetSeatAssignmentCountsRequest struct {
+	Requestor string
+	OrgID     string
+	ServiceID string
 }
 
 // NewLicenseAppService ctor.
@@ -33,6 +48,55 @@ func NewLicenseAppService(accessRepo *contracts.AccessRepository, seatRepo *cont
 		principalRepo: principalRepo,
 		ctx:           context.Background(),
 	}
+}
+
+// GetSeatAssignmentCounts gets the seat limit and current allocation for a license
+func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (current int, max int, err error) {
+	evt := model.GetLicenseEvent{
+		OrgID:     req.OrgID,
+		ServiceID: req.ServiceID,
+	}
+
+	evt.Requestor = vo.SubjectID(req.Requestor)
+
+	seatsService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
+
+	lic, err := seatsService.GetLicense(evt)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	current = lic.InUse
+	max = lic.MaxSeats
+	err = nil
+	return
+}
+
+// GetSeatAssignments gets the subjects assigned to seats in a license
+func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]model.Principal, error) {
+	evt := model.GetLicenseEvent{
+		OrgID:     req.OrgID,
+		ServiceID: req.ServiceID,
+	}
+
+	evt.Requestor = vo.SubjectID(req.Requestor)
+
+	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
+
+	assigned, err := seatService.GetAssignedSeats(evt)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.IncludeUsers {
+		return s.principalRepo.GetByIDs(assigned)
+	}
+
+	principals := make([]model.Principal, len(assigned))
+	for i, id := range assigned {
+		principals[i] = model.NewPrincipal(id)
+	}
+	return principals, nil
 }
 
 // ModifySeats TODO

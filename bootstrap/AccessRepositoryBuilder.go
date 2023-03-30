@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/domain/contracts"
+	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/authzed"
 	"authz/infrastructure/repository/fga"
@@ -28,13 +29,13 @@ func (e *AccessRepositoryBuilder) WithImplementation(implID string) *AccessRepos
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	switch e.impl {
 	case "stub":
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[vo.SubjectID]map[string]bool{}}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[vo.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":
 		return &authzed.SpiceDbAccessRepository{}, nil
 	case "openfga":
 		return &fga.OpenFgaAccessRepository{}, nil
 	default:
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[vo.SubjectID]map[string]bool{}}, nil
+		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[vo.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	}
 }
 
@@ -45,4 +46,8 @@ func getMockData() map[vo.SubjectID]bool {
 		"bob":   true,
 		"chuck": false,
 	}
+}
+
+func getMockLicenseData() map[string]model.License {
+	return map[string]model.License{"smarts": *model.NewLicense("aspian", "smarts", 20, 0)}
 }
