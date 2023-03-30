@@ -59,7 +59,7 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 
 	evt.Requestor = vo.SubjectID(req.Requestor)
 
-	seatsService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
+	seatsService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
 	lic, err := seatsService.GetLicense(evt)
 	if err != nil {
@@ -81,7 +81,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 	evt.Requestor = vo.SubjectID(req.Requestor)
 
-	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
+	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
 	assigned, err := seatService.GetAssignedSeats(evt)
 	if err != nil {
