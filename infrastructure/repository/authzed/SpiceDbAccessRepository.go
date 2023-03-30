@@ -168,15 +168,13 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*m
 
 // GetAssigned - todo implementation
 func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]vo.SubjectID, error) {
-	result, err := authzedConn.client.LookupResources(authzedConn.ctx, &v1.LookupResourcesRequest{
-		Subject: &v1.SubjectReference{
-			Object: &v1.ObjectReference{
-				ObjectType: LicenseObjectType,
-				ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
-			},
+	result, err := authzedConn.client.LookupSubjects(authzedConn.ctx, &v1.LookupSubjectsRequest{
+		Resource: &v1.ObjectReference{
+			ObjectType: LicenseObjectType,
+			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
 		},
-		Permission:         "access",
-		ResourceObjectType: SubjectType,
+		Permission:        "access",
+		SubjectObjectType: SubjectType,
 	})
 
 	if err != nil {

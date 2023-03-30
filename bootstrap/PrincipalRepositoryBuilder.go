@@ -27,9 +27,9 @@ func (b *PrincipalRepositoryBuilder) WithStore(store string) *PrincipalRepositor
 func (b *PrincipalRepositoryBuilder) Build() contracts.PrincipalRepository {
 	switch b.store {
 	case "stub":
-		return &mock.StubPrincipalRepository{Principals: getMockPrincipalData()}
+		return &mock.StubPrincipalRepository{Principals: getMockPrincipalData(), DefaultOrg: "o1"}
 	default:
-		return &mock.StubPrincipalRepository{Principals: getMockPrincipalData()}
+		return &mock.StubPrincipalRepository{Principals: getMockPrincipalData(), DefaultOrg: "o1"}
 	}
 }
 
