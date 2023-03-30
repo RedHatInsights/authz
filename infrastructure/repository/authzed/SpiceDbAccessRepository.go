@@ -171,14 +171,21 @@ func (s *SpiceDbAccessRepository) GetAssigned(_ string, _ string) ([]vo.SubjectI
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
-func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking bool) {
+func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) {
+
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpcutil.WithInsecureBearerToken(token),
 	}
 
 	if isBlocking {
 		opts = append(opts, grpc.WithBlock())
+	}
+
+	if !useTLS {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else { // Use TLS - but for now SKIP CA verification
+		skipCA, _ := grpcutil.WithSystemCerts(grpcutil.SkipVerifyCA)
+		opts = append(opts, skipCA)
 	}
 
 	client, err := authzed.NewClient(
