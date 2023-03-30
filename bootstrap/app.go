@@ -20,7 +20,7 @@ func Run(endpoint string, token string, store string) {
 	ar.NewConnection(
 		endpoint,
 		token,
-		true)
+		false)
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
