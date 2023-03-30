@@ -15,7 +15,7 @@ type StubAccessRepository struct {
 }
 
 // NewConnection Stub impl
-func (s *StubAccessRepository) NewConnection(_ string, _ string, _ bool) {
+func (s *StubAccessRepository) NewConnection(_ string, _ string, _ bool, _ bool) {
 	// NOT USED IN STUB
 }
 

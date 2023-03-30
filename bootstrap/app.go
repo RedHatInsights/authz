@@ -20,11 +20,12 @@ func Run(endpoint string, token string, store string) {
 	ar.NewConnection(
 		endpoint,
 		token,
-		false)
+		false,
+		true)
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
-		HTTPPort:  "8081",
+		HTTPPort:  "8080",
 		HTTPSPort: "8443",
 		TLSConfig: api.TLSConfig{
 			CertPath: "/etc/tls/tls.crt",

@@ -17,6 +17,7 @@ import (
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // SubjectType user
@@ -170,10 +171,9 @@ func (s *SpiceDbAccessRepository) GetAssigned(_ string, _ string) ([]vo.SubjectI
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
-func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking bool) {
+func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) {
 
 	opts := []grpc.DialOption{
-		//grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpcutil.WithInsecureBearerToken(token),
 	}
 
@@ -181,9 +181,12 @@ func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token st
 		opts = append(opts, grpc.WithBlock())
 	}
 
-	//TODO - Skip CA for now, To verify
-	skipCA, _ := grpcutil.WithSystemCerts(grpcutil.SkipVerifyCA)
-	opts = append(opts, skipCA)
+	if !useTLS {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else { // Use TLS - but for now SKIP CA verification
+		skipCA, _ := grpcutil.WithSystemCerts(grpcutil.SkipVerifyCA)
+		opts = append(opts, skipCA)
+	}
 
 	client, err := authzed.NewClient(
 		spiceDbEndpoint,
