@@ -29,6 +29,9 @@ const LicenseSeatObjectType = "license_seats"
 // LicenseObjectType - License object
 const LicenseObjectType = "license"
 
+// LicenseVersionStr - License Version realation
+const LicenseVersionStr = "version"
+
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct{}
 
@@ -85,11 +88,18 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID strin
 
 	glog.Infof("Assigned operation :%v", result)
 
+	//Update the license version count - increment
+	err = s.modifyLicenseSeatsVersionCount(orgID, svc.ID, 1, true)
+	if err != nil {
+		glog.Errorf("Failed to update license version relation :%v", err.Error())
+		return err
+	}
+
 	return nil
 }
 
 // UnAssignSeat delete the relation
-func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, _ string, _ model.Service) error {
+func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error {
 	result, err := authzedConn.client.DeleteRelationships(authzedConn.ctx, &v1.DeleteRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:     LicenseSeatObjectType,
@@ -108,6 +118,12 @@ func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, _ string,
 		return err
 	}
 
+	//Update the license version count - decrement
+	err = s.modifyLicenseSeatsVersionCount(orgID, svc.ID, 1, false)
+	if err != nil {
+		glog.Errorf("Failed to update license version relation :%v", err.Error())
+		return err
+	}
 	return nil
 }
 
@@ -168,6 +184,111 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*m
 // GetAssigned - todo implementation
 func (s *SpiceDbAccessRepository) GetAssigned(_ string, _ string) ([]vo.SubjectID, error) {
 	return nil, nil
+}
+
+func (s *SpiceDbAccessRepository) modifyLicenseSeatsVersionCount(orgID, serviceID string, count int, increment bool) error {
+	//Step1 - Read the current License version
+	resp, err := authzedConn.client.ReadRelationships(authzedConn.ctx, &v1.ReadRelationshipsRequest{
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:       LicenseObjectType,
+			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),
+		},
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to read License relation :%v", err.Error())
+		return err
+	}
+
+	var assignedCount int
+	var currentLicenseVersion string
+	for {
+		v, err := resp.Recv()
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			glog.Errorf("Failed iterate License read response :%v", err.Error())
+			return err
+		}
+		// The version is of the form: <Versionstring>/currentassignedseatscount
+		if v.Relationship.Relation == "version" {
+			glog.Infof("License - Version : %v", v.Relationship.Subject.Object.ObjectId)
+			//spilt with "/" and the second part of the string is the current assigned count
+			versionStrArr := strings.Split(v.Relationship.Subject.Object.ObjectId, "/")
+			if len(versionStrArr) != 2 {
+				return fmt.Errorf("invalid license version %s", v.Relationship.Subject.Object.ObjectId)
+			}
+			assignedCount, err = strconv.Atoi(versionStrArr[1])
+			if err != nil {
+				return err
+			}
+			currentLicenseVersion = versionStrArr[0]
+		}
+	}
+
+	// Step 2 Delete the existing License - Version relationship
+	err = s.deleteLicenseVersionRelation(orgID, serviceID, currentLicenseVersion, assignedCount)
+	if err != nil {
+		glog.Errorf("Failed to delete old License version relation :%v", err.Error())
+		return err
+	}
+
+	//Step 3 - Write the new License - Version relationship
+	//Get the old Data and perform the modification
+	if increment {
+		assignedCount = assignedCount + count
+	} else {
+		assignedCount = assignedCount - count
+	}
+	err = s.writeLicenseVersionRelation(orgID, serviceID, currentLicenseVersion, assignedCount)
+
+	if err != nil {
+		glog.Errorf("Failed to write new License version relation :%v", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (s *SpiceDbAccessRepository) deleteLicenseVersionRelation(_, _, versionStr string, count int) error {
+	resp, err := authzedConn.client.DeleteRelationships(authzedConn.ctx, &v1.DeleteRelationshipsRequest{
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:     LicenseObjectType,
+			OptionalRelation: LicenseVersionStr,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       LicenseVersionStr,
+				OptionalSubjectId: fmt.Sprintf("%s/%d", versionStr, count),
+			},
+		},
+	})
+	if err != nil {
+		glog.Errorf("Failed to delete License Version relation :%v", err.Error())
+		return err
+	}
+	glog.Infof("Deleted license version relation :%v", resp)
+	return nil
+}
+
+func (s *SpiceDbAccessRepository) writeLicenseVersionRelation(orgID, srvcID, versionStr string, count int) error {
+
+	subject, object := createSubjectObjectTuple(LicenseVersionStr, fmt.Sprintf("%s/%d", versionStr, count),
+		LicenseObjectType, fmt.Sprintf("%s/%s", orgID, srvcID))
+	var relationshipUpdates = []*v1.RelationshipUpdate{
+		{Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
+			Subject:  subject,
+			Resource: object,
+			Relation: LicenseVersionStr,
+		}},
+	}
+	result, err := authzedConn.client.WriteRelationships(authzedConn.ctx, &v1.WriteRelationshipsRequest{
+		Updates: relationshipUpdates,
+	})
+	if err != nil {
+		glog.Errorf("Failed to create license version relation :%v", err.Error())
+		return err
+	}
+	glog.Infof("License Version create operation :%v", result)
+	return nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
