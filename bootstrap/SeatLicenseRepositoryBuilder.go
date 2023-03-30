@@ -1,6 +1,9 @@
 package bootstrap
 
-import "authz/domain/contracts"
+import (
+	"authz/domain/contracts"
+	"authz/infrastructure/repository/authzed"
+)
 
 // SeatLicenseRepositoryBuilder constructs SeatLicenseRepositories based on the provided configuration
 type SeatLicenseRepositoryBuilder struct {
@@ -28,6 +31,8 @@ func (b *SeatLicenseRepositoryBuilder) WithStore(store string) *SeatLicenseRepos
 // Build constructs the repository
 func (b *SeatLicenseRepositoryBuilder) Build() contracts.SeatLicenseRepository {
 	switch b.store {
+	case "spicedb":
+		return &authzed.SpiceDbAccessRepository{}
 	case "stub":
 		return b.stub
 	default:

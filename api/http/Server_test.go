@@ -118,7 +118,7 @@ func createTestServer() *grpc.Server {
 
 	return &grpc.Server{
 		AccessAppService:  application.NewAccessAppService(&accessRepo, principalRepo),
-		LicenseAppService: application.NewLicenseAppService(accessRepo, licenseRepo, principalRepo),
+		LicenseAppService: application.NewLicenseAppService(&accessRepo, &licenseRepo, principalRepo),
 	}
 }
 
