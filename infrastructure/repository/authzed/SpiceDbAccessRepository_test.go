@@ -5,6 +5,7 @@ import (
 	"authz/domain/valueobjects"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"testing"
 
@@ -92,6 +93,27 @@ func TestGetAssigned(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, []valueobjects.SubjectID{"u1"}, assigned)
+}
+
+func TestRapidAssignments(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	for i := 2; i < 10; i++ {
+		err = client.AssignSeat(valueobjects.SubjectID(fmt.Sprintf("u%d", i)), "o1", model.Service{ID: "smarts"})
+		assert.NoError(t, err)
+	}
+
+	lic, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, 10, lic.InUse)
 }
 
 func TestAssignUnassign(t *testing.T) {
