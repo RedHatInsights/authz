@@ -34,7 +34,9 @@ const LicenseObjectType = "license"
 const LicenseVersionStr = "version"
 
 // SpiceDbAccessRepository -
-type SpiceDbAccessRepository struct{}
+type SpiceDbAccessRepository struct {
+	authzedClient
+}
 
 // authzedClient - Authz client struct
 type authzedClient struct {
@@ -42,13 +44,11 @@ type authzedClient struct {
 	ctx    context.Context
 }
 
-var authzedConn *authzedClient
-
 // CheckAccess - verify permission with subject type "user"
 func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation string, resource model.Resource) (vo.AccessDecision, error) {
 	subject, object := createSubjectObjectTuple(SubjectType, string(subjectID), resource.Type, resource.ID)
 
-	result, err := authzedConn.client.CheckPermission(authzedConn.ctx, &v1.CheckPermissionRequest{
+	result, err := s.client.CheckPermission(s.ctx, &v1.CheckPermissionRequest{
 		Resource:   object,
 		Permission: operation,
 		Subject:    subject,
@@ -78,7 +78,7 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID strin
 		}},
 	}
 
-	result, err := authzedConn.client.WriteRelationships(authzedConn.ctx, &v1.WriteRelationshipsRequest{
+	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
 	})
 
@@ -101,7 +101,7 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID strin
 
 // UnAssignSeat delete the relation
 func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error {
-	result, err := authzedConn.client.DeleteRelationships(authzedConn.ctx, &v1.DeleteRelationshipsRequest{
+	result, err := s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:     LicenseSeatObjectType,
 			OptionalRelation: "assigned",
@@ -131,7 +131,7 @@ func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID str
 // GetLicense - Get the current license infoarmation
 func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*model.License, error) {
 	var license model.License
-	resp, err := authzedConn.client.ReadRelationships(authzedConn.ctx, &v1.ReadRelationshipsRequest{
+	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:       LicenseObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),
@@ -184,7 +184,7 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*m
 
 // GetAssigned - todo implementation
 func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]vo.SubjectID, error) {
-	result, err := authzedConn.client.LookupSubjects(authzedConn.ctx, &v1.LookupSubjectsRequest{
+	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{
 			ObjectType: LicenseObjectType,
 			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
@@ -214,7 +214,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 
 func (s *SpiceDbAccessRepository) modifyLicenseSeatsVersionCount(orgID, serviceID string, count int, increment bool) error {
 	//Step1 - Read the current License version
-	resp, err := authzedConn.client.ReadRelationships(authzedConn.ctx, &v1.ReadRelationshipsRequest{
+	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:       LicenseObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),
@@ -277,7 +277,7 @@ func (s *SpiceDbAccessRepository) modifyLicenseSeatsVersionCount(orgID, serviceI
 }
 
 func (s *SpiceDbAccessRepository) deleteLicenseVersionRelation(_, _, versionStr string, count int) error {
-	resp, err := authzedConn.client.DeleteRelationships(authzedConn.ctx, &v1.DeleteRelationshipsRequest{
+	resp, err := s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:     LicenseObjectType,
 			OptionalRelation: LicenseVersionStr,
@@ -306,7 +306,7 @@ func (s *SpiceDbAccessRepository) writeLicenseVersionRelation(orgID, srvcID, ver
 			Relation: LicenseVersionStr,
 		}},
 	}
-	result, err := authzedConn.client.WriteRelationships(authzedConn.ctx, &v1.WriteRelationshipsRequest{
+	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
 	})
 	if err != nil {
@@ -344,10 +344,8 @@ func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token st
 		log.Fatalf("unable to initialize client: %s", err)
 	}
 
-	authzedConn = &authzedClient{
-		client: client,
-		ctx:    context.Background(),
-	}
+	s.client = client
+	s.ctx = context.Background()
 }
 
 func createSubjectObjectTuple(subjectType string, subjectValue string, objectType string, objectValue string) (*v1.SubjectReference, *v1.ObjectReference) {
