@@ -8,7 +8,6 @@ require (
 	github.com/golang/glog v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
 	github.com/kinbiko/jsonassert v1.1.1
-	github.com/openfga/go-sdk v0.2.1
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5

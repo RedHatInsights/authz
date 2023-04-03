@@ -5,7 +5,6 @@ import (
 	"authz/domain/model"
 	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/authzed"
-	"authz/infrastructure/repository/fga"
 	"authz/infrastructure/repository/mock"
 )
 
@@ -32,8 +31,6 @@ func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[vo.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":
 		return &authzed.SpiceDbAccessRepository{}, nil
-	case "openfga":
-		return &fga.OpenFgaAccessRepository{}, nil
 	default:
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[vo.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	}
