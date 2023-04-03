@@ -132,6 +132,7 @@ func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID str
 func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*model.License, error) {
 	var license model.License
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:       LicenseObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),
@@ -215,6 +216,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 func (s *SpiceDbAccessRepository) modifyLicenseSeatsVersionCount(orgID, serviceID string, count int, increment bool) error {
 	//Step1 - Read the current License version
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:       LicenseObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, serviceID),

@@ -107,13 +107,13 @@ func TestRapidAssignments(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
+	//t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
 	t.Parallel()
 
 	client, err := spicedbTestClient()
 	assert.NoError(t, err)
 
-	for i := 2; i < 10; i++ {
+	for i := 2; i <= 10; i++ {
 		err = client.AssignSeat(valueobjects.SubjectID(fmt.Sprintf("u%d", i)), "o1", model.Service{ID: "smarts"})
 		assert.NoError(t, err)
 	}
@@ -128,7 +128,7 @@ func TestAssignUnassign(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
+	//t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
 
 	t.Parallel()
 
