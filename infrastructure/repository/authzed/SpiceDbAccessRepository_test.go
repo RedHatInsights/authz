@@ -30,10 +30,9 @@ func TestMain(m *testing.M) {
 	)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "authzed/spicedb",
-		Tag:        "v1.17.0", // Replace this with an actual version
-		Cmd:        []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
-		//TODO: how to get the absolute path at runtime?
+		Repository:   "authzed/spicedb",
+		Tag:          "v1.17.0", // Replace this with an actual version
+		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
 		Mounts:       []string{path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
 		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
 	})
@@ -68,6 +67,32 @@ func spicedbTestClient() (*SpiceDbAccessRepository, error) {
 	e.NewConnection("localhost:"+port, randomKey, true, false)
 
 	return e, nil
+}
+
+func TestCheckAccess(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.Parallel()
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	cases := []struct {
+		sub       valueobjects.SubjectID
+		operation string
+		resource  model.Resource
+		expected  valueobjects.AccessDecision
+	}{
+		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: true},
+		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/doesnotexist"}, expected: false},
+		{sub: "doesnotexist", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: false},
+	}
+
+	for _, testcase := range cases {
+		actual, err := client.CheckAccess(testcase.sub, testcase.operation, testcase.resource)
+		assert.NoError(t, err, fmt.Sprintf("Error in case (subject: %s, operation: %s, resource: [%s, %s])", testcase.sub, testcase.operation, testcase.resource.Type, testcase.resource.ID))
+		assert.Equal(t, testcase.expected, actual, "Unexpected result for case (subject: %s, operation: %s, resource: [%s, %s])", testcase.sub, testcase.operation, testcase.resource.Type, testcase.resource.ID)
+	}
 }
 
 func TestGetLicense(t *testing.T) {
@@ -107,7 +132,7 @@ func TestRapidAssignments(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	//t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
+
 	t.Parallel()
 
 	client, err := spicedbTestClient()
@@ -128,7 +153,6 @@ func TestAssignUnassign(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
-	//t.SkipNow() //NOTE: this test passes if run slowly but not if run fast. Consistency?
 
 	t.Parallel()
 
