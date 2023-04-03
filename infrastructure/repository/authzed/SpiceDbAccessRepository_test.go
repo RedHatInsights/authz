@@ -7,6 +7,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/ory/dockertest/v3"
@@ -21,12 +24,17 @@ func TestMain(m *testing.M) {
 		return
 	}
 
+	var (
+		_, b, _, _ = runtime.Caller(0)
+		basepath   = filepath.Dir(b)
+	)
+
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "authzed/spicedb",
 		Tag:        "v1.17.0", // Replace this with an actual version
 		Cmd:        []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
 		//TODO: how to get the absolute path at runtime?
-		Mounts:       []string{"/home/wscalf/Projects/authz/schema/spicedb_bootstrap.yaml:/mnt/spicedb_bootstrap.yaml"},
+		Mounts:       []string{path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
 		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
 	})
 	if err != nil {
