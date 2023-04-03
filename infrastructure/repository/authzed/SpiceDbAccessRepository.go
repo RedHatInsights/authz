@@ -332,9 +332,9 @@ func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token st
 
 	if !useTLS {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	} else { // Use TLS - but for now SKIP CA verification
-		skipCA, _ := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
-		opts = append(opts, skipCA)
+	} else {
+		tlsConfig, _ := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+		opts = append(opts, tlsConfig)
 	}
 
 	client, err := authzed.NewClient(
