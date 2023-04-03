@@ -40,13 +40,10 @@ func TestMain(m *testing.M) {
 		return
 	}
 
-	defer func() {
-		_ = pool.Purge(resource)
-	}()
-
 	port = resource.GetPort("50051/tcp")
 
 	result := m.Run()
+	_ = pool.Purge(resource)
 
 	os.Exit(result)
 }
