@@ -1,47 +1,58 @@
 package authzed
 
 import (
-	"context"
+	"authz/domain/model"
+	"authz/domain/valueobjects"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 
-	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
 	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/assert"
 )
 
-// runSpiceDBTestServer spins up a SpiceDB container running the integration
-// test server.
-func runSpiceDBTestServer(t *testing.T) (port string, err error) {
+var port string
+
+func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("") // Empty string uses default docker env
 	if err != nil {
 		return
 	}
 
+	var (
+		_, b, _, _ = runtime.Caller(0)
+		basepath   = filepath.Dir(b)
+	)
+
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository:   "authzed/spicedb",
 		Tag:          "v1.17.0", // Replace this with an actual version
-		Cmd:          []string{"serve-testing"},
+		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
+		Mounts:       []string{path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
 		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
 	})
 	if err != nil {
 		return
 	}
 
-	// When you're done, kill and remove the container
-	t.Cleanup(func() {
-		_ = pool.Purge(resource)
-	})
+	port = resource.GetPort("50051/tcp")
 
-	return resource.GetPort("50051/tcp"), nil
+	result := m.Run()
+	_ = pool.Purge(resource)
+
+	os.Exit(result)
 }
 
 // spicedbTestClient creates a new SpiceDB client with random credentials.
 //
 // The test server gives each set of a credentials its own isolated datastore
 // so that tests can be ran in parallel.
-func spicedbTestClient(_ *testing.T, port string) (*authzed.Client, error) {
+func spicedbTestClient() (*SpiceDbAccessRepository, error) {
 	// Generate a random credential to isolate this client from any others.
 	buf := make([]byte, 20)
 	if _, err := rand.Read(buf); err != nil {
@@ -52,60 +63,112 @@ func spicedbTestClient(_ *testing.T, port string) (*authzed.Client, error) {
 	e := &SpiceDbAccessRepository{}
 	e.NewConnection("localhost:"+port, randomKey, true, false)
 
-	return authzedConn.client, nil
+	return e, nil
 }
 
-func TestSpiceDB(t *testing.T) {
+func TestCheckAccess(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.Parallel()
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	cases := []struct {
+		sub       valueobjects.SubjectID
+		operation string
+		resource  model.Resource
+		expected  valueobjects.AccessDecision
+	}{
+		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: true},
+		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/doesnotexist"}, expected: false},
+		{sub: "doesnotexist", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: false},
+	}
+
+	for _, testcase := range cases {
+		actual, err := client.CheckAccess(testcase.sub, testcase.operation, testcase.resource)
+		assert.NoError(t, err, fmt.Sprintf("Error in case (subject: %s, operation: %s, resource: [%s, %s])", testcase.sub, testcase.operation, testcase.resource.Type, testcase.resource.ID))
+		assert.Equal(t, testcase.expected, actual, "Unexpected result for case (subject: %s, operation: %s, resource: [%s, %s])", testcase.sub, testcase.operation, testcase.resource.Type, testcase.resource.ID)
+	}
+}
+
+func TestGetLicense(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	lic, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, "o1", lic.OrgID)
+	assert.Equal(t, "smarts", lic.ServiceID)
+	assert.Equal(t, 10, lic.MaxSeats)
+	assert.Equal(t, 1, lic.InUse)
+}
+
+func TestGetAssigned(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	assigned, err := client.GetAssigned("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.ElementsMatch(t, []valueobjects.SubjectID{"u1"}, assigned)
+}
+
+func TestRapidAssignments(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
 
-	port, err := runSpiceDBTestServer(t)
-	if err != nil {
-		t.Fatal(err)
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	for i := 2; i <= 10; i++ {
+		err = client.AssignSeat(valueobjects.SubjectID(fmt.Sprintf("u%d", i)), "o1", model.Service{ID: "smarts"})
+		assert.NoError(t, err)
 	}
 
-	tests := []struct {
-		name   string
-		schema string
-	}{
-		{
-			"basic readback",
-			`definition user {}`,
-		},
-		{
-			"readback 2",
-			`definition user {}`,
-		},
-		{
-			"Nr 3",
-			`definition user {}`,
-		},
+	lic, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, 10, lic.InUse)
+}
+
+func TestAssignUnassign(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
 	}
 
-	for _, tt := range tests {
-		tt2 := tt
-		t.Run(tt2.name, func(t *testing.T) {
-			t.Parallel()
+	t.Parallel()
 
-			client, err := spicedbTestClient(t, port)
-			if err != nil {
-				t.Fatal(err)
-			}
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
 
-			_, err = client.WriteSchema(context.TODO(), &v1.WriteSchemaRequest{Schema: tt2.schema})
-			if err != nil {
-				t.Fatal(err)
-			}
+	err = client.AssignSeat("u2", "o1", model.Service{ID: "smarts"})
+	assert.NoError(t, err)
 
-			resp, err := client.ReadSchema(context.TODO(), &v1.ReadSchemaRequest{})
-			if err != nil {
-				t.Fatal(err)
-			}
+	lic, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
 
-			if tt2.schema != resp.SchemaText {
-				t.Fatal(err)
-			}
-		})
-	}
+	assert.Equal(t, 2, lic.InUse)
+
+	err = client.UnAssignSeat("u2", "o1", model.Service{ID: "smarts"})
+	assert.NoError(t, err)
+
+	lic, err = client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, lic.InUse)
 }
