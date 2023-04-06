@@ -147,3 +147,18 @@ clean:
 clean-apigenv3:
 	@echo "removing artifacts from openapi v3 generator"
 	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+
+.PHONY: lint
+lint:
+	$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
+
+.PHONY: test-short
+test-short:
+	$(GO) test -short $(PWD)/...
+
+.PHONY: test
+test:
+	$(GO) test $(PWD)/...
+
+.PHONY: pr-check
+pr-check: test lint binary
