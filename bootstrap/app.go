@@ -43,13 +43,14 @@ func initialize(endpoint string, token string, store string, useTLS bool) (*grpc
 	ar := getAccessRepository(store)
 	sr := getSeatRepository(store, ar)
 	pr := getPrincipalRepository(store)
+	blocking := true
 	ar.NewConnection(
 		endpoint,
 		token,
-		true,
+		blocking,
 		useTLS)
-	if cast, ok := sr.(contracts.AccessRepository); ok {
-		cast.NewConnection(endpoint, token, true, useTLS)
+	if tempAccessRepo, ok := sr.(contracts.AccessRepository); ok {
+		tempAccessRepo.NewConnection(endpoint, token, blocking, useTLS)
 	}
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.

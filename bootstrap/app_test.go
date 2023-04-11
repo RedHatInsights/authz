@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/golang/glog"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
@@ -82,15 +83,6 @@ func TestModify(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func initializeGrpcServer(t *testing.T) *grpc.Server {
-	token, err := serialKey()
-	assert.NoError(t, err)
-
-	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
-
-	return grpc
-}
-
 func getContext() context.Context {
 	data := metadata.New(map[string]string{
 		"grpcgateway-authorization": "token",
@@ -101,10 +93,20 @@ func getContext() context.Context {
 
 var port string
 
+func initializeGrpcServer(t *testing.T) *grpc.Server {
+	token, err := serialKey()
+	assert.NoError(t, err)
+
+	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
+
+	return grpc
+}
+
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("") // Empty string uses default docker env
 	if err != nil {
-		return
+		glog.Fatalf("Failed to initialize dockertest pool: %s", err)
+		os.Exit(1)
 	}
 
 	var (
@@ -117,10 +119,11 @@ func TestMain(m *testing.M) {
 		Tag:          "v1.17.0", // Replace this with an actual version
 		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
 		Mounts:       []string{path.Join(basepath, "../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
-		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
+		ExposedPorts: []string{"50051/tcp"},
 	})
 	if err != nil {
-		return
+		glog.Fatalf("Failed to create SpiceDB container: %s", err)
+		os.Exit(1)
 	}
 
 	port = resource.GetPort("50051/tcp")
