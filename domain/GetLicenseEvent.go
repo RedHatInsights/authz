@@ -1,10 +1,8 @@
-package model
-
-import "authz/domain/valueobjects"
+package domain
 
 // GetLicenseEvent represents a request for a license
 type GetLicenseEvent struct {
-	Requestor valueobjects.SubjectID
+	Requestor SubjectID
 	OrgID     string
 	ServiceID string
 }

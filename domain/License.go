@@ -1,4 +1,4 @@
-package model
+package domain
 
 // License represents a license purchased by an org for a service
 type License struct {

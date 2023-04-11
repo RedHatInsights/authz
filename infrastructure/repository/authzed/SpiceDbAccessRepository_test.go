@@ -1,8 +1,7 @@
 package authzed
 
 import (
-	"authz/domain/model"
-	"authz/domain/valueobjects"
+	"authz/domain"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -75,14 +74,14 @@ func TestCheckAccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	cases := []struct {
-		sub       valueobjects.SubjectID
+		sub       domain.SubjectID
 		operation string
-		resource  model.Resource
-		expected  valueobjects.AccessDecision
+		resource  domain.Resource
+		expected  domain.AccessDecision
 	}{
-		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: true},
-		{sub: "u1", operation: "access", resource: model.Resource{Type: "license", ID: "o1/doesnotexist"}, expected: false},
-		{sub: "doesnotexist", operation: "access", resource: model.Resource{Type: "license", ID: "o1/smarts"}, expected: false},
+		{sub: "u1", operation: "access", resource: domain.Resource{Type: "license", ID: "o1/smarts"}, expected: true},
+		{sub: "u1", operation: "access", resource: domain.Resource{Type: "license", ID: "o1/doesnotexist"}, expected: false},
+		{sub: "doesnotexist", operation: "access", resource: domain.Resource{Type: "license", ID: "o1/smarts"}, expected: false},
 	}
 
 	for _, testcase := range cases {
@@ -122,7 +121,7 @@ func TestGetAssigned(t *testing.T) {
 	assigned, err := client.GetAssigned("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.ElementsMatch(t, []valueobjects.SubjectID{"u1"}, assigned)
+	assert.ElementsMatch(t, []domain.SubjectID{"u1"}, assigned)
 }
 
 func TestRapidAssignments(t *testing.T) {
@@ -136,7 +135,7 @@ func TestRapidAssignments(t *testing.T) {
 	assert.NoError(t, err)
 
 	for i := 2; i <= 10; i++ {
-		err = client.AssignSeat(valueobjects.SubjectID(fmt.Sprintf("u%d", i)), "o1", model.Service{ID: "smarts"})
+		err = client.AssignSeat(domain.SubjectID(fmt.Sprintf("u%d", i)), "o1", domain.Service{ID: "smarts"})
 		assert.NoError(t, err)
 	}
 
@@ -156,7 +155,7 @@ func TestAssignUnassign(t *testing.T) {
 	client, err := spicedbTestClient()
 	assert.NoError(t, err)
 
-	err = client.AssignSeat("u2", "o1", model.Service{ID: "smarts"})
+	err = client.AssignSeat("u2", "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
 
 	lic, err := client.GetLicense("o1", "smarts")
@@ -164,7 +163,7 @@ func TestAssignUnassign(t *testing.T) {
 
 	assert.Equal(t, 2, lic.InUse)
 
-	err = client.UnAssignSeat("u2", "o1", model.Service{ID: "smarts"})
+	err = client.UnAssignSeat("u2", "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
 
 	lic, err = client.GetLicense("o1", "smarts")

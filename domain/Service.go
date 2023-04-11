@@ -1,4 +1,4 @@
-package model
+package domain
 
 // Service represents a service/application in the larger environment
 type Service struct {

@@ -2,8 +2,7 @@
 package authzed
 
 import (
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
+	"authz/domain"
 	"context"
 	"errors"
 	"fmt"
@@ -45,7 +44,7 @@ type authzedClient struct {
 }
 
 // CheckAccess - verify permission with subject type "user"
-func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation string, resource model.Resource) (vo.AccessDecision, error) {
+func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operation string, resource domain.Resource) (domain.AccessDecision, error) {
 	subject, object := createSubjectObjectTuple(SubjectType, string(subjectID), resource.Type, resource.ID)
 
 	result, err := s.client.CheckPermission(s.ctx, &v1.CheckPermissionRequest{
@@ -68,7 +67,7 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID vo.SubjectID, operation 
 }
 
 // AssignSeat create the relation
-func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error {
+func (s *SpiceDbAccessRepository) AssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error {
 	subject, object := createSubjectObjectTuple(SubjectType, string(subjectID), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
 	var relationshipUpdates = []*v1.RelationshipUpdate{
 		{Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
@@ -100,7 +99,7 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID vo.SubjectID, orgID strin
 }
 
 // UnAssignSeat delete the relation
-func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID string, svc model.Service) error {
+func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error {
 	result, err := s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
 		RelationshipFilter: &v1.RelationshipFilter{
 			ResourceType:     LicenseSeatObjectType,
@@ -129,8 +128,8 @@ func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID vo.SubjectID, orgID str
 }
 
 // GetLicense - Get the current license infoarmation
-func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*model.License, error) {
-	var license model.License
+func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*domain.License, error) {
+	var license domain.License
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
 		RelationshipFilter: &v1.RelationshipFilter{
@@ -184,7 +183,7 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*m
 }
 
 // GetAssigned - todo implementation
-func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]vo.SubjectID, error) {
+func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{
 			ObjectType: LicenseObjectType,
@@ -198,7 +197,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 		return nil, err
 	}
 
-	ids := make([]vo.SubjectID, 0)
+	ids := make([]domain.SubjectID, 0)
 	for {
 		next, err := result.Recv()
 		if errors.Is(err, io.EOF) {
@@ -208,7 +207,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 			return nil, err
 		}
 
-		ids = append(ids, vo.SubjectID(next.SubjectObjectId))
+		ids = append(ids, domain.SubjectID(next.SubjectObjectId))
 	}
 	return ids, nil
 }

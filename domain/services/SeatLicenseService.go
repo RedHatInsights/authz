@@ -1,9 +1,8 @@
 package services
 
 import (
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
 )
 
 // SeatLicenseService performs operations related to per-seat licensing
@@ -13,7 +12,7 @@ type SeatLicenseService struct {
 }
 
 // ModifySeats handles ModifySeatAssignmentEvents to assign and unassign seats
-func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) error {
+func (l *SeatLicenseService) ModifySeats(evt domain.ModifySeatAssignmentEvent) error {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return err
 	}
@@ -35,7 +34,7 @@ func (l *SeatLicenseService) ModifySeats(evt model.ModifySeatAssignmentEvent) er
 }
 
 // GetLicense gets the License for the provided information
-func (l *SeatLicenseService) GetLicense(evt model.GetLicenseEvent) (*model.License, error) {
+func (l *SeatLicenseService) GetLicense(evt domain.GetLicenseEvent) (*domain.License, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (l *SeatLicenseService) GetLicense(evt model.GetLicenseEvent) (*model.Licen
 }
 
 // GetAssignedSeats gets the subjects assigned to the given license
-func (l *SeatLicenseService) GetAssignedSeats(evt model.GetLicenseEvent) ([]vo.SubjectID, error) {
+func (l *SeatLicenseService) GetAssignedSeats(evt domain.GetLicenseEvent) ([]domain.SubjectID, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return nil, err
 	}
@@ -57,9 +56,9 @@ func NewSeatLicenseService(seats contracts.SeatLicenseRepository, authz contract
 	return &SeatLicenseService{seats: seats, authz: authz}
 }
 
-func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor vo.SubjectID) error {
+func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(requestor domain.SubjectID) error {
 	if !requestor.HasIdentity() {
-		return model.ErrNotAuthenticated
+		return domain.ErrNotAuthenticated
 	}
 
 	authz, err := true, error(nil) //l.authz.CheckAccess(requestor, "manage_license", org.AsResource()) //Maybe on a per-service basis? //TODO: implement meta-authz
@@ -68,7 +67,7 @@ func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(request
 	}
 
 	if !authz {
-		return model.ErrNotAuthorized
+		return domain.ErrNotAuthorized
 	}
 
 	return nil

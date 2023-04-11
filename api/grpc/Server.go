@@ -5,7 +5,7 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/application"
-	"authz/domain/model"
+	"authz/domain"
 	"context"
 	"errors"
 	"net"
@@ -213,9 +213,9 @@ func convertTokenToPrincipalID(token string) (string, error) {
 
 func convertDomainErrorToGrpc(err error) error {
 	switch {
-	case errors.Is(err, model.ErrNotAuthenticated):
+	case errors.Is(err, domain.ErrNotAuthenticated):
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
-	case errors.Is(err, model.ErrNotAuthorized):
+	case errors.Is(err, domain.ErrNotAuthorized):
 		return status.Error(codes.PermissionDenied, "Access denied.")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")

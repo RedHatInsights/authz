@@ -1,21 +1,20 @@
 package mock
 
 import (
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
+	"authz/domain"
 	"fmt"
 )
 
 // StubPrincipalRepository represents an in-memory store of principal data
 type StubPrincipalRepository struct {
 	DefaultOrg string
-	Principals map[vo.SubjectID]model.Principal
+	Principals map[domain.SubjectID]domain.Principal
 }
 
 // GetByID retrieves a principal for the given ID. If no ID is provided (ex: empty string), it returns an anonymous principal. If any error occurs, it's returned.
-func (s *StubPrincipalRepository) GetByID(id vo.SubjectID) (model.Principal, error) {
+func (s *StubPrincipalRepository) GetByID(id domain.SubjectID) (domain.Principal, error) {
 	if id == "" {
-		return model.NewAnonymousPrincipal(), nil
+		return domain.NewAnonymousPrincipal(), nil
 	}
 
 	principal, ok := s.Principals[id]
@@ -27,8 +26,8 @@ func (s *StubPrincipalRepository) GetByID(id vo.SubjectID) (model.Principal, err
 }
 
 // GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
-func (s *StubPrincipalRepository) GetByIDs(ids []vo.SubjectID) ([]model.Principal, error) {
-	principals := make([]model.Principal, len(ids))
+func (s *StubPrincipalRepository) GetByIDs(ids []domain.SubjectID) ([]domain.Principal, error) {
+	principals := make([]domain.Principal, len(ids))
 
 	for i, id := range ids {
 		var err error
@@ -41,8 +40,8 @@ func (s *StubPrincipalRepository) GetByIDs(ids []vo.SubjectID) ([]model.Principa
 }
 
 // GetByOrgID retrieves all members of the given organization
-func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]vo.SubjectID, error) {
-	ids := make([]vo.SubjectID, 0)
+func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]domain.SubjectID, error) {
+	ids := make([]domain.SubjectID, 0)
 	for _, p := range s.Principals {
 		if p.OrgID == orgID {
 			ids = append(ids, p.ID)
@@ -51,8 +50,8 @@ func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]vo.SubjectID, erro
 	return ids, nil
 }
 
-func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id vo.SubjectID) (model.Principal, error) {
-	p := model.Principal{
+func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id domain.SubjectID) (domain.Principal, error) {
+	p := domain.Principal{
 		ID:          id,
 		DisplayName: fmt.Sprintf("User %s", id),
 		OrgID:       s.DefaultOrg,

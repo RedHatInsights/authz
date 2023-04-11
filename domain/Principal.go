@@ -1,11 +1,9 @@
-package model
-
-import vo "authz/domain/valueobjects"
+package domain
 
 // A Principal is an identity that may have some authority
 type Principal struct {
 	//IDs are permanent and unique identifying values.
-	ID          vo.SubjectID
+	ID          SubjectID
 	DisplayName string
 	OrgID       string
 }
@@ -16,7 +14,7 @@ func (p Principal) IsAnonymous() bool {
 }
 
 // NewPrincipal constructs a new principal with the given identifier.
-func NewPrincipal(id vo.SubjectID, displayName string, orgID string) Principal {
+func NewPrincipal(id SubjectID, displayName string, orgID string) Principal {
 	return Principal{ID: id, DisplayName: displayName, OrgID: orgID}
 }
 

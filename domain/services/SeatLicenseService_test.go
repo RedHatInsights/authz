@@ -1,9 +1,8 @@
 package services
 
 import (
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 
 	err := lic.ModifySeats(req)
 
-	assert.ErrorIs(t, err, model.ErrNotAuthenticated)
+	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
 }
 
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
@@ -35,7 +34,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 
 	err := lic.ModifySeats(req)
 
-	assert.ErrorIs(t, err, model.ErrNotAuthorized)
+	assert.ErrorIs(t, err, domain.ErrNotAuthorized)
 }
 
 func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
@@ -71,23 +70,23 @@ func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 	assert.False(t, bool(authz), "Should not have been authorized without license.")
 }
 
-func modifyLicRequestFromVars(requestorID string, subjectOrg string, assign []string, unassign []string) model.ModifySeatAssignmentEvent {
-	evt := model.ModifySeatAssignmentEvent{
-		Request: model.Request{
-			Requestor: vo.SubjectID(requestorID),
+func modifyLicRequestFromVars(requestorID string, subjectOrg string, assign []string, unassign []string) domain.ModifySeatAssignmentEvent {
+	evt := domain.ModifySeatAssignmentEvent{
+		Request: domain.Request{
+			Requestor: domain.SubjectID(requestorID),
 		},
-		Org:     model.Organization{ID: subjectOrg},
-		Service: model.Service{ID: "smarts"},
+		Org:     domain.Organization{ID: subjectOrg},
+		Service: domain.Service{ID: "smarts"},
 	}
 
-	evt.Assign = make([]vo.SubjectID, len(assign))
+	evt.Assign = make([]domain.SubjectID, len(assign))
 	for i, id := range assign {
-		evt.Assign[i] = vo.SubjectID(id)
+		evt.Assign[i] = domain.SubjectID(id)
 	}
 
-	evt.UnAssign = make([]vo.SubjectID, len(unassign))
+	evt.UnAssign = make([]domain.SubjectID, len(unassign))
 	for i, id := range unassign {
-		evt.UnAssign[i] = vo.SubjectID(id)
+		evt.UnAssign[i] = domain.SubjectID(id)
 	}
 
 	return evt
