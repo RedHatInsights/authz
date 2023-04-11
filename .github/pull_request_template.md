@@ -1,6 +1,6 @@
 ### PR Template:
 
-* [ ] Is the agreed upon acceptance criteria fullfilled?
+* [ ] Are the agreed upon acceptance criteria fulfilled?
 
 * [ ] Was the 4-eye-principle applied? (async PR review, pairing, ensembling)
 
