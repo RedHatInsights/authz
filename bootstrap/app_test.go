@@ -4,12 +4,12 @@ import (
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc"
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"sync/atomic"
 	"testing"
 
 	"github.com/ory/dockertest/v3"
@@ -20,6 +20,7 @@ import (
 // These smoketests should exercise minimal functionality in vertical slices, primarily to ensure correct startup
 
 func TestCheckAccess(t *testing.T) {
+	t.Parallel()
 	srv := initializeGrpcServer(t)
 
 	resp, err := srv.CheckPermission(getContext(), &core.CheckPermissionRequest{
@@ -35,6 +36,7 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestGetLicense(t *testing.T) {
+	t.Parallel()
 	srv := initializeGrpcServer(t)
 
 	resp, err := srv.GetLicense(getContext(), &core.GetLicenseRequest{
@@ -49,9 +51,10 @@ func TestGetLicense(t *testing.T) {
 }
 
 func TestGetAssigned(t *testing.T) {
+	t.Parallel()
 	srv := initializeGrpcServer(t)
 
-	includeUsers := false
+	includeUsers := true
 	filter := core.SeatFilterType_assigned
 	resp, err := srv.GetSeats(getContext(), &core.GetSeatsRequest{
 		OrgId:        "o1",
@@ -66,6 +69,7 @@ func TestGetAssigned(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
+	t.Parallel()
 	srv := initializeGrpcServer(t)
 
 	_, err := srv.ModifySeats(getContext(), &core.ModifySeatsRequest{
@@ -79,7 +83,7 @@ func TestModify(t *testing.T) {
 }
 
 func initializeGrpcServer(t *testing.T) *grpc.Server {
-	token, err := randomKey()
+	token, err := serialKey()
 	assert.NoError(t, err)
 
 	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
@@ -127,10 +131,9 @@ func TestMain(m *testing.M) {
 	os.Exit(result)
 }
 
-func randomKey() (string, error) {
-	buf := make([]byte, 20)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(buf), nil
+var keyData int32 = 1
+
+func serialKey() (string, error) {
+	atomic.AddInt32(&keyData, 1)
+	return strconv.Itoa(int(keyData)), nil
 }
