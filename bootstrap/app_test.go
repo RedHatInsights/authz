@@ -1,0 +1,136 @@
+package bootstrap
+
+import (
+	core "authz/api/gen/v1alpha"
+	"authz/api/grpc"
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
+	"testing"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/metadata"
+)
+
+// These smoketests should exercise minimal functionality in vertical slices, primarily to ensure correct startup
+
+func TestCheckAccess(t *testing.T) {
+	srv := initializeGrpcServer(t)
+
+	resp, err := srv.CheckPermission(getContext(), &core.CheckPermissionRequest{
+		Subject:      "u1",
+		Operation:    "access",
+		Resourcetype: "license",
+		Resourceid:   "o1/smarts",
+	})
+
+	assert.NoError(t, err)
+
+	assert.True(t, resp.Result)
+}
+
+func TestGetLicense(t *testing.T) {
+	srv := initializeGrpcServer(t)
+
+	resp, err := srv.GetLicense(getContext(), &core.GetLicenseRequest{
+		OrgId:     "o1",
+		ServiceId: "smarts",
+	})
+
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 9, resp.SeatsAvailable)
+	assert.EqualValues(t, 10, resp.SeatsTotal)
+}
+
+func TestGetAssigned(t *testing.T) {
+	srv := initializeGrpcServer(t)
+
+	includeUsers := false
+	filter := core.SeatFilterType_assigned
+	resp, err := srv.GetSeats(getContext(), &core.GetSeatsRequest{
+		OrgId:        "o1",
+		ServiceId:    "smarts",
+		IncludeUsers: &includeUsers,
+		Filter:       &filter,
+	})
+
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 1, len(resp.Users))
+}
+
+func TestModify(t *testing.T) {
+	srv := initializeGrpcServer(t)
+
+	_, err := srv.ModifySeats(getContext(), &core.ModifySeatsRequest{
+		OrgId:     "o1",
+		ServiceId: "smarts",
+		Assign:    []string{"u2"},
+		Unassign:  []string{"u1"},
+	})
+
+	assert.NoError(t, err)
+}
+
+func initializeGrpcServer(t *testing.T) *grpc.Server {
+	token, err := randomKey()
+	assert.NoError(t, err)
+
+	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
+
+	return grpc
+}
+
+func getContext() context.Context {
+	data := metadata.New(map[string]string{
+		"grpcgateway-authorization": "token",
+	})
+
+	return metadata.NewIncomingContext(context.Background(), data)
+}
+
+var port string
+
+func TestMain(m *testing.M) {
+	pool, err := dockertest.NewPool("") // Empty string uses default docker env
+	if err != nil {
+		return
+	}
+
+	var (
+		_, b, _, _ = runtime.Caller(0)
+		basepath   = filepath.Dir(b)
+	)
+
+	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository:   "authzed/spicedb",
+		Tag:          "v1.17.0", // Replace this with an actual version
+		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
+		Mounts:       []string{path.Join(basepath, "../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
+		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
+	})
+	if err != nil {
+		return
+	}
+
+	port = resource.GetPort("50051/tcp")
+
+	result := m.Run()
+	_ = pool.Purge(resource)
+
+	os.Exit(result)
+}
+
+func randomKey() (string, error) {
+	buf := make([]byte, 20)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(buf), nil
+}

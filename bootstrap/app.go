@@ -14,14 +14,43 @@ import (
 
 // Run configures and runs the actual bootstrap.
 func Run(endpoint string, token string, store string, useTLS bool) {
+	srv, webSrv := initialize(endpoint, token, store, useTLS)
+
+	wait := sync.WaitGroup{}
+
+	go func() {
+		err := srv.Serve(&wait)
+		if err != nil {
+			glog.Fatal("Could not start grpc serving: ", err)
+		} else {
+			wait.Add(1)
+		}
+	}()
+
+	go func() {
+		err := webSrv.Serve(&wait)
+		if err != nil {
+			glog.Fatal("Could not start http serving: ", err)
+		} else {
+			wait.Add(1)
+		}
+	}()
+
+	wait.Wait()
+}
+
+func initialize(endpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
 	ar := getAccessRepository(store)
 	sr := getSeatRepository(store, ar)
 	pr := getPrincipalRepository(store)
 	ar.NewConnection(
 		endpoint,
 		token,
-		false,
+		true,
 		useTLS)
+	if cast, ok := sr.(contracts.AccessRepository); ok {
+		cast.NewConnection(endpoint, token, true, useTLS)
+	}
 
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
@@ -37,33 +66,13 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
 
-	wait := sync.WaitGroup{}
-
-	wait.Add(2)
-
 	srv := getGrpcServer(aas, sas, &srvCfg)
-
-	go func() {
-		err := srv.Serve(&wait)
-		if err != nil {
-			glog.Fatal("Could not start grpc serving: ", err)
-		}
-	}()
 
 	webSrv := getHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
 	webSrv.SetSeatRef(srv)
 
-	go func() {
-		err := webSrv.
-			Serve(&wait)
-		if err != nil {
-			glog.Fatal("Could not start http serving: ", err)
-
-		}
-	}()
-
-	wait.Wait()
+	return srv, webSrv
 }
 
 func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
