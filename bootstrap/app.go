@@ -22,8 +22,6 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 		err := srv.Serve(&wait)
 		if err != nil {
 			glog.Fatal("Could not start grpc serving: ", err)
-		} else {
-			wait.Add(1)
 		}
 	}()
 
@@ -31,11 +29,10 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 		err := webSrv.Serve(&wait)
 		if err != nil {
 			glog.Fatal("Could not start http serving: ", err)
-		} else {
-			wait.Add(1)
 		}
 	}()
 
+	wait.Add(2)
 	wait.Wait()
 }
 
