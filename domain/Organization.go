@@ -1,4 +1,4 @@
-package model
+package domain
 
 // Organization represents an organization/tenant within the system
 type Organization struct {

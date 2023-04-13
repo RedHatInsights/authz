@@ -1,10 +1,9 @@
 package application
 
 import (
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
 	"authz/domain/services"
-	vo "authz/domain/valueobjects"
 	"context"
 )
 
@@ -53,12 +52,12 @@ func NewLicenseAppService(accessRepo *contracts.AccessRepository, seatRepo *cont
 
 // GetSeatAssignmentCounts gets the seat limit and current allocation for a license
 func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (limit int, available int, err error) {
-	evt := model.GetLicenseEvent{
+	evt := domain.GetLicenseEvent{
 		OrgID:     req.OrgID,
 		ServiceID: req.ServiceID,
 	}
 
-	evt.Requestor = vo.SubjectID(req.Requestor)
+	evt.Requestor = domain.SubjectID(req.Requestor)
 
 	seatsService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
@@ -74,13 +73,13 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 }
 
 // GetSeatAssignments gets the subjects assigned to seats in a license
-func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]model.Principal, error) {
-	evt := model.GetLicenseEvent{
+func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]domain.Principal, error) {
+	evt := domain.GetLicenseEvent{
 		OrgID:     req.OrgID,
 		ServiceID: req.ServiceID,
 	}
 
-	evt.Requestor = vo.SubjectID(req.Requestor)
+	evt.Requestor = domain.SubjectID(req.Requestor)
 
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
@@ -89,7 +88,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 		return nil, err
 	}
 
-	var resultIds []vo.SubjectID
+	var resultIds []domain.SubjectID
 	if req.Assigned {
 		resultIds = assigned
 	} else {
@@ -105,30 +104,30 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 		return s.principalRepo.GetByIDs(resultIds)
 	}
 
-	principals := make([]model.Principal, len(resultIds))
+	principals := make([]domain.Principal, len(resultIds))
 	for i, id := range resultIds {
-		principals[i] = model.Principal{ID: id}
+		principals[i] = domain.Principal{ID: id}
 	}
 	return principals, nil
 }
 
 // ModifySeats TODO
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
-	evt := model.ModifySeatAssignmentEvent{
-		Org:     model.Organization{ID: req.OrgID},
-		Service: model.Service{ID: req.ServiceID},
+	evt := domain.ModifySeatAssignmentEvent{
+		Org:     domain.Organization{ID: req.OrgID},
+		Service: domain.Service{ID: req.ServiceID},
 	}
 
-	evt.Requestor = vo.SubjectID(req.Requestor)
+	evt.Requestor = domain.SubjectID(req.Requestor)
 
-	evt.Assign = make([]vo.SubjectID, len(req.Assign))
+	evt.Assign = make([]domain.SubjectID, len(req.Assign))
 	for i, id := range req.Assign {
-		evt.Assign[i] = vo.SubjectID(id)
+		evt.Assign[i] = domain.SubjectID(id)
 	}
 
-	evt.UnAssign = make([]vo.SubjectID, len(req.Unassign))
+	evt.UnAssign = make([]domain.SubjectID, len(req.Unassign))
 	for i, id := range req.Unassign {
-		evt.UnAssign[i] = vo.SubjectID(id)
+		evt.UnAssign[i] = domain.SubjectID(id)
 	}
 
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
@@ -136,13 +135,13 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	return seatService.ModifySeats(evt)
 }
 
-func subtract(first []vo.SubjectID, second []vo.SubjectID) []vo.SubjectID { //Move to a SubjectSet or something?
-	subtrahend := map[vo.SubjectID]interface{}{} //idiomatic set
+func subtract(first []domain.SubjectID, second []domain.SubjectID) []domain.SubjectID { //Move to a SubjectSet or something?
+	subtrahend := map[domain.SubjectID]interface{}{} //idiomatic set
 	for _, id := range second {
 		subtrahend[id] = struct{}{}
 	}
 
-	result := make([]vo.SubjectID, 0, len(first))
+	result := make([]domain.SubjectID, 0, len(first))
 
 	for _, id := range first {
 		if _, ok := subtrahend[id]; ok {

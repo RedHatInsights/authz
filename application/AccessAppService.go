@@ -2,10 +2,9 @@
 package application
 
 import (
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
 	"authz/domain/services"
-	vo "authz/domain/valueobjects"
 	"context"
 )
 
@@ -35,14 +34,14 @@ func NewAccessAppService(accessRepo *contracts.AccessRepository, principalRepo c
 }
 
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
-func (p *AccessAppService) Check(req CheckRequest) (vo.AccessDecision, error) {
-	event := model.CheckEvent{
-		SubjectID: vo.SubjectID(req.Subject),
+func (p *AccessAppService) Check(req CheckRequest) (domain.AccessDecision, error) {
+	event := domain.CheckEvent{
+		SubjectID: domain.SubjectID(req.Subject),
 		Operation: req.Operation,
-		Resource:  model.Resource{Type: req.ResourceType, ID: req.ResourceID},
+		Resource:  domain.Resource{Type: req.ResourceType, ID: req.ResourceID},
 	}
 
-	event.Requestor = vo.SubjectID(req.Requestor)
+	event.Requestor = domain.SubjectID(req.Requestor)
 
 	checkResult := services.NewAccessService(*p.accessRepo)
 

@@ -1,4 +1,4 @@
-package valueobjects
+package domain
 
 // SubjectID represents a reference to a subject on the platform
 type SubjectID string

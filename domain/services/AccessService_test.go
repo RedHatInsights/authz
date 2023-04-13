@@ -1,9 +1,8 @@
 package services
 
 import (
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/mock"
 	"testing"
 )
@@ -59,21 +58,21 @@ func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
 	}
 }
 
-func objFromRequest(requestorID string, subjectID string, operation string, resourceType string, resourceID string) model.CheckEvent {
-	return model.CheckEvent{
-		Request: model.Request{
-			Requestor: vo.SubjectID(requestorID),
+func objFromRequest(requestorID string, subjectID string, operation string, resourceType string, resourceID string) domain.CheckEvent {
+	return domain.CheckEvent{
+		Request: domain.Request{
+			Requestor: domain.SubjectID(requestorID),
 		},
-		SubjectID: vo.SubjectID(subjectID),
+		SubjectID: domain.SubjectID(subjectID),
 		Operation: operation,
-		Resource:  model.Resource{Type: resourceType, ID: resourceID},
+		Resource:  domain.Resource{Type: resourceType, ID: resourceID},
 	}
 }
 
 func mockAuthzRepository() contracts.AccessRepository {
-	return &mock.StubAccessRepository{Data: map[vo.SubjectID]bool{
+	return &mock.StubAccessRepository{Data: map[domain.SubjectID]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
-	}, LicensedSeats: map[string]map[vo.SubjectID]bool{}}
+	}, LicensedSeats: map[string]map[domain.SubjectID]bool{}}
 }

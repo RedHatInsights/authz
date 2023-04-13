@@ -3,9 +3,8 @@ package http
 import (
 	"authz/api/grpc"
 	"authz/application"
+	"authz/domain"
 	"authz/domain/contracts"
-	"authz/domain/model"
-	vo "authz/domain/valueobjects"
 	"authz/infrastructure/repository/mock"
 	"io"
 	"net/http"
@@ -188,24 +187,24 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func mockAccessRepository() contracts.AccessRepository {
-	return &mock.StubAccessRepository{Data: map[vo.SubjectID]bool{
+	return &mock.StubAccessRepository{Data: map[domain.SubjectID]bool{
 		"system": true,
 		"okay":   true,
 		"bad":    false,
 	},
-		LicensedSeats: map[string]map[vo.SubjectID]bool{},
-		Licenses: map[string]model.License{
-			"smarts": *model.NewLicense("aspian", "smarts", 20, 0),
+		LicensedSeats: map[string]map[domain.SubjectID]bool{},
+		Licenses: map[string]domain.License{
+			"smarts": *domain.NewLicense("aspian", "smarts", 20, 0),
 		},
 	}
 }
 
 func mockPrincipalRepository() contracts.PrincipalRepository {
 	return &mock.StubPrincipalRepository{
-		Principals: map[vo.SubjectID]model.Principal{
-			"system": model.NewPrincipal("system", "System User", "smarts"),
-			"okay":   model.NewPrincipal("okay", "Okay User", "aspian"),
-			"bad":    model.NewPrincipal("bad", "Bad User", "aspian"),
+		Principals: map[domain.SubjectID]domain.Principal{
+			"system": domain.NewPrincipal("system", "System User", "smarts"),
+			"okay":   domain.NewPrincipal("okay", "Okay User", "aspian"),
+			"bad":    domain.NewPrincipal("bad", "Bad User", "aspian"),
 		},
 		DefaultOrg: "aspian",
 	}
