@@ -4,6 +4,7 @@ import (
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc"
 	"context"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
@@ -105,8 +105,7 @@ func initializeGrpcServer(t *testing.T) *grpc.Server {
 func TestMain(m *testing.M) {
 	pool, err := dockertest.NewPool("") // Empty string uses default docker env
 	if err != nil {
-		glog.Fatalf("Failed to initialize dockertest pool: %s", err)
-		os.Exit(1)
+		log.Fatalf("Failed to initialize dockertest pool: %s", err)
 	}
 
 	var (
@@ -122,8 +121,7 @@ func TestMain(m *testing.M) {
 		ExposedPorts: []string{"50051/tcp"},
 	})
 	if err != nil {
-		glog.Fatalf("Failed to create SpiceDB container: %s", err)
-		os.Exit(1)
+		log.Fatalf("Failed to create SpiceDB container: %s", err)
 	}
 
 	port = resource.GetPort("50051/tcp")
