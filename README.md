@@ -12,6 +12,8 @@ run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb --
 
 For complete tests, run `go test ./...` (use -count=1 to avoid caching)
 For abbreviated tests, run `go test -short ./...`
+For smoketests against an environment, run `./scripts/test.sh <HOSTNAME>` where <HOSTNAME> is the fully qualified domain name of the environment where the application is running.
+    Ex: ./scripts/test.sh localhost
 
 
 # Building
