@@ -37,10 +37,6 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 }
 
 func initialize(endpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
-	ar := getAccessRepository(store, endpoint, token, useTLS)
-	sr := getSeatRepository(store, endpoint, token, useTLS, ar)
-	pr := getPrincipalRepository(store)
-
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
 		HTTPPort:  "8081",
@@ -51,7 +47,18 @@ func initialize(endpoint string, token string, store string, useTLS bool) (*grpc
 			KeyPath:  "/etc/tls/tls.key",
 			KeyName:  "",
 		},
+		StoreConfig: api.StoreConfig{
+			Store:     store,
+			Endpoint:  endpoint,
+			AuthToken: token,
+			UseTLS:    useTLS,
+		},
 	}
+
+	ar := getAccessRepository(&srvCfg)
+	sr := getSeatRepository(&srvCfg, ar)
+	pr := getPrincipalRepository(store)
+
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
 
@@ -88,19 +95,18 @@ func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
-func getSeatRepository(store string, endpoint string, token string, useTLS bool, potentialStub interface{}) contracts.SeatLicenseRepository {
+func getSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
 	}
 
-	return b.WithStore(store).WithConnectionInfo(endpoint, token, useTLS).Build()
+	return b.WithConfig(config).Build()
 }
 
-func getAccessRepository(store string, endpoint string, token string, useTLS bool) contracts.AccessRepository {
+func getAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
-		WithImplementation(store).
-		WithConnectionInfo(endpoint, token, useTLS).Build()
+		WithConfig(config).Build()
 
 	if err != nil {
 		glog.Fatal("Could not initialize access repository: ", err)

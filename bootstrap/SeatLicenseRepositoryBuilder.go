@@ -1,18 +1,15 @@
 package bootstrap
 
 import (
+	"authz/api"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
 )
 
 // SeatLicenseRepositoryBuilder constructs SeatLicenseRepositories based on the provided configuration
 type SeatLicenseRepositoryBuilder struct {
-	stub  contracts.SeatLicenseRepository
-	store string
-
-	endpoint  string
-	authToken string
-	useTLS    bool
+	stub   contracts.SeatLicenseRepository
+	config *api.ServerConfig
 }
 
 // NewSeatLicenseRepositoryBuilder constructs a new SeatLicenseRepositoryBuilder
@@ -20,12 +17,9 @@ func NewSeatLicenseRepositoryBuilder() *SeatLicenseRepositoryBuilder {
 	return &SeatLicenseRepositoryBuilder{}
 }
 
-// WithConnectionInfo configures connection information to be used with applicable implementations
-func (b *SeatLicenseRepositoryBuilder) WithConnectionInfo(endpoint string, authToken string, useTLS bool) *SeatLicenseRepositoryBuilder {
-	b.endpoint = endpoint
-	b.authToken = authToken
-	b.useTLS = useTLS
-
+// WithConfig supplies a ServerConfig struct to be used as-needed for building objects
+func (b *SeatLicenseRepositoryBuilder) WithConfig(config *api.ServerConfig) *SeatLicenseRepositoryBuilder {
+	b.config = config
 	return b
 }
 
@@ -35,18 +29,13 @@ func (b *SeatLicenseRepositoryBuilder) WithStub(stub contracts.SeatLicenseReposi
 	return b
 }
 
-// WithStore specifies the application back-end (ex: stub or spicedb)
-func (b *SeatLicenseRepositoryBuilder) WithStore(store string) *SeatLicenseRepositoryBuilder {
-	b.store = store
-	return b
-}
-
 // Build constructs the repository
 func (b *SeatLicenseRepositoryBuilder) Build() contracts.SeatLicenseRepository {
-	switch b.store {
+	config := b.config.StoreConfig
+	switch config.Store {
 	case "spicedb":
 		spicedb := authzed.SpiceDbAccessRepository{}
-		spicedb.NewConnection(b.endpoint, b.authToken, true, b.useTLS)
+		spicedb.NewConnection(config.Endpoint, config.AuthToken, true, config.UseTLS)
 		return &spicedb
 	case "stub":
 		return b.stub
