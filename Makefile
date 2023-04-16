@@ -162,3 +162,13 @@ test:
 
 .PHONY: pr-check
 pr-check: test lint binary
+
+.PHONY: arch-describe
+arch-describe:
+	@echo "Current architecture rules:"
+	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest describe
+
+.PHONY: arch-check
+arch-check:
+	@echo "Checking changes against architecture rules defined in arch-go.yml:"
+	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest

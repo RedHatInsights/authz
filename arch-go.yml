@@ -1,0 +1,11 @@
+version: 1
+threshold:
+  compliance: 100
+  coverage: 25
+dependenciesRules:
+  - package: "domain"
+    shouldOnlyDependsOn:
+      internal:
+        - "domain.**"
+    shouldNotDependsOn:
+      external: [ "*.*" ]
