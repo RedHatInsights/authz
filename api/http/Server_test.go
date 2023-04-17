@@ -100,6 +100,44 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
 
+func TestCors_NotImplementedMethod(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	body := `{
+			"assign": [
+			  "okay"
+			]
+		  }`
+
+	req := httptest.NewRequest("OPTIONS", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "okay")
+
+	resp := runRequestWithServer(req, srv)
+	assert.Equal(t, resp.StatusCode, 501)
+}
+
+func TestCors_AllowAllOrigins(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	body := `{
+			"assign": [
+			  "okay"
+			]
+		  }`
+
+	req := httptest.NewRequest("POST", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "okay")
+	req.Header.Set("AllowAllOrigins", "true")
+
+	resp := runRequestWithServer(req, srv)
+	assert.Equal(t, resp.Header.Get("Vary"), "Origin")
+	assertJSONResponse(t, resp, 200, `{}`)
+}
+
 func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	t.Parallel()
 	srv := createTestServer()
@@ -157,6 +195,7 @@ func createTestServer() *grpc.Server {
 
 func runRequestWithServer(req *http.Request, srv *grpc.Server) *http.Response {
 	mux, _ := createMultiplexer(srv, srv)
+
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 

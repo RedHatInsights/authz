@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 )
 
 // Server serves a HTTP api based on the generated grpc gateway code
@@ -79,7 +80,7 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (*runtime.ServeMux, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (http.Handler, error) {
 	mux := runtime.NewServeMux()
 
 	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
@@ -90,5 +91,13 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 		return nil, err
 	}
 
-	return mux, nil
+	handler := cors.New(cors.Options{
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+		Debug:            true,
+	}).Handler(mux)
+
+	return handler, nil
 }
