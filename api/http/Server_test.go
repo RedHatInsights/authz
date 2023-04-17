@@ -12,8 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rs/cors"
-
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
 )
@@ -198,15 +196,8 @@ func createTestServer() *grpc.Server {
 func runRequestWithServer(req *http.Request, srv *grpc.Server) *http.Response {
 	mux, _ := createMultiplexer(srv, srv)
 
-	handler := cors.New(cors.Options{
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}).Handler(mux)
-
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
+	mux.ServeHTTP(rec, req)
 
 	return rec.Result()
 }

@@ -30,7 +30,7 @@ ret=`( curl --silent --fail -X POST https://$host/v1alpha/check -H "Content-Type
 assert "$ret = true" "$msg"
 
 msg='Checking if synthetic_test is included in the list of assigned users'
-ret=`( curl --silent --fail -H "Authorization: token" https://ciam-authz-hw-ciam-authz--runtime-ext.apps.ext.spoke.preprod.us-east-1.aws.paas.redhat.com/v1alpha/orgs/o1/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "synthetic_test")'`
+ret=`( curl --silent --fail -H "Authorization: token" https://$host/v1alpha/orgs/o1/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "synthetic_test")'`
 assert "$ret = true" "$msg"
 
 msg='Revoking license for synthetic_test (should succeed)'

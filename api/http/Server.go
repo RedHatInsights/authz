@@ -31,13 +31,6 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 
-	handler := cors.New(cors.Options{
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}).Handler(mux)
-
 	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
 		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
@@ -46,7 +39,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			err = http.ListenAndServeTLS(
 				":"+s.ServerConfig.HTTPSPort,
 				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
-				s.ServerConfig.TLSConfig.KeyPath, handler)
+				s.ServerConfig.TLSConfig.KeyPath, mux)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
@@ -55,7 +48,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
 			s.ServerConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, handler)
+		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -87,7 +80,7 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (*runtime.ServeMux, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (http.Handler, error) {
 	mux := runtime.NewServeMux()
 
 	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
@@ -98,5 +91,13 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 		return nil, err
 	}
 
-	return mux, nil
+	handler := cors.New(cors.Options{
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+		Debug:            true,
+	}).Handler(mux)
+
+	return handler, nil
 }
