@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 )
 
 // Server serves a HTTP api based on the generated grpc gateway code
@@ -30,6 +31,13 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 
+	handler := cors.New(cors.Options{
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler(mux)
+
 	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
 		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
@@ -38,7 +46,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			err = http.ListenAndServeTLS(
 				":"+s.ServerConfig.HTTPSPort,
 				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
-				s.ServerConfig.TLSConfig.KeyPath, mux)
+				s.ServerConfig.TLSConfig.KeyPath, handler)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
@@ -47,7 +55,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
 			s.ServerConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
+		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, handler)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
