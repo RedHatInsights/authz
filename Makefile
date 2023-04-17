@@ -161,7 +161,7 @@ test:
 	$(GO) test $(PWD)/...
 
 .PHONY: pr-check
-pr-check: test lint binary
+pr-check: arch-check test lint binary
 
 .PHONY: arch-describe
 arch-describe:
