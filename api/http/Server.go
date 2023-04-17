@@ -33,7 +33,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	handler := cors.New(cors.Options{
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}).Handler(mux)

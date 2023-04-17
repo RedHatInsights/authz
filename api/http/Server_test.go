@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rs/cors"
+
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
 )
@@ -100,6 +102,44 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
 
+func TestCors_NotImplementedMethod(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	body := `{
+			"assign": [
+			  "okay"
+			]
+		  }`
+
+	req := httptest.NewRequest("OPTIONS", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "okay")
+
+	resp := runRequestWithServer(req, srv)
+	assert.Equal(t, resp.StatusCode, 501)
+}
+
+func TestCors_AllowAllOrigins(t *testing.T) {
+	t.Parallel()
+	srv := createTestServer()
+
+	body := `{
+			"assign": [
+			  "okay"
+			]
+		  }`
+
+	req := httptest.NewRequest("POST", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "okay")
+	req.Header.Set("AllowAllOrigins", "true")
+
+	resp := runRequestWithServer(req, srv)
+	assert.Equal(t, resp.Header.Get("Vary"), "Origin")
+	assertJSONResponse(t, resp, 200, `{}`)
+}
+
 func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	t.Parallel()
 	srv := createTestServer()
@@ -157,8 +197,16 @@ func createTestServer() *grpc.Server {
 
 func runRequestWithServer(req *http.Request, srv *grpc.Server) *http.Response {
 	mux, _ := createMultiplexer(srv, srv)
+
+	handler := cors.New(cors.Options{
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}).Handler(mux)
+
 	rec := httptest.NewRecorder()
-	mux.ServeHTTP(rec, req)
+	handler.ServeHTTP(rec, req)
 
 	return rec.Result()
 }
