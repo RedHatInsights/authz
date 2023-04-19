@@ -110,7 +110,7 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 			]
 		  }`
 
-	req := httptest.NewRequest("OPTIONS", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodTrace, "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "okay")
 
@@ -128,7 +128,7 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 			]
 		  }`
 
-	req := httptest.NewRequest("POST", "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "okay")
 	req.Header.Set("AllowAllOrigins", "true")
