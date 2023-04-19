@@ -92,7 +92,7 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 	}
 
 	handler := cors.New(cors.Options{
-		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedMethods:   []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
