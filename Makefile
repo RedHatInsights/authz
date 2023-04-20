@@ -18,10 +18,12 @@ DOCKER ?= docker
 DOCKER_CONFIG="${PWD}/.docker"
 SHELL = bash
 
+# builds the binary inside the bin folder
 .PHONY: binary
 binary:
 	$(GO) build -o bin/authz cmd/main.go
 
+# starts a kind cluster
 .PHONY: kind-create
 kind-create:
 	@kind create cluster --name=authz --config=k8s/kind.yml
@@ -33,25 +35,30 @@ kind-create:
 	@kubectl wait --for=condition=complete job/ingress-nginx-admission-patch -n ingress-nginx --timeout 60s
 	@kubectl wait --for condition=Ready=True pod -l app.kubernetes.io/component=controller -n ingress-nginx --timeout 120s
 
+# deploys the authz server to the kind cluster
 .PHONY: kind-deploy
 kind-deploy:
 	@kubectl apply -f k8s/authz.yml
 	@echo "Wait for pods with: kubectl get pods,svc"
 	@echo "See k8s/README.md for more info."
 
+# adds the spiceDB schema to the kind clusters configmap
+.PHONY: kind-create-schema-configmap
 kind-create-schema-configmap:
 	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_bootstrap.yaml
-.PHONY: kind-create-schema-configmap
 
+# deploys spiceDB
+.PHONY: kind-spicedb-deploy
 kind-spicedb-deploy:
 	@kubectl create secret generic spicedb --from-file=SPICEDB_GRPC_PRESHARED_KEY=.secrets/spice-db-local
 	@kubectl apply -f k8s/spicedb.yaml
-.PHONY: kind-spicedb-deploy
 
+# deletes the kind cluster
 .PHONY: kind-delete
 kind-delete:
 	@kind delete cluster --name=authz
 
+# creates tls certificate and key in the tls dir
 .PHONY: tls-cert
 tls-cert:
 	@echo "creating directory tls/"
@@ -62,25 +69,46 @@ tls-cert:
                -addext "subjectAltName=DNS:example.com,DNS:www.example.net,IP:10.0.0.1"
 	@echo "Success! find your cert files in the tls/ folder"
 
-generate:
+# delete the tls directory and certs
+.PHONY: tls-delete
+tls-delete:
+	@echo "removing generated tls certs"
+	@rm -rf tls/
+
+# generate a go client from the openAPI spec
+.PHONY: apiclient-gen
+apiclient-gen:
+	@echo "generating go client from spec"
 	./scripts/generate.sh
-.PHONY: generate
+
+# delete generated go client
+.PHONY: apiclient-delete
+apiclient-delete:
+	@echo "removing generated go client"
+	@cd api/v1alpha && rm -rf public/
 
 # validate the openapi schema
-openapi/validate: 
+.PHONY: apigen-validate
+apigen-validate:
 	$(DOCKER) run --rm -v "${PWD}:/local" openapitools/openapi-generator-cli validate -i /local/api/v1alpha/openapi-authz-v1alpha.yaml
-.PHONY: openapi/validate
 
-# Run Swagger and host the api docs
-run/docs:
+# Run Swagger UI and host the api docs
+.PHONY: apidocs-start
+apidocs-ui:
 	$(DOCKER) run --rm --name swagger_ui_docs -d -p 8082:8080 -e URLS="[ \
 		{ url: \"/openapi/v1alpha/openapi-authz-v1alpha.yaml\", name: \"Authz API\"}]"\
 		  -v $(PWD)/api/:/usr/share/nginx/html/openapi:Z swaggerapi/swagger-ui
 	@echo "Please open http://localhost:8082/"
-.PHONY: run/docs
+
+# Remove Swagger container
+.PHONY: apidocs-stop
+apidocs-stop:
+	$(DOCKER) container stop swagger_ui_docs
+	$(DOCKER) container rm swagger_ui_docs
 
 #convert grpc gateway openapiv2 spec to openapi v3
-run/docs/genv3:
+.PHONY: apigen-v3
+apigen-v3:
 	@echo "generating v3 openapi.yaml from grpc-gateway v2 yaml..."
 	$(DOCKER) run --rm --name swagger_codegen \
 		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.yaml -l openapi-yaml -o .
@@ -88,19 +116,18 @@ run/docs/genv3:
 	$(DOCKER) run --rm --name swagger_codegen \
 		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.json -l openapi -o .
 	@echo "Remove unnecessary generated artifacts"
-	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+	@make apigen-v2-delete
 	@echo "move and rename files to v1alpha directory"
 	@cd api/gen/v1alpha && mv openapi.yaml ../../v1alpha/openapi-authz-v1alpha.yaml
 	@cd api/gen/v1alpha && mv openapi.json ../../v1alpha/openapi-authz-v1alpha.json
-.PHONY: run/docs/genv3
 
-# Remove Swagger container
-run/docs/teardown:
-	$(DOCKER) container stop swagger_ui_docs
-	$(DOCKER) container rm swagger_ui_docs
-.PHONY: run/docs/teardown
+# remove generated openAPI artifacts
+.PHONY: apigen-v2-delete
+apigen-v2-delete:
+	@echo "removing v2 artifacts"
+	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
 
-# Generate grpc gateway code from proto
+# Generate grpc gateway code from proto via buf
 .PHONY: buf-gen
 buf-gen:
 #check if protoc is installed
@@ -132,42 +159,46 @@ endif
 	@echo "Generating grpc gateway code from .proto files"
 	@cd api && buf generate
 
-.PHONY: clean-tls
-clean-tls:
-	@echo "removing generated tls certs"
-	@rm -rf tls/
+# generate go code and openAPI v2 spec, then converts the v2 spec to v3, then validates it.
+.PHONY: apigen
+apigen: buf-gen apigen-v3 apigen-validate
 
+# remove all generated files
 .PHONY: clean
-clean:
-	@echo "removing all generated artifacts "
-	@rm -rf tls/
-	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+clean: tls-delete apigen-v2-delete apiclient-delete
+	@echo "All generated artifacts removed."
 
-.PHONY: clean-apigenv3
-clean-apigenv3:
-	@echo "removing artifacts from openapi v3 generator"
-	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
-
+# run go linter with the repositories lint config
 .PHONY: lint
 lint:
 	$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
 
+# run short subset of tests
 .PHONY: test-short
 test-short:
 	$(GO) test -short $(PWD)/...
 
+# run all tests
 .PHONY: test
 test:
 	$(GO) test $(PWD)/...
 
+# mimics the CI that runs on PR
 .PHONY: pr-check
-pr-check: arch-check test lint binary
+pr-check: gmtidy arch-check test lint binary
 
+# runs go mod tidy
+.PHONY: gmtidy
+gmtidy:
+	$(GO) mod tidy
+
+# describes current architectural rules setup in arch-go.yml
 .PHONY: arch-describe
 arch-describe:
 	@echo "Current architecture rules:"
 	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest describe
 
+# checks if architectural rules are met
 .PHONY: arch-check
 arch-check:
 	@echo "Checking changes against architecture rules defined in arch-go.yml:"
