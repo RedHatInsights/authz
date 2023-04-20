@@ -23,6 +23,13 @@ SHELL = bash
 binary:
 	$(GO) build -o bin/authz cmd/main.go
 
+# builds the binary inside the bin folder
+.PHONY: binary-delete
+binary-delete:
+	@echo "removing binary"
+	@rm -rf bin/
+	@echo "binary successfully removed"
+
 # starts a kind cluster
 .PHONY: kind-create
 kind-create:
@@ -74,18 +81,7 @@ tls-cert:
 tls-delete:
 	@echo "removing generated tls certs"
 	@rm -rf tls/
-
-# generate a go client from the openAPI spec
-.PHONY: apiclient-gen
-apiclient-gen:
-	@echo "generating go client from spec"
-	./scripts/generate.sh
-
-# delete generated go client
-.PHONY: apiclient-delete
-apiclient-delete:
-	@echo "removing generated go client"
-	@cd api/v1alpha && rm -rf public/
+	@echo "TLS certs successfully removed"
 
 # validate the openapi schema
 .PHONY: apigen-validate
@@ -124,8 +120,10 @@ apigen-v3:
 # remove generated openAPI artifacts
 .PHONY: apigen-v2-delete
 apigen-v2-delete:
-	@echo "removing v2 artifacts"
+	@echo "removing openapi v2 artifacts"
 	@cd api/gen/v1alpha && rm -rf .swagger-codegen/ && rm -f README.md && rm -f .swagger-codegen-ignore
+	@echo "opanpi v2 artifacts successfully removed"
+
 
 # Generate grpc gateway code from proto via buf
 .PHONY: buf-gen
@@ -165,7 +163,7 @@ apigen: buf-gen apigen-v3 apigen-validate
 
 # remove all generated files
 .PHONY: clean
-clean: tls-delete apigen-v2-delete apiclient-delete
+clean: tls-delete apigen-v2-delete binary-delete
 	@echo "All generated artifacts removed."
 
 # run go linter with the repositories lint config
