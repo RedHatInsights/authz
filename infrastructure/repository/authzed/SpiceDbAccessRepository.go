@@ -321,18 +321,18 @@ func (s *SpiceDbAccessRepository) writeLicenseVersionRelation(orgID, srvcID, ver
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
 func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) {
 
-	opts := []grpc.DialOption{
-		grpcutil.WithInsecureBearerToken(token),
-	}
+	var opts []grpc.DialOption
 
 	if isBlocking {
 		opts = append(opts, grpc.WithBlock())
 	}
 
 	if !useTLS {
+		opts = append(opts, grpcutil.WithInsecureBearerToken(token))
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		tlsConfig, _ := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+		opts = append(opts, grpcutil.WithBearerToken(token))
 		opts = append(opts, tlsConfig)
 	}
 
