@@ -91,13 +91,27 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 		return nil, err
 	}
 
-	handler := cors.New(cors.Options{
+	chain := createChain(logMiddleware, corsMiddleware).then(mux)
+
+	return chain, nil
+}
+
+func corsMiddleware(h http.Handler) http.Handler {
+	return cors.New(cors.Options{
 		AllowedMethods:   []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           300,
 		Debug:            true,
-	}).Handler(mux)
+	}).Handler(h)
+}
 
-	return handler, nil
+func logMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		glog.V(0).Infof("Request incoming: %s %s", r.Method, r.RequestURI)
+		glog.V(1).Infof("Request dump: %+v", *r)
+
+		h.ServeHTTP(w, r)
+	})
 }
