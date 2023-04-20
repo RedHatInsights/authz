@@ -27,7 +27,7 @@ echo "Generating SDKs"
 additional_properties="generateInterfaces=true,enumClassPrefix=true"
 
 
-OPENAPI_FILENAME="api/v1alpha/openapi-authz-v1_alpha.yaml"
+OPENAPI_FILENAME="api/v1alpha/openapi-authz-v1alpha.yaml"
 PACKAGE_NAME="api"
 OUTPUT_PATH="api/v1alpha/public"
 
