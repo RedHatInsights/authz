@@ -1,6 +1,7 @@
 package authzed
 
 import (
+	"authz/api"
 	"authz/domain"
 	"crypto/rand"
 	"encoding/base64"
@@ -29,8 +30,8 @@ func TestMain(m *testing.M) {
 	)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   "authzed/spicedb",
-		Tag:          "v1.17.0", // Replace this with an actual version
+		Repository:   api.SpicedbImage,
+		Tag:          api.SpicedbVersion, // Replace this with an actual version
 		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
 		Mounts:       []string{path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
 		ExposedPorts: []string{"50051/tcp", "50052/tcp"},

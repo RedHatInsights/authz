@@ -1,6 +1,13 @@
 // Package api is for communication purposes
 package api
 
+const (
+	// SpicedbImage is the image used for containerized spiceDB in tests
+	SpicedbImage = "authzed/spicedb"
+	// SpicedbVersion is the image version used for containerized spiceDB in tests
+	SpicedbVersion = "v1.20.0"
+)
+
 // ServerConfig contains all server-related configuration.
 type ServerConfig struct {
 	GrpcPort    string
