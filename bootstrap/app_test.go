@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/golang/glog"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -286,8 +288,9 @@ func setupService() {
 	if err != nil {
 		panic(err)
 	}
+	writeTestEnvToYaml(spicedbToken)
 
-	go Run(fmt.Sprintf("localhost:%s", container.Port()), oidcDiscoveryURL, spicedbToken, "spicedb", false)
+	go Run("../")
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
 		return post("/v1alpha/check", "system",
 			`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
@@ -295,6 +298,35 @@ func setupService() {
 
 	if err != nil {
 		log.Printf("Error waiting for gateway to come online: %s", err)
+		os.Exit(1)
+	}
+}
+
+func writeTestEnvToYaml(token string) {
+	var data, err = os.ReadFile("../config.yaml")
+	if err != nil {
+		fmt.Printf("Error reading config.yaml: %s\n", err)
+		os.Exit(1)
+	}
+	y := make(map[string]interface{})
+	err = yaml.Unmarshal(data, &y)
+	if err != nil {
+		fmt.Printf("Error parsing yaml: %s\n", err)
+		os.Exit(1)
+	}
+
+	storeKey := y["app"].(map[string]interface{})["store"].(map[string]interface{})
+	storeKey["token"] = token
+	storeKey["endpoint"] = "localhost:" + container.Port()
+	res, err := yaml.Marshal(y)
+	if err != nil {
+		fmt.Printf("Error marshalling yaml in test: %s\n", err)
+		os.Exit(1)
+	}
+
+	e := os.WriteFile("../config.yaml", res, 0644)
+	if e != nil {
+		fmt.Printf("Error writing new yaml in test: %s\n", err)
 		os.Exit(1)
 	}
 }
@@ -460,7 +492,6 @@ func TestMain(m *testing.M) {
 		glog.Errorf("Error initializing SpiceDB container: %s", err)
 		os.Exit(1)
 	}
-
 	result := m.Run()
 
 	container.Close()

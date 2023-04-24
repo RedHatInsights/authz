@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
 )
@@ -9,7 +9,7 @@ import (
 // SeatLicenseRepositoryBuilder constructs SeatLicenseRepositories based on the provided configuration
 type SeatLicenseRepositoryBuilder struct {
 	stub   contracts.SeatLicenseRepository
-	config *api.ServerConfig
+	config *serviceconfig.ServiceConfig
 }
 
 // NewSeatLicenseRepositoryBuilder constructs a new SeatLicenseRepositoryBuilder
@@ -17,8 +17,8 @@ func NewSeatLicenseRepositoryBuilder() *SeatLicenseRepositoryBuilder {
 	return &SeatLicenseRepositoryBuilder{}
 }
 
-// WithConfig supplies a ServerConfig struct to be used as-needed for building objects
-func (b *SeatLicenseRepositoryBuilder) WithConfig(config *api.ServerConfig) *SeatLicenseRepositoryBuilder {
+// WithConfig supplies a ServiceConfig struct to be used as-needed for building objects
+func (b *SeatLicenseRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *SeatLicenseRepositoryBuilder {
 	b.config = config
 	return b
 }
@@ -32,7 +32,7 @@ func (b *SeatLicenseRepositoryBuilder) WithStub(stub contracts.SeatLicenseReposi
 // Build constructs the repository
 func (b *SeatLicenseRepositoryBuilder) Build() contracts.SeatLicenseRepository {
 	config := b.config.StoreConfig
-	switch config.Store {
+	switch config.Kind {
 	case "spicedb":
 		spicedb := authzed.SpiceDbAccessRepository{}
 		spicedb.NewConnection(config.Endpoint, config.AuthToken, true, config.UseTLS)

@@ -1,7 +1,7 @@
 package bootstrap
 
 import (
-	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
@@ -10,7 +10,7 @@ import (
 
 // AccessRepositoryBuilder is the builder containing the config for building technical implementations of the server
 type AccessRepositoryBuilder struct {
-	config *api.ServerConfig
+	config *serviceconfig.ServiceConfig
 }
 
 // NewAccessRepositoryBuilder returns a new AccessRepositoryBuilder instance
@@ -18,8 +18,8 @@ func NewAccessRepositoryBuilder() *AccessRepositoryBuilder {
 	return &AccessRepositoryBuilder{}
 }
 
-// WithConfig supplies a ServerConfig struct to be used as-needed for building objects
-func (e *AccessRepositoryBuilder) WithConfig(config *api.ServerConfig) *AccessRepositoryBuilder {
+// WithConfig supplies a ServiceConfig struct to be used as-needed for building objects
+func (e *AccessRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *AccessRepositoryBuilder {
 	e.config = config
 	return e
 }
@@ -27,7 +27,7 @@ func (e *AccessRepositoryBuilder) WithConfig(config *api.ServerConfig) *AccessRe
 // Build builds an implementation based on the given param
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	config := e.config.StoreConfig
-	switch config.Store {
+	switch config.Kind {
 	case "stub":
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":

@@ -1,0 +1,37 @@
+app:
+    cors:
+        allowCredentials: false
+        allowedHeaders:
+            - Accept
+            - ResponseType
+            - Content-Length
+            - Accept-Encoding
+            - Accept-Language
+            - Authorization
+            - Content-Type
+            - User-Agent
+        allowedMethods:
+            - HEAD
+            - GET
+            - POST
+            - PATCH
+            - PUT
+            - DELETE
+            - OPTIONS
+        allowedOrigins:
+            - '*'
+        debug: true
+        maxAge: 0
+    server:
+        grpcPort: 50052
+        httpPort: 8081
+        httpsPort: 8443
+        logRequests: true
+    store:
+        endpoint: localhost:55061
+        kind: spicedb
+        token: YDYnXYge9SXGA6EpxhbsMDqmr0E=
+        useTLS: false
+    tls:
+        certFile: /etc/tls/tls.crt
+        keyFile: /etc/tls/tls.key

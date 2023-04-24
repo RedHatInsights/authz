@@ -2,12 +2,16 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
+	"authz/infrastructure/config"
+	"strconv"
 	"sync"
+
+	"github.com/go-playground/validator/v10"
 
 	"github.com/golang/glog"
 )
@@ -17,9 +21,44 @@ var grpcServer *grpc.Server
 var httpServer *http.Server
 var waitForCompletion *sync.WaitGroup
 
+// Cfg holds the parsed and validated service config.
+var Cfg *serviceconfig.ServiceConfig
+
+// getConfig loads the config based on the technical implementation "viper".
+func getConfig(configPath string) serviceconfig.Config {
+	cfg, err := config.NewBuilder().
+		ConfigName("config").
+		ConfigType("yaml").
+		ConfigPaths(
+			configPath,
+		).
+		Defaults(map[string]interface{}{}).
+		Options().
+		Build()
+
+	if err != nil {
+		glog.Fatalf("Could not initialize config: %v", err)
+	}
+	return cfg
+}
+
 // Run configures and runs the actual bootstrap.
-func Run(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) {
-	grpcServer, httpServer = initialize(endpoint, oidcDiscoveryEndpoint, token, store, useTLS)
+func Run(configPath string) {
+	configProvider := getConfig(configPath)
+	srvCfg := parseServiceConfig(configProvider)
+	vl := validator.New()
+	err := vl.Struct(srvCfg)
+
+	if err != nil {
+		for _, e := range err.(validator.ValidationErrors) {
+			glog.Errorf("Error in configuration: %v", e)
+		}
+		glog.Fatal("Can not start service with wrong configuration.")
+	}
+	//set global Config now that it is parsed and validated.
+	Cfg = &srvCfg
+
+	grpcServer, httpServer = initialize(srvCfg)
 
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
@@ -58,33 +97,11 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
-	srvCfg := api.ServerConfig{ //TODO: Discuss config.
-		GrpcPort:  "50051",
-		HTTPPort:  "8081",
-		HTTPSPort: "8443",
-		TLSConfig: api.TLSConfig{
-			CertPath: "/etc/tls/tls.crt",
-			CertName: "",
-			KeyPath:  "/etc/tls/tls.key",
-			KeyName:  "",
-		},
-		StoreConfig: api.StoreConfig{
-			Store:     store,
-			Endpoint:  endpoint,
-			AuthToken: token,
-			UseTLS:    useTLS,
-		},
-		AuthConfig: api.AuthConfig{
-			DiscoveryEndpoint: oidcDiscoveryEndpoint,
-			Audience:          "cloud-services", //TODO: make these configurable
-			RequiredScope:     "openid",
-		},
-	}
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server) {
 
 	ar := initAccessRepository(&srvCfg)
 	sr := initSeatRepository(&srvCfg, ar)
-	pr := initPrincipalRepository(store)
+	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
@@ -99,11 +116,11 @@ func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, sto
 }
 
 // initGrpcServer initializes a new grpc server struct
-func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
+func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serviceConfig *serviceconfig.ServiceConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildGrpc()
 
 	if err != nil {
@@ -113,9 +130,9 @@ func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseA
 }
 
 // initHttpServer initializes new http server struct
-func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
+func initHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 	srv, err := NewServerBuilder().
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildHTTP()
 
 	if err != nil {
@@ -124,7 +141,7 @@ func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
-func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
+func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
@@ -133,7 +150,7 @@ func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) con
 	return b.WithConfig(config).Build()
 }
 
-func initAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
+func initAccessRepository(config *serviceconfig.ServiceConfig) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
 		WithConfig(config).Build()
 
@@ -145,4 +162,33 @@ func initAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
 
 func initPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
+}
+
+func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
+	return serviceconfig.ServiceConfig{
+		GrpcPort:     cfg.GetInt("app.server.grpcPort"),
+		GrpcPortStr:  strconv.Itoa(cfg.GetInt("app.server.grpcPort")),
+		HTTPPort:     cfg.GetInt("app.server.httpPort"),
+		HTTPPortStr:  strconv.Itoa(cfg.GetInt("app.server.httpPort")),
+		HTTPSPort:    cfg.GetInt("app.server.httpsPort"),
+		HTTPSPortStr: strconv.Itoa(cfg.GetInt("app.server.httpsPort")),
+		LogRequests:  cfg.GetBool("app.server.logRequests"),
+		TLSConfig: serviceconfig.TLSConfig{
+			CertFile: cfg.GetString("app.tls.certFile"),
+			KeyFile:  cfg.GetString("app.tls.keyFile"),
+		},
+		StoreConfig: serviceconfig.StoreConfig{
+			Kind:      cfg.GetString("app.store.kind"),
+			Endpoint:  cfg.GetString("app.store.endpoint"),
+			AuthToken: cfg.GetString("app.store.token"),
+			UseTLS:    cfg.GetBool("app.store.useTLS"),
+		},
+		CorsConfig: serviceconfig.CorsConfig{
+			AllowedMethods:   cfg.GetStringSlice("app.cors.allowedMethods"),
+			AllowedHeaders:   cfg.GetStringSlice("app.cors.allowedHeaders"),
+			AllowCredentials: cfg.GetBool("app.cors.allowCredentials"),
+			MaxAge:           cfg.GetInt("app.cors.maxAge"),
+			Debug:            cfg.GetBool("app.cors.debug"),
+		},
+	}
 }

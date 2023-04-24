@@ -21,6 +21,7 @@ SHELL = bash
 # builds the binary inside the bin folder
 .PHONY: binary
 binary:
+	@echo "Building the service..."
 	$(GO) build -tags release -o bin/authz cmd/main.go
 
 # builds the binary inside the bin folder
@@ -169,7 +170,9 @@ clean: tls-delete apigen-v2-delete binary-delete
 # run go linter with the repositories lint config
 .PHONY: lint
 lint:
-	$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
+	@echo ""
+	@echo "Linting code."
+	@$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
 
 # run short subset of tests
 .PHONY: test-short
@@ -179,7 +182,9 @@ test-short:
 # run all tests
 .PHONY: test
 test:
-	$(GO) test $(PWD)/...
+	@echo ""
+	@echo "Running tests."
+	@$(GO) test $(PWD)/...
 
 # mimics the CI that runs on PR
 .PHONY: pr-check
@@ -188,16 +193,19 @@ pr-check: gmtidy arch-check test lint binary
 # runs go mod tidy
 .PHONY: gmtidy
 gmtidy:
-	$(GO) mod tidy
+	@echo "Tidying dependencies using go mod tidy..."
+	@$(GO) mod tidy
 
 # describes current architectural rules setup in arch-go.yml
 .PHONY: arch-describe
 arch-describe:
+	@echo ""
 	@echo "Current architecture rules:"
 	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest describe
 
 # checks if architectural rules are met
 .PHONY: arch-check
 arch-check:
+	@echo ""
 	@echo "Checking changes against architecture rules defined in arch-go.yml:"
 	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest
