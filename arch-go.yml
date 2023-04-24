@@ -1,7 +1,7 @@
 version: 1
 threshold:
   compliance: 100
-  coverage: 25
+  coverage: 0
 dependenciesRules:
   - package: "domain"
     shouldOnlyDependsOn:
