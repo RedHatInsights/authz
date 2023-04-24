@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
 )
@@ -18,7 +19,7 @@ func NewSeatLicenseRepositoryBuilder() *SeatLicenseRepositoryBuilder {
 }
 
 // WithConfig supplies a ServerConfig struct to be used as-needed for building objects
-func (b *SeatLicenseRepositoryBuilder) WithConfig(config *api.ServerConfig) *SeatLicenseRepositoryBuilder {
+func (b *SeatLicenseRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *SeatLicenseRepositoryBuilder {
 	b.config = config
 	return b
 }

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
@@ -19,7 +20,7 @@ func NewAccessRepositoryBuilder() *AccessRepositoryBuilder {
 }
 
 // WithConfig supplies a ServerConfig struct to be used as-needed for building objects
-func (e *AccessRepositoryBuilder) WithConfig(config *api.ServerConfig) *AccessRepositoryBuilder {
+func (e *AccessRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *AccessRepositoryBuilder {
 	e.config = config
 	return e
 }

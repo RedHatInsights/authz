@@ -5,6 +5,7 @@ import (
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 )
 
@@ -34,7 +35,7 @@ func (s *ServerBuilder) WithLicenseAppService(sh *application.LicenseAppService)
 }
 
 // WithServerConfig sets the ServerConfig configuration for the used server.
-func (s *ServerBuilder) WithServerConfig(c *api.ServerConfig) *ServerBuilder {
+func (s *ServerBuilder) WithServerConfig(c *serviceconfig.ServiceConfig) *ServerBuilder {
 	s.ServerConfig = c
 	return s
 }

@@ -2,19 +2,42 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
+	"authz/infrastructure/config"
 	"sync"
 
 	"github.com/golang/glog"
 )
 
+// Cfg holds the config from yaml.
+var Cfg serviceconfig.Config
+
+// getConfig loads the config based on the technical implementation "viper".
+func getConfig(configPath string) serviceconfig.Config {
+	cfg, err := config.NewBuilder().
+		ConfigName("config").
+		ConfigType("yaml").
+		ConfigPaths(
+			configPath,
+		).
+		Defaults(map[string]interface{}{}).
+		Options().
+		Build()
+
+	if err != nil {
+		glog.Fatalf("Could not initialize config: %w", err)
+	}
+	return cfg
+}
+
 // Run configures and runs the actual bootstrap.
-func Run(endpoint string, token string, store string, useTLS bool) {
-	srv, webSrv := initialize(endpoint, token, store, useTLS)
+func Run(configPath string) {
+	Cfg = getConfig(configPath)
+	srv, webSrv := initialize()
 
 	wait := sync.WaitGroup{}
 
@@ -36,28 +59,12 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 	wait.Wait()
 }
 
-func initialize(endpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
-	srvCfg := api.ServerConfig{ //TODO: Discuss config.
-		GrpcPort:  "50051",
-		HTTPPort:  "8081",
-		HTTPSPort: "8443",
-		TLSConfig: api.TLSConfig{
-			CertPath: "/etc/tls/tls.crt",
-			CertName: "",
-			KeyPath:  "/etc/tls/tls.key",
-			KeyName:  "",
-		},
-		StoreConfig: api.StoreConfig{
-			Store:     store,
-			Endpoint:  endpoint,
-			AuthToken: token,
-			UseTLS:    useTLS,
-		},
-	}
+func initialize() (*grpc.Server, *http.Server) {
+	srvCfg := parseServiceConfig()
 
 	ar := getAccessRepository(&srvCfg)
 	sr := getSeatRepository(&srvCfg, ar)
-	pr := getPrincipalRepository(store)
+	pr := getPrincipalRepository(srvCfg.StoreConfig.Store)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
@@ -71,7 +78,7 @@ func initialize(endpoint string, token string, store string, useTLS bool) (*grpc
 	return srv, webSrv
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *serviceconfig.ServiceConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
@@ -84,7 +91,7 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAp
 	return srv
 }
 
-func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
+func getHTTPServer(serverConfig *serviceconfig.ServiceConfig) *http.Server {
 	srv, err := NewServerBuilder().
 		WithServerConfig(serverConfig).
 		BuildHTTP()
@@ -95,7 +102,7 @@ func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
-func getSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
+func getSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
@@ -104,7 +111,7 @@ func getSeatRepository(config *api.ServerConfig, potentialStub interface{}) cont
 	return b.WithConfig(config).Build()
 }
 
-func getAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
+func getAccessRepository(config *serviceconfig.ServiceConfig) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
 		WithConfig(config).Build()
 
@@ -116,4 +123,31 @@ func getAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
 
 func getPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
+}
+
+func parseServiceConfig() serviceconfig.ServiceConfig {
+	return serviceconfig.ServiceConfig{
+		GrpcPort:  Cfg.GetString("app.server.grpcPort"), //TODO: validate
+		HttpPort:  Cfg.GetString("app.server.httpPort"),
+		HttpsPort: Cfg.GetString("app.server.httpsPort"),
+		TLSConfig: serviceconfig.TLSConfig{
+			CertPath: "",
+			CertName: "",
+			KeyPath:  "",
+			KeyName:  "",
+		},
+		StoreConfig: serviceconfig.StoreConfig{
+			Store:     "",
+			Endpoint:  "",
+			AuthToken: "",
+			UseTLS:    false,
+		},
+		CorsConfig: serviceconfig.CorsConfig{
+			AllowedMethods:   nil,
+			AllowedHeaders:   nil,
+			AllowCredentials: false,
+			MaxAge:           0,
+			Debug:            false,
+		},
+	}
 }
