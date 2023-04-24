@@ -23,7 +23,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 }
 
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
-	t.SkipNow()
+	t.SkipNow() //Skip until meta-authz is in place
 	req := modifyLicRequestFromVars("bad",
 		"aspian",
 		[]string{"okay"},
