@@ -22,6 +22,9 @@ import (
 // These smoketests should exercise minimal functionality in vertical slices, primarily to ensure correct startup
 
 func TestCheckAccess(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	t.Parallel()
 	srv := initializeGrpcServer(t)
 
@@ -38,6 +41,9 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestGetLicense(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	t.Parallel()
 	srv := initializeGrpcServer(t)
 
@@ -53,6 +59,9 @@ func TestGetLicense(t *testing.T) {
 }
 
 func TestGetAssigned(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	t.Parallel()
 	srv := initializeGrpcServer(t)
 
@@ -71,6 +80,9 @@ func TestGetAssigned(t *testing.T) {
 }
 
 func TestModify(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
 	t.Parallel()
 	srv := initializeGrpcServer(t)
 

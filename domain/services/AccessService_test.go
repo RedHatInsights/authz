@@ -8,7 +8,7 @@ import (
 )
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
-	t.SkipNow()
+	t.SkipNow() //Skip until meta-authz is in place
 	access := NewAccessService(mockAuthzRepository())
 	_, err := access.Check(objFromRequest(
 		"other system",
