@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
@@ -10,7 +9,7 @@ import (
 // SeatLicenseRepositoryBuilder constructs SeatLicenseRepositories based on the provided configuration
 type SeatLicenseRepositoryBuilder struct {
 	stub   contracts.SeatLicenseRepository
-	config *api.ServerConfig
+	config *serviceconfig.ServiceConfig
 }
 
 // NewSeatLicenseRepositoryBuilder constructs a new SeatLicenseRepositoryBuilder

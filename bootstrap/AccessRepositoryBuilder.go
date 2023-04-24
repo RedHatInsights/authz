@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"authz/domain/contracts"
@@ -11,7 +10,7 @@ import (
 
 // AccessRepositoryBuilder is the builder containing the config for building technical implementations of the server
 type AccessRepositoryBuilder struct {
-	config *api.ServerConfig
+	config *serviceconfig.ServiceConfig
 }
 
 // NewAccessRepositoryBuilder returns a new AccessRepositoryBuilder instance

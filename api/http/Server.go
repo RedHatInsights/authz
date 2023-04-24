@@ -2,8 +2,8 @@
 package http
 
 import (
-	"authz/api"
 	core "authz/api/gen/v1alpha"
+	"authz/bootstrap/serviceconfig"
 	"context"
 	"net/http"
 	"os"
@@ -16,7 +16,7 @@ import (
 
 // Server serves a HTTP api based on the generated grpc gateway code
 type Server struct {
-	ServerConfig       *api.ServerConfig
+	ServerConfig       *serviceconfig.ServiceConfig
 	GrpcCheckService   core.CheckPermissionServer
 	GrpcLicenseService core.LicenseServiceServer
 }
@@ -34,10 +34,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
 		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServerConfig.HTTPSPort)
+				s.ServerConfig.HttpsPort)
 
 			err = http.ListenAndServeTLS(
-				":"+s.ServerConfig.HTTPSPort,
+				":"+s.ServerConfig.HttpsPort,
 				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
 				s.ServerConfig.TLSConfig.KeyPath, mux)
 			if err != nil {
@@ -47,8 +47,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServerConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
+			s.ServerConfig.HttpPort)
+		err = http.ListenAndServe(":"+s.ServerConfig.HttpPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -69,7 +69,7 @@ func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(c api.ServerConfig) *Server {
+func NewServer(c serviceconfig.ServiceConfig) *Server {
 	return &Server{
 		ServerConfig: &c,
 	}

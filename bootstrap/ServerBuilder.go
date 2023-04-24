@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
@@ -14,7 +13,7 @@ type ServerBuilder struct {
 	PrincipalRepository contracts.PrincipalRepository
 	AccessAppService    *application.AccessAppService
 	LicenseAppService   *application.LicenseAppService
-	ServerConfig        *api.ServerConfig
+	ServiceConfig       *serviceconfig.ServiceConfig
 }
 
 // NewServerBuilder returns a new ServerBuilder instance
@@ -36,16 +35,16 @@ func (s *ServerBuilder) WithLicenseAppService(sh *application.LicenseAppService)
 
 // WithServerConfig sets the ServerConfig configuration for the used server.
 func (s *ServerBuilder) WithServerConfig(c *serviceconfig.ServiceConfig) *ServerBuilder {
-	s.ServerConfig = c
+	s.ServiceConfig = c
 	return s
 }
 
 // BuildGrpc builds the grpc-server of the grpc gateway
 func (s *ServerBuilder) BuildGrpc() (srv *grpc.Server, err error) {
-	return grpc.NewServer(*s.AccessAppService, *s.LicenseAppService, *s.ServerConfig), nil
+	return grpc.NewServer(*s.AccessAppService, *s.LicenseAppService, *s.ServiceConfig), nil
 }
 
 // BuildHTTP builds the HTTP Server of the grpc gateway
 func (s *ServerBuilder) BuildHTTP() (srv *http.Server, err error) {
-	return http.NewServer(*s.ServerConfig), nil
+	return http.NewServer(*s.ServiceConfig), nil
 }
