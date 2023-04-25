@@ -18,6 +18,7 @@ var Cfg serviceconfig.Config
 
 // getConfig loads the config based on the technical implementation "viper".
 func getConfig(configPath string) serviceconfig.Config {
+
 	cfg, err := config.NewBuilder().
 		ConfigName("config").
 		ConfigType("yaml").
@@ -29,7 +30,7 @@ func getConfig(configPath string) serviceconfig.Config {
 		Build()
 
 	if err != nil {
-		glog.Fatalf("Could not initialize config: %w", err)
+		glog.Fatal("Could not initialize config: ", err)
 	}
 	return cfg
 }
@@ -37,7 +38,8 @@ func getConfig(configPath string) serviceconfig.Config {
 // Run configures and runs the actual bootstrap.
 func Run(configPath string) {
 	Cfg = getConfig(configPath)
-	srv, webSrv := initialize()
+	srvCfg := parseServiceConfig()
+	srv, webSrv := initialize(srvCfg)
 
 	wait := sync.WaitGroup{}
 
@@ -59,12 +61,11 @@ func Run(configPath string) {
 	wait.Wait()
 }
 
-func initialize() (*grpc.Server, *http.Server) {
-	srvCfg := parseServiceConfig()
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server) {
 
 	ar := getAccessRepository(&srvCfg)
 	sr := getSeatRepository(&srvCfg, ar)
-	pr := getPrincipalRepository(srvCfg.StoreConfig.Store)
+	pr := getPrincipalRepository(srvCfg.StoreConfig.Kind)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
@@ -127,27 +128,25 @@ func getPrincipalRepository(store string) contracts.PrincipalRepository {
 
 func parseServiceConfig() serviceconfig.ServiceConfig {
 	return serviceconfig.ServiceConfig{
-		GrpcPort:  Cfg.GetString("app.server.grpcPort"), //TODO: validate
-		HttpPort:  Cfg.GetString("app.server.httpPort"),
-		HttpsPort: Cfg.GetString("app.server.httpsPort"),
+		GrpcPort:  Cfg.GetString("app.server.grpcPort"),
+		HTTPPort:  Cfg.GetString("app.server.httpPort"),
+		HTTPSPort: Cfg.GetString("app.server.httpsPort"),
 		TLSConfig: serviceconfig.TLSConfig{
-			CertPath: "",
-			CertName: "",
-			KeyPath:  "",
-			KeyName:  "",
+			CertFile: Cfg.GetString("app.tls.certFile"),
+			KeyFile:  Cfg.GetString("app.tls.keyFile"),
 		},
 		StoreConfig: serviceconfig.StoreConfig{
-			Store:     "",
-			Endpoint:  "",
-			AuthToken: "",
-			UseTLS:    false,
+			Kind:      Cfg.GetString("app.store.kind"),
+			Endpoint:  Cfg.GetString("app.store.endpoint"),
+			AuthToken: Cfg.GetString("app.store.token"),
+			UseTLS:    Cfg.GetBool("app.store.useTLS"),
 		},
 		CorsConfig: serviceconfig.CorsConfig{
-			AllowedMethods:   nil,
-			AllowedHeaders:   nil,
-			AllowCredentials: false,
-			MaxAge:           0,
-			Debug:            false,
+			AllowedMethods:   Cfg.GetStringSlice("app.cors.allowedMethods"),
+			AllowedHeaders:   Cfg.GetStringSlice("app.cors.allowedHeaders"),
+			AllowCredentials: Cfg.GetBool("app.cors.allowCredentials"),
+			MaxAge:           Cfg.GetInt("app.cors.maxAge"),
+			Debug:            Cfg.GetBool("app.cors.debug"),
 		},
 	}
 }

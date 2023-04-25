@@ -27,7 +27,7 @@ func (e *AccessRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig
 // Build builds an implementation based on the given param
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	config := e.config.StoreConfig
-	switch config.Store {
+	switch config.Kind {
 	case "stub":
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":

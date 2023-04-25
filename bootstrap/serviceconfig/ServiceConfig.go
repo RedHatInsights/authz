@@ -4,8 +4,8 @@ package serviceconfig
 // ServiceConfig contains all server-related configuration.
 type ServiceConfig struct {
 	GrpcPort    string
-	HttpPort    string
-	HttpsPort   string
+	HTTPPort    string
+	HTTPSPort   string
 	CorsConfig  CorsConfig
 	TLSConfig   TLSConfig
 	StoreConfig StoreConfig
@@ -13,15 +13,13 @@ type ServiceConfig struct {
 
 // TLSConfig includes the TLS configuration.
 type TLSConfig struct {
-	CertPath string
-	CertName string //default: tls.crt
-	KeyPath  string
-	KeyName  string //default: tls.key
+	CertFile string
+	KeyFile  string
 }
 
 // StoreConfig includes connection details to use an underlying authZ store
 type StoreConfig struct {
-	Store     string
+	Kind      string
 	Endpoint  string
 	AuthToken string
 	UseTLS    bool

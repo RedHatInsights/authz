@@ -4,6 +4,7 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc"
+	"authz/bootstrap/serviceconfig"
 	"context"
 	"os"
 	"path"
@@ -97,8 +98,8 @@ var port string
 func initializeGrpcServer(t *testing.T) *grpc.Server {
 	token, err := serialKey()
 	assert.NoError(t, err)
-
-	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
+	mockCfg := mockConfig(token)
+	grpc, _ := initialize(mockCfg)
 
 	return grpc
 }
@@ -128,7 +129,6 @@ func TestMain(m *testing.M) {
 	}
 
 	port = resource.GetPort("50051/tcp")
-
 	result := m.Run()
 	_ = pool.Purge(resource)
 
@@ -140,4 +140,26 @@ var keyData int32 = 1
 func serialKey() (string, error) {
 	atomic.AddInt32(&keyData, 1)
 	return strconv.Itoa(int(keyData)), nil
+}
+
+func mockConfig(token string) serviceconfig.ServiceConfig {
+	return serviceconfig.ServiceConfig{
+		GrpcPort:  "50051",
+		HTTPPort:  "8081",
+		HTTPSPort: "8443",
+		CorsConfig: serviceconfig.CorsConfig{
+			AllowedMethods:   []string{},
+			AllowedHeaders:   []string{},
+			AllowCredentials: true,
+			MaxAge:           0,
+			Debug:            false,
+		},
+		TLSConfig: serviceconfig.TLSConfig{},
+		StoreConfig: serviceconfig.StoreConfig{
+			Kind:      "spicedb",
+			Endpoint:  "localhost:" + port,
+			AuthToken: token,
+			UseTLS:    false,
+		},
+	}
 }

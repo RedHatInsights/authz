@@ -21,7 +21,8 @@ SHELL = bash
 # builds the binary inside the bin folder
 .PHONY: binary
 binary:
-	$(GO) build -o bin/authz cmd/main.go
+	@echo "Building the service..."
+	@$(GO) build -o bin/authz cmd/main.go
 
 # builds the binary inside the bin folder
 .PHONY: binary-delete
@@ -169,7 +170,9 @@ clean: tls-delete apigen-v2-delete binary-delete
 # run go linter with the repositories lint config
 .PHONY: lint
 lint:
-	$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
+	@echo ""
+	@echo "Linting code."
+	@$(DOCKER) run -t --rm -v $(PWD):/app -w /app golangci/golangci-lint golangci-lint run -v
 
 # run short subset of tests
 .PHONY: test-short
@@ -188,7 +191,8 @@ pr-check: gmtidy arch-check test lint binary
 # runs go mod tidy
 .PHONY: gmtidy
 gmtidy:
-	$(GO) mod tidy
+	@echo "Tidying dependencies using go mod tidy..."
+	@$(GO) mod tidy
 
 # describes current architectural rules setup in arch-go.yml
 .PHONY: arch-describe

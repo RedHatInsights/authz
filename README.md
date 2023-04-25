@@ -2,11 +2,19 @@
 
 # Start up
 
-## Start using stub access repository:
-run `go run cmd/main.go --store=stub`
+run `go run cmd/main.go <-c / --config> <path-to-config-without-file>`
 
-## Start using spicedb access repository:
-run `go run cmd/main.go --endpoint=<endpoint> --token=<token> --store=spicedb --useTLS=false`
+## Example: Running with the provided config.yml in this repo
+* from the root directory: `go run cmd/main.go -c .`
+* from the `cmd` directory: go run main.go -c ../
+
+## Configuring the underlying Store
+Set 
+```
+store:
+  kind: "stub"
+```
+in config.yaml. Set it to `"spicedb"` and fill out the other fields to use spiceDB instead.
 
 # Testing
 

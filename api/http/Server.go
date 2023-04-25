@@ -31,15 +31,15 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 
-	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
-		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
+	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServerConfig.HttpsPort)
+				s.ServerConfig.HTTPSPort)
 
 			err = http.ListenAndServeTLS(
-				":"+s.ServerConfig.HttpsPort,
-				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
-				s.ServerConfig.TLSConfig.KeyPath, mux)
+				":"+s.ServerConfig.HTTPSPort,
+				s.ServerConfig.TLSConfig.CertFile, //TODO: Needs sanity checking.
+				s.ServerConfig.TLSConfig.KeyFile, mux)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
@@ -47,8 +47,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServerConfig.HttpPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HttpPort, mux)
+			s.ServerConfig.HTTPPort)
+		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)

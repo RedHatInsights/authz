@@ -1,0 +1,19 @@
+app:
+  server:
+    grpcPort: "50051"
+    httpPort: "8080"
+    httpsPort: "8443"
+  tls:
+    certFile: "/etc/tls/tls.crt"
+    keyFile: "/etc/tls/tls.key"
+  store:
+    kind: "stub"
+    endpoint: "http://localhost:50052" # spiceDB Endpoint
+    token: "foobar" # spiceDB token
+    useTLS: false
+  cors:
+    allowedMethods:
+    allowedHeaders:
+    allowCredentials:
+    maxAge:
+    debug:
