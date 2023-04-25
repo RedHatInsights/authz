@@ -217,6 +217,8 @@ func convertDomainErrorToGrpc(err error) error {
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 	case errors.Is(err, domain.ErrNotAuthorized):
 		return status.Error(codes.PermissionDenied, "Access denied.")
+	case errors.Is(err, domain.ErrLicenseLimitExceeded):
+		return status.Error(codes.FailedPrecondition, "License limits exceeded.")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}
