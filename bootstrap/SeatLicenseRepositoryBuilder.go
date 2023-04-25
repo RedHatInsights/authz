@@ -17,7 +17,7 @@ func NewSeatLicenseRepositoryBuilder() *SeatLicenseRepositoryBuilder {
 	return &SeatLicenseRepositoryBuilder{}
 }
 
-// WithConfig supplies a ServerConfig struct to be used as-needed for building objects
+// WithConfig supplies a ServiceConfig struct to be used as-needed for building objects
 func (b *SeatLicenseRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *SeatLicenseRepositoryBuilder {
 	b.config = config
 	return b

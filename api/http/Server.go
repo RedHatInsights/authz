@@ -14,9 +14,9 @@ import (
 	"github.com/rs/cors"
 )
 
-// Server serves a HTTP api based on the generated grpc gateway code
+// Server serves an HTTP api based on the generated grpc gateway code
 type Server struct {
-	ServerConfig       *serviceconfig.ServiceConfig
+	ServiceConfig      *serviceconfig.ServiceConfig
 	GrpcCheckService   core.CheckPermissionServer
 	GrpcLicenseService core.LicenseServiceServer
 }
@@ -31,15 +31,15 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 
-	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertFile); err == nil {
-		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in HTTPS mode
+	if _, err = os.Stat(s.ServiceConfig.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(s.ServiceConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServerConfig.HTTPSPort)
+				s.ServiceConfig.HTTPSPort)
 
 			err = http.ListenAndServeTLS(
-				":"+s.ServerConfig.HTTPSPort,
-				s.ServerConfig.TLSConfig.CertFile, //TODO: Needs sanity checking.
-				s.ServerConfig.TLSConfig.KeyFile, mux)
+				":"+s.ServiceConfig.HTTPSPort,
+				s.ServiceConfig.TLSConfig.CertFile, //TODO: Needs sanity checking.
+				s.ServiceConfig.TLSConfig.KeyFile, mux)
 			if err != nil {
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
@@ -47,8 +47,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServerConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
+			s.ServiceConfig.HTTPPort)
+		err = http.ListenAndServe(":"+s.ServiceConfig.HTTPPort, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -71,7 +71,7 @@ func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
 // NewServer creates a new Server object to use.
 func NewServer(c serviceconfig.ServiceConfig) *Server {
 	return &Server{
-		ServerConfig: &c,
+		ServiceConfig: &c,
 	}
 }
 
@@ -96,7 +96,7 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 	return chain, nil
 }
 
-func corsMiddleware(h http.Handler) http.Handler {
+func corsMiddleware(h http.Handler) http.Handler { //TODO: inject config somehow.
 	return cors.New(cors.Options{
 		AllowedMethods:   []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
 		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type", "User-Agent"},

@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc"
 	"authz/bootstrap/serviceconfig"
@@ -117,8 +116,8 @@ func TestMain(m *testing.M) {
 	)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   api.SpicedbImage,
-		Tag:          api.SpicedbVersion, // Replace this with an actual version
+		Repository:   serviceconfig.SpicedbImage,
+		Tag:          serviceconfig.SpicedbVersion,
 		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
 		Mounts:       []string{path.Join(basepath, "../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
 		ExposedPorts: []string{"50051/tcp"},

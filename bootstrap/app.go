@@ -79,11 +79,11 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server)
 	return srv, webSrv
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *serviceconfig.ServiceConfig) *grpc.Server {
+func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serviceConfig *serviceconfig.ServiceConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildGrpc()
 
 	if err != nil {
@@ -92,9 +92,9 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAp
 	return srv
 }
 
-func getHTTPServer(serverConfig *serviceconfig.ServiceConfig) *http.Server {
+func getHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 	srv, err := NewServerBuilder().
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildHTTP()
 
 	if err != nil {
@@ -128,9 +128,10 @@ func getPrincipalRepository(store string) contracts.PrincipalRepository {
 
 func parseServiceConfig() serviceconfig.ServiceConfig {
 	return serviceconfig.ServiceConfig{
-		GrpcPort:  Cfg.GetString("app.server.grpcPort"),
-		HTTPPort:  Cfg.GetString("app.server.httpPort"),
-		HTTPSPort: Cfg.GetString("app.server.httpsPort"),
+		GrpcPort:    Cfg.GetString("app.server.grpcPort"),
+		HTTPPort:    Cfg.GetString("app.server.httpPort"),
+		HTTPSPort:   Cfg.GetString("app.server.httpsPort"),
+		LogRequests: Cfg.GetBool("app.server.logRequests"),
 		TLSConfig: serviceconfig.TLSConfig{
 			CertFile: Cfg.GetString("app.tls.certFile"),
 			KeyFile:  Cfg.GetString("app.tls.keyFile"),
@@ -141,7 +142,7 @@ func parseServiceConfig() serviceconfig.ServiceConfig {
 			AuthToken: Cfg.GetString("app.store.token"),
 			UseTLS:    Cfg.GetBool("app.store.useTLS"),
 		},
-		CorsConfig: serviceconfig.CorsConfig{
+		CorsConfig: serviceconfig.CorsConfig{ //TODO: see how to integrate in middlewares.
 			AllowedMethods:   Cfg.GetStringSlice("app.cors.allowedMethods"),
 			AllowedHeaders:   Cfg.GetStringSlice("app.cors.allowedHeaders"),
 			AllowCredentials: Cfg.GetBool("app.cors.allowCredentials"),

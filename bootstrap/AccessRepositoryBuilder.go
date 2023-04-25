@@ -18,7 +18,7 @@ func NewAccessRepositoryBuilder() *AccessRepositoryBuilder {
 	return &AccessRepositoryBuilder{}
 }
 
-// WithConfig supplies a ServerConfig struct to be used as-needed for building objects
+// WithConfig supplies a ServiceConfig struct to be used as-needed for building objects
 func (e *AccessRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig) *AccessRepositoryBuilder {
 	e.config = config
 	return e

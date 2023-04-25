@@ -1,19 +1,21 @@
 app:
   server:
-    grpcPort: "50051"
-    httpPort: "8080"
+    grpcPort: "50052"
+    httpPort: "8081"
     httpsPort: "8443"
+    logRequests: true
   tls:
     certFile: "/etc/tls/tls.crt"
     keyFile: "/etc/tls/tls.key"
   store:
     kind: "stub"
-    endpoint: "http://localhost:50052" # spiceDB Endpoint
-    token: "foobar" # spiceDB token
+    endpoint: "localhost:50051" # spiceDB Endpoint, only used when kind = spicedb
+    token: "foobar" # spiceDB psk, only used when kind = spicedb
     useTLS: false
   cors:
-    allowedMethods:
-    allowedHeaders:
-    allowCredentials:
-    maxAge:
-    debug:
+    allowedOrigins: ["*"]
+    allowedMethods: ["HEAD","GET","POST","PATCH","PUT","DELETE","OPTIONS"]
+    allowedHeaders: ["Accept","ResponseType","Content-Length","Accept-Encoding","Accept-Language","Authorization","Content-Type","User-Agent"]
+    allowCredentials: false
+    maxAge: 0
+    debug: true

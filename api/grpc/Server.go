@@ -24,7 +24,7 @@ import (
 type Server struct {
 	AccessAppService  *application.AccessAppService
 	LicenseAppService *application.LicenseAppService
-	ServerConfig      *serviceconfig.ServiceConfig
+	ServiceConfig     *serviceconfig.ServiceConfig
 }
 
 // GetLicense ToDo - just a stub for now.
@@ -123,14 +123,14 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 
 // NewServer creates a new Server object to use.
 func NewServer(h application.AccessAppService, l application.LicenseAppService, c serviceconfig.ServiceConfig) *Server {
-	return &Server{AccessAppService: &h, ServerConfig: &c, LicenseAppService: &l}
+	return &Server{AccessAppService: &h, ServiceConfig: &c, LicenseAppService: &l}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+s.ServerConfig.GrpcPort)
+	ls, err := net.Listen("tcp", ":"+s.ServiceConfig.GrpcPort)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -139,11 +139,11 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	var creds credentials.TransportCredentials
 
-	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertFile); err == nil {
-		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in TLS mode
+	if _, err = os.Stat(s.ServiceConfig.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(s.ServiceConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("TLS cert and Key found  - Starting gRPC server in secure TLS mode")
 
-			creds, err = credentials.NewServerTLSFromFile(s.ServerConfig.TLSConfig.CertFile, s.ServerConfig.TLSConfig.KeyFile)
+			creds, err = credentials.NewServerTLSFromFile(s.ServiceConfig.TLSConfig.CertFile, s.ServiceConfig.TLSConfig.KeyFile)
 			if err != nil {
 				glog.Errorf("Error loading certs: %s", err)
 				return err
@@ -151,7 +151,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s",
-			s.ServerConfig.GrpcPort)
+			s.ServiceConfig.GrpcPort)
 	}
 
 	srv := grpc.NewServer(grpc.Creds(creds))

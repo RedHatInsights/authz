@@ -33,8 +33,8 @@ func (s *ServerBuilder) WithLicenseAppService(sh *application.LicenseAppService)
 	return s
 }
 
-// WithServerConfig sets the ServerConfig configuration for the used server.
-func (s *ServerBuilder) WithServerConfig(c *serviceconfig.ServiceConfig) *ServerBuilder {
+// WithServiceConfig sets the ServiceConfig configuration for the used server.
+func (s *ServerBuilder) WithServiceConfig(c *serviceconfig.ServiceConfig) *ServerBuilder {
 	s.ServiceConfig = c
 	return s
 }
