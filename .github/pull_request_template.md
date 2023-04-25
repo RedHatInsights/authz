@@ -1,5 +1,14 @@
 ### PR Template:
 
+## Describe your changes
+
+- ...
+
+## Ticket reference (if applicable)
+Fixes #
+
+## Checklist
+
 * [ ] Are the agreed upon acceptance criteria fulfilled?
 
 * [ ] Was the 4-eye-principle applied? (async PR review, pairing, ensembling)
@@ -18,6 +27,5 @@
 
 * [ ] Is the corresponding Ticket in the right state? (should be on "review" now, put to done when this change made it to production)
 
-* [ ] For changes to the public API / code dependencies: Was the whole team (or a sufficient amount of ppl) able to review?  
-
+* [ ] For changes to the public API / code dependencies: Was the whole team (or a sufficient amount of ppl) able to review?
 
