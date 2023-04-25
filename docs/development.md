@@ -5,7 +5,7 @@ The authz service is a golang compiled binary running on the following ports (by
 * HTTP:  8081
 * HTTPS: 8443
 
-For development purpose, we use HTTP/8081. 
+For development purposes, we use HTTP/8081. 
 
 Authz calls out to SpiceDB on grpc/50051 by default if the command line, below, is used.
 
