@@ -69,6 +69,11 @@ message GetSeatsResponse {
   repeated GetSeatsUserRepresentation users = 1; // Just user IDs, unless "includeUsers" = true.
 }
 
+message LicenseLimitExceededError {
+  sint32 seatsTotal = 1; // Total number of seats assignable.
+  sint32 seatsAvailable = 2; // Current number of available seats which can be assigned.
+}
+
 //we may return more userinfo, this is a starting point.
 message GetSeatsUserRepresentation {
   string displayName = 1;

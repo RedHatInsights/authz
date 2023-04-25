@@ -212,13 +212,18 @@ func convertTokenToPrincipalID(token string) (string, error) {
 }
 
 func convertDomainErrorToGrpc(err error) error {
+	var licenseLimitExceeded domain.ErrLicenseLimitExceeded
+	if errors.As(err, &licenseLimitExceeded) {
+		resp := status.New(codes.FailedPrecondition, licenseLimitExceeded.Error())
+		resp, _ = resp.WithDetails(&core.LicenseLimitExceededError{SeatsTotal: int32(licenseLimitExceeded.MaxSeats), SeatsAvailable: int32(licenseLimitExceeded.AvailableSeats)})
+		return resp.Err()
+	}
+
 	switch {
 	case errors.Is(err, domain.ErrNotAuthenticated):
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 	case errors.Is(err, domain.ErrNotAuthorized):
 		return status.Error(codes.PermissionDenied, "Access denied.")
-	case errors.Is(err, domain.ErrLicenseLimitExceeded):
-		return status.Error(codes.FailedPrecondition, "License limits exceeded.")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}

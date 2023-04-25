@@ -35,7 +35,11 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	err = lic.ModifySeats(req)
 
 	//then
-	assert.ErrorIs(t, err, domain.ErrLicenseLimitExceeded)
+	var limitExceededErr domain.ErrLicenseLimitExceeded
+	assert.ErrorAs(t, err, &limitExceededErr)
+	assert.Equal(t, 5, limitExceededErr.MaxSeats)
+	assert.Equal(t, 0, limitExceededErr.AvailableSeats)
+
 	license, err := lic.GetLicense(domain.GetLicenseEvent{
 		Requestor: "okay",
 		OrgID:     "aspian",

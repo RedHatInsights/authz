@@ -176,7 +176,7 @@ func TestOverAssigningLicensesFails(t *testing.T) {
 		]
 	}`))
 
-	assert.Equal(t, 400, resp.StatusCode)
+	assertJSONResponse(t, resp, 400, `{"code": 9, "message": "<<PRESENCE>>", "details": [{"@type":"<<PRESENCE>>", "seatsTotal":%d, "seatsAvailable":%d}]}`, 2, 2) //Two still available because none were consumed
 }
 
 func post(uri string, token string, body string) *http.Request {

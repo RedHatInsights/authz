@@ -23,7 +23,7 @@ func (l *SeatLicenseService) ModifySeats(evt domain.ModifySeatAssignmentEvent) e
 	}
 
 	if license.GetAvailableSeats() < (len(evt.Assign) - len(evt.UnAssign)) {
-		return domain.ErrLicenseLimitExceeded
+		return domain.NewErrLicenseLimitExceeded(license.MaxSeats, license.GetAvailableSeats())
 	}
 
 	//TODO: consistency? Atm, if an error occurs part-way through, this will partially save.
