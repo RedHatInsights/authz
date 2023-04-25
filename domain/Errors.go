@@ -10,3 +10,6 @@ var ErrNotAuthenticated = errors.New("NotAuthenticated")
 
 // ErrInvalidRequest is returned when some part of the request is incompatible with another part.
 var ErrInvalidRequest = errors.New("InvalidRequest")
+
+// ErrLicenseLimitExceeded is returned when an operation attempts to allocate more licenses than are available
+var ErrLicenseLimitExceeded = errors.New("LicenseLimitExceeded")
