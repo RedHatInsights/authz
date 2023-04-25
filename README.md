@@ -20,3 +20,7 @@ For smoketests against an environment, run `./scripts/test.sh <BASEURI>` where <
 # Building
 
 run `go build -o authz cmd/main.go` or `make binary`
+
+# Developers
+
+[Authz service development guide](docs/development.md)
