@@ -3,6 +3,7 @@ package services
 import (
 	"authz/domain"
 	"authz/domain/contracts"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,31 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 	err := lic.ModifySeats(req)
 
 	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
+}
+
+func TestSeatLicenseOverAssignment(t *testing.T) {
+	//given
+	store := mockAuthzRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	assign := []string{}
+	for i := 0; i < 10; i++ { //License allows 5 seats
+		assign = append(assign, "user"+strconv.Itoa(i))
+	}
+
+	req := modifyLicRequestFromVars("okay", "aspian", assign, []string{})
+	//when
+	err := lic.ModifySeats(req)
+	assert.ErrorIs(t, err, domain.ErrLicenseLimitExceeded)
+	//then
+	license, err := lic.GetLicense(domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "aspian",
+		ServiceID: "smarts",
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, 0, license.InUse)
 }
 
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
