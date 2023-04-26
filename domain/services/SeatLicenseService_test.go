@@ -76,6 +76,33 @@ func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
 	assert.NotContains(t, seats, domain.SubjectID("user0"))
 }
 
+func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
+	// have an org with at least 1 assigned seat
+	// get the count of assigned users for that org
+	// make a modify-request to unassign a user that is not actually assigned
+	//expect that the assigned counter is the same as before unassigning
+
+	//given
+	store := mockAuthzRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+	err := lic.ModifySeats(modifyLicRequestFromVars("okay", "aspian", []string{"user0"}, []string{}))
+	assert.NoError(t, err)
+
+	// when
+	req := modifyLicRequestFromVars("okay", "aspian", []string{}, []string{"not assigned"})
+	err = lic.ModifySeats(req)
+
+	// then
+	assert.Error(t, err)
+	license, err := lic.GetLicense(domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "aspian",
+		ServiceID: "smarts",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, license.InUse)
+}
+
 func fillUpLicense(lic *SeatLicenseService) error {
 	toAssign := make([]string, 5)
 	for i := range toAssign {
