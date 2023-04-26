@@ -1,8 +1,8 @@
 app:
   server:
-    grpcPort:
-    httpPort: -1
-    httpsPort: 66666
+    grpcPort: 50052
+    httpPort: 8081
+    httpsPort: 8443
     logRequests: true
   tls:
     certFile: "/etc/tls/tls.crt"
