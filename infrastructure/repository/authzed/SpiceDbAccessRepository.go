@@ -100,13 +100,20 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID domain.SubjectID, orgID s
 
 // UnAssignSeat delete the relation
 func (s *SpiceDbAccessRepository) UnAssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error {
+	filter := &v1.RelationshipFilter{
+		ResourceType:     LicenseSeatObjectType,
+		OptionalRelation: "assigned",
+		OptionalSubjectFilter: &v1.SubjectFilter{
+			SubjectType:       SubjectType,
+			OptionalSubjectId: string(subjectID),
+		},
+	}
 	result, err := s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
-		RelationshipFilter: &v1.RelationshipFilter{
-			ResourceType:     LicenseSeatObjectType,
-			OptionalRelation: "assigned",
-			OptionalSubjectFilter: &v1.SubjectFilter{
-				SubjectType:       SubjectType,
-				OptionalSubjectId: string(subjectID),
+		RelationshipFilter: filter,
+		OptionalPreconditions: []*v1.Precondition{
+			{
+				Operation: v1.Precondition_OPERATION_MUST_MATCH,
+				Filter:    filter,
 			},
 		},
 	})

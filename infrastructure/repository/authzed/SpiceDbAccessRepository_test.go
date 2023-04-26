@@ -172,3 +172,47 @@ func TestAssignUnassign(t *testing.T) {
 
 	assert.Equal(t, 1, lic.InUse)
 }
+
+func TestUnassignNotAssigned(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	licBefore, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	err = client.UnAssignSeat(domain.SubjectID("not_assigned"), "o1", domain.Service{ID: "smarts"})
+	assert.Error(t, err)
+
+	licAfter, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+}
+
+func TestAssignAlreadyAssigned(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	licBefore, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	err = client.AssignSeat(domain.SubjectID("u1"), "o1", domain.Service{ID: "smarts"})
+	assert.Error(t, err)
+
+	licAfter, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+}
