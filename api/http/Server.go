@@ -25,7 +25,7 @@ type Server struct {
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcLicenseService)
+	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcLicenseService, *s.ServiceConfig)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
@@ -80,7 +80,7 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (http.Handler, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer, c serviceconfig.ServiceConfig) (http.Handler, error) {
 	mux := runtime.NewServeMux()
 
 	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
@@ -91,19 +91,22 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 		return nil, err
 	}
 
-	chain := createChain(logMiddleware, corsMiddleware).then(mux)
+	chain := createChain(logMiddleware, makeCorsMiddleware(c)).then(mux)
 
 	return chain, nil
 }
 
-func corsMiddleware(h http.Handler) http.Handler { //TODO: inject config somehow.
-	return cors.New(cors.Options{
-		AllowedMethods:   []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
-		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type", "User-Agent"},
-		AllowCredentials: true,
-		MaxAge:           300,
-		Debug:            true,
-	}).Handler(h)
+func makeCorsMiddleware(c serviceconfig.ServiceConfig) middleware {
+	return func(h http.Handler) http.Handler {
+		return cors.New(cors.Options{
+			AllowedMethods:   c.CorsConfig.AllowedMethods,
+			AllowedHeaders:   c.CorsConfig.AllowedHeaders,
+			AllowCredentials: c.CorsConfig.AllowCredentials,
+			MaxAge:           c.CorsConfig.MaxAge,
+			Debug:            c.CorsConfig.Debug,
+			AllowedOrigins:   c.CorsConfig.AllowedOrigins,
+		}).Handler(h)
+	}
 }
 
 func logMiddleware(h http.Handler) http.Handler {
