@@ -27,17 +27,19 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	//given
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+	err := fillUpLicense(lic)
+	assert.NoError(t, err)
 
-	assign := []string{}
-	for i := 0; i < 10; i++ { //License allows 5 seats
-		assign = append(assign, "user"+strconv.Itoa(i))
-	}
-
-	req := modifyLicRequestFromVars("okay", "aspian", assign, []string{})
 	//when
-	err := lic.ModifySeats(req)
-	assert.ErrorIs(t, err, domain.ErrLicenseLimitExceeded)
+	req := modifyLicRequestFromVars("okay", "aspian", []string{"usernext"}, []string{})
+	err = lic.ModifySeats(req)
+
 	//then
+	var limitExceededErr domain.ErrLicenseLimitExceeded
+	assert.ErrorAs(t, err, &limitExceededErr)
+	assert.Equal(t, 5, limitExceededErr.MaxSeats)
+	assert.Equal(t, 0, limitExceededErr.AvailableSeats)
+
 	license, err := lic.GetLicense(domain.GetLicenseEvent{
 		Requestor: "okay",
 		OrgID:     "aspian",
@@ -45,7 +47,49 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, 0, license.InUse)
+	assert.Equal(t, 0, license.GetAvailableSeats())
+}
+
+func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
+	//given
+	store := mockAuthzRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	err := fillUpLicense(lic)
+	assert.NoError(t, err)
+
+	//when
+	req := modifyLicRequestFromVars("okay", "aspian", []string{"usernext"}, []string{"user0"})
+	err = lic.ModifySeats(req)
+
+	//then
+	assert.NoError(t, err)
+
+	getevt := domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "aspian",
+		ServiceID: "smarts",
+	}
+	license, err := lic.GetLicense(getevt)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, license.GetAvailableSeats())
+
+	seats, err := lic.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+	assert.Contains(t, seats, domain.SubjectID("usernext"))
+	assert.NotContains(t, seats, domain.SubjectID("user0"))
+}
+
+func fillUpLicense(lic *SeatLicenseService) error {
+	toAssign := make([]string, 5)
+	for i := range toAssign {
+		toAssign[i] = "user" + strconv.Itoa(i)
+	}
+
+	req := modifyLicRequestFromVars("okay", "aspian", toAssign, []string{})
+	err := lic.ModifySeats(req)
+
+	return err
 }
 
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {

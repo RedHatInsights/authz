@@ -144,7 +144,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	//No one is licensed initially, expect a fixed count and none in use
 	resp := runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":2, "seatsTotal": 2}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"users": []}`)
 
@@ -157,11 +157,26 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 		  }`), srv)
 
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":19, "seatsTotal": 20}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":1, "seatsTotal": 2}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Okay User","id":"okay"}]}`)
 	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats?filter=assignable", "token"), srv)
 	assertJSONResponse(t, resp, 200, `{"users":[{"assigned":false,"displayName":"Bad User","id":"bad"}]}`)
+}
+
+func TestOverAssigningLicensesFails(t *testing.T) {
+	t.Parallel()
+
+	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+		`{
+		"assign": [
+			"user1",
+			"user2",
+			"user3"
+		]
+	}`))
+
+	assertJSONResponse(t, resp, 400, `{"code": 9, "message": "<<PRESENCE>>", "details": [{"@type":"<<PRESENCE>>", "seatsTotal":%d, "seatsAvailable":%d}]}`, 2, 2) //Two still available because none were consumed
 }
 
 func post(uri string, token string, body string) *http.Request {
@@ -233,7 +248,7 @@ func mockAccessRepository() contracts.AccessRepository {
 	},
 		LicensedSeats: map[string]map[domain.SubjectID]bool{},
 		Licenses: map[string]domain.License{
-			"smarts": *domain.NewLicense("aspian", "smarts", 20, 0),
+			"smarts": *domain.NewLicense("aspian", "smarts", 2, 0),
 		},
 	}
 }
