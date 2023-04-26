@@ -8,13 +8,16 @@ import (
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/infrastructure/config"
+	"strconv"
 	"sync"
+
+	"github.com/go-playground/validator/v10"
 
 	"github.com/golang/glog"
 )
 
-// Cfg holds the config from yaml.
-var Cfg serviceconfig.Config
+// Cfg holds the parsed and validated service config.
+var Cfg *serviceconfig.ServiceConfig
 
 // getConfig loads the config based on the technical implementation "viper".
 func getConfig(configPath string) serviceconfig.Config {
@@ -37,8 +40,20 @@ func getConfig(configPath string) serviceconfig.Config {
 
 // Run configures and runs the actual bootstrap.
 func Run(configPath string) {
-	Cfg = getConfig(configPath)
-	srvCfg := parseServiceConfig()
+	configProvider := getConfig(configPath)
+	srvCfg := parseServiceConfig(configProvider)
+	vl := validator.New()
+	err := vl.Struct(srvCfg)
+
+	if err != nil {
+		for _, e := range err.(validator.ValidationErrors) {
+			glog.Errorf("Error in configuration: %v", e)
+		}
+		glog.Fatal("Can not start service with wrong configuration.")
+	}
+	//set global Config now that it is parsed and validated.
+	Cfg = &srvCfg
+
 	srv, webSrv := initialize(srvCfg)
 
 	wait := sync.WaitGroup{}
@@ -126,28 +141,31 @@ func getPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
 }
 
-func parseServiceConfig() serviceconfig.ServiceConfig {
+func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
 	return serviceconfig.ServiceConfig{
-		GrpcPort:    Cfg.GetString("app.server.grpcPort"),
-		HTTPPort:    Cfg.GetString("app.server.httpPort"),
-		HTTPSPort:   Cfg.GetString("app.server.httpsPort"),
-		LogRequests: Cfg.GetBool("app.server.logRequests"),
+		GrpcPort:     cfg.GetInt("app.server.grpcPort"),
+		GrpcPortStr:  strconv.Itoa(cfg.GetInt("app.server.grpcPort")),
+		HTTPPort:     cfg.GetInt("app.server.httpPort"),
+		HTTPPortStr:  strconv.Itoa(cfg.GetInt("app.server.httpPort")),
+		HTTPSPort:    cfg.GetInt("app.server.httpsPort"),
+		HTTPSPortStr: strconv.Itoa(cfg.GetInt("app.server.httpsPort")),
+		LogRequests:  cfg.GetBool("app.server.logRequests"),
 		TLSConfig: serviceconfig.TLSConfig{
-			CertFile: Cfg.GetString("app.tls.certFile"),
-			KeyFile:  Cfg.GetString("app.tls.keyFile"),
+			CertFile: cfg.GetString("app.tls.certFile"),
+			KeyFile:  cfg.GetString("app.tls.keyFile"),
 		},
 		StoreConfig: serviceconfig.StoreConfig{
-			Kind:      Cfg.GetString("app.store.kind"),
-			Endpoint:  Cfg.GetString("app.store.endpoint"),
-			AuthToken: Cfg.GetString("app.store.token"),
-			UseTLS:    Cfg.GetBool("app.store.useTLS"),
+			Kind:      cfg.GetString("app.store.kind"),
+			Endpoint:  cfg.GetString("app.store.endpoint"),
+			AuthToken: cfg.GetString("app.store.token"),
+			UseTLS:    cfg.GetBool("app.store.useTLS"),
 		},
 		CorsConfig: serviceconfig.CorsConfig{ //TODO: see how to integrate in middlewares.
-			AllowedMethods:   Cfg.GetStringSlice("app.cors.allowedMethods"),
-			AllowedHeaders:   Cfg.GetStringSlice("app.cors.allowedHeaders"),
-			AllowCredentials: Cfg.GetBool("app.cors.allowCredentials"),
-			MaxAge:           Cfg.GetInt("app.cors.maxAge"),
-			Debug:            Cfg.GetBool("app.cors.debug"),
+			AllowedMethods:   cfg.GetStringSlice("app.cors.allowedMethods"),
+			AllowedHeaders:   cfg.GetStringSlice("app.cors.allowedHeaders"),
+			AllowCredentials: cfg.GetBool("app.cors.allowCredentials"),
+			MaxAge:           cfg.GetInt("app.cors.maxAge"),
+			Debug:            cfg.GetBool("app.cors.debug"),
 		},
 	}
 }

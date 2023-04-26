@@ -34,10 +34,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	if _, err = os.Stat(s.ServiceConfig.TLSConfig.CertFile); err == nil {
 		if _, err := os.Stat(s.ServiceConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServiceConfig.HTTPSPort)
+				s.ServiceConfig.HTTPSPortStr)
 
 			err = http.ListenAndServeTLS(
-				":"+s.ServiceConfig.HTTPSPort,
+				":"+s.ServiceConfig.HTTPSPortStr,
 				s.ServiceConfig.TLSConfig.CertFile, //TODO: Needs sanity checking.
 				s.ServiceConfig.TLSConfig.KeyFile, mux)
 			if err != nil {
@@ -47,8 +47,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServiceConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServiceConfig.HTTPPort, mux)
+			s.ServiceConfig.HTTPPortStr)
+		err = http.ListenAndServe(":"+s.ServiceConfig.HTTPPortStr, mux)
 
 		if err != nil {
 			glog.Errorf("Error hosting insecure service: %s", err)

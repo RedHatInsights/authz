@@ -10,13 +10,16 @@ const (
 
 // ServiceConfig contains all server-related configuration.
 type ServiceConfig struct {
-	GrpcPort    string
-	HTTPPort    string
-	HTTPSPort   string
-	CorsConfig  CorsConfig
-	TLSConfig   TLSConfig
-	StoreConfig StoreConfig
-	LogRequests bool
+	GrpcPort     int `validate:"required,gte=0,lte=65535"`
+	GrpcPortStr  string
+	HTTPPort     int `validate:"required,gte=0,lte=65535"`
+	HTTPPortStr  string
+	HTTPSPort    int `validate:"omitempty,gte=0,lte=65535"`
+	HTTPSPortStr string
+	CorsConfig   CorsConfig
+	TLSConfig    TLSConfig
+	StoreConfig  StoreConfig
+	LogRequests  bool
 }
 
 // TLSConfig includes the TLS configuration.

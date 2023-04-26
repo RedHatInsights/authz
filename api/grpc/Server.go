@@ -130,7 +130,7 @@ func NewServer(h application.AccessAppService, l application.LicenseAppService, 
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+s.ServiceConfig.GrpcPort)
+	ls, err := net.Listen("tcp", ":"+s.ServiceConfig.GrpcPortStr)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -151,7 +151,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s",
-			s.ServiceConfig.GrpcPort)
+			s.ServiceConfig.GrpcPortStr)
 	}
 
 	srv := grpc.NewServer(grpc.Creds(creds))

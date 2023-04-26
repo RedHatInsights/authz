@@ -143,9 +143,9 @@ func serialKey() (string, error) {
 
 func mockConfig(token string) serviceconfig.ServiceConfig {
 	return serviceconfig.ServiceConfig{
-		GrpcPort:  "50051",
-		HTTPPort:  "8081",
-		HTTPSPort: "8443",
+		GrpcPortStr:  "50051",
+		HTTPPortStr:  "8081",
+		HTTPSPortStr: "8443",
 		CorsConfig: serviceconfig.CorsConfig{
 			AllowedMethods:   []string{},
 			AllowedHeaders:   []string{},

@@ -182,7 +182,9 @@ test-short:
 # run all tests
 .PHONY: test
 test:
-	$(GO) test $(PWD)/...
+	@echo ""
+	@echo "Running tests."
+	@$(GO) test $(PWD)/...
 
 # mimics the CI that runs on PR
 .PHONY: pr-check
@@ -197,11 +199,13 @@ gmtidy:
 # describes current architectural rules setup in arch-go.yml
 .PHONY: arch-describe
 arch-describe:
+	@echo ""
 	@echo "Current architecture rules:"
 	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest describe
 
 # checks if architectural rules are met
 .PHONY: arch-check
 arch-check:
+	@echo ""
 	@echo "Checking changes against architecture rules defined in arch-go.yml:"
 	@$(DOCKER) run --rm -v $(PWD):/app -w /app quay.io/archgo/arch-go-test:latest

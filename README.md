@@ -2,10 +2,12 @@
 
 # Start up
 
-run `go run cmd/main.go <-c / --config> <path-to-config-without-file>`
+run `go run cmd/main.go < -c / --config > < path-to-directory-where-config-file-lives >`
 
 ## Example: Running with the provided config.yml in this repo
-* from the root directory: `go run cmd/main.go -c .`
+* from the root directory: `go run cmd/main.go -c .` 
+  or `go run cmd/maing.go --config $PWD` 
+
 * from the `cmd` directory: go run main.go -c ../
 
 ## Configuring the underlying Store
