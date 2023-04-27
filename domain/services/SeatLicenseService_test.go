@@ -77,11 +77,6 @@ func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
 }
 
 func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
-	// have an org with at least 1 assigned seat
-	// get the count of assigned users for that org
-	// make a modify-request to unassign a user that is not actually assigned
-	//expect that the assigned counter is the same as before unassigning
-
 	//given
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
