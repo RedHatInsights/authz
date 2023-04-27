@@ -3,6 +3,7 @@ package mock
 
 import (
 	"authz/domain"
+	"errors"
 )
 
 // StubAccessRepository represents an in-memory authorization system with a fixed state
@@ -74,6 +75,10 @@ func (s *StubAccessRepository) AssignSeat(subjectID domain.SubjectID, _ string, 
 // UnAssignSeat removes the seat assignment for the given principal for the given service
 func (s *StubAccessRepository) UnAssignSeat(subjectID domain.SubjectID, _ string, svc domain.Service) error {
 	if lics, ok := s.LicensedSeats[svc.ID]; ok {
+		if v, ok := lics[subjectID]; !ok || !v {
+			return errors.New("can't unassign a subject not previously assigned")
+		}
+
 		lics[subjectID] = false
 	}
 
