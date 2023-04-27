@@ -26,7 +26,20 @@ func (l *SeatLicenseService) ModifySeats(evt domain.ModifySeatAssignmentEvent) e
 		return domain.ErrLicenseLimitExceeded
 	}
 
-	//TODO: consistency? Atm, if an error occurs part-way through, this will partially save.
+	if len(evt.UnAssign) > 0 {
+		if err := l.seats.UnAssignSeats(evt.UnAssign, evt.Org.ID, license, evt.Service); err != nil {
+			return err
+		}
+	}
+
+	if len(evt.Assign) > 0 {
+		if err := l.seats.AssignSeats(evt.Assign, evt.Org.ID, license, evt.Service); err != nil {
+			return err
+		}
+	}
+
+	/* OLD, solved:
+	// TODO: consistency? Atm, if an error occurs part-way through, this will partially save.
 	for _, principal := range evt.UnAssign {
 		if err := l.seats.UnAssignSeat(principal, evt.Org.ID, evt.Service); err != nil {
 			return err
@@ -37,7 +50,7 @@ func (l *SeatLicenseService) ModifySeats(evt domain.ModifySeatAssignmentEvent) e
 		if err := l.seats.AssignSeat(principal, evt.Org.ID, evt.Service); err != nil {
 			return err
 		}
-	}
+	}*/
 
 	return nil
 }

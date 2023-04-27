@@ -8,8 +8,12 @@ import (
 type SeatLicenseRepository interface {
 	// AssignSeat assigns the given principal a seat for the given service
 	AssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error
+	// AssignSeats assigns a given range of principals for a license. When there are unknown values in the range, it fails.
+	AssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error
 	// UnAssignSeat removes the seat assignment for the given principal for the given service
 	UnAssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error
+	// UnAssignSeats atomically removes a given range of principals for a license. When there are unknown values in the range, it fails.
+	UnAssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error
 	// GetLicense retrieves the stored license for the given organization and service, if any.
 	GetLicense(orgID string, serviceID string) (*domain.License, error)
 	// GetAssigned retrieves the IDs of the subjects assigned seats in the current license
