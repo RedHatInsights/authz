@@ -68,6 +68,53 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 
 // AssignSeats adds a range of assigned relations atomically.
 func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
+
+	// eventually below call is generic for assign/unassign, hence the separate function
+	return s.assignSeatsAtomic(subjectIDs, orgID, license, svc)
+}
+
+func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
+	//Step1 - Read the current License version
+	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:       LicenseObjectType,
+			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, svc.ID),
+		},
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to read License relation :%v", err.Error())
+		return err
+	}
+
+	var assignedCount int
+	var currentLicenseVersion string
+	for {
+		v, err := resp.Recv()
+		if err != nil && err == io.EOF {
+			break
+		}
+		if err != nil {
+			glog.Errorf("Failed iterate License read response :%v", err.Error())
+			return err
+		}
+		// The version is of the form: <Versionstring>/currentassignedseatscount
+		if v.Relationship.Relation == "version" {
+			glog.Infof("License - Version : %v", v.Relationship.Subject.Object.ObjectId)
+			//spilt with "/" and the second part of the string is the current assigned count
+			versionStrArr := strings.Split(v.Relationship.Subject.Object.ObjectId, "/")
+			if len(versionStrArr) != 2 {
+				return fmt.Errorf("invalid license version %s", v.Relationship.Subject.Object.ObjectId)
+			}
+			assignedCount, err = strconv.Atoi(versionStrArr[1])
+			if err != nil {
+				return err
+			}
+			currentLicenseVersion = versionStrArr[0]
+		}
+	}
+
 	//prepare updates
 	var relationshipUpdates []*v1.RelationshipUpdate
 
@@ -82,9 +129,7 @@ func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, org
 			}})
 	}
 
-	//var preconditions []*v1.Precondition
-
-	//now that we have all at once, send updates
+	// Step 2 Create seat assignment relationships
 	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
 	})
@@ -96,10 +141,36 @@ func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, org
 
 	glog.Infof("Assigned operation :%v", result)
 
-	//Update the license version count - increment
-	err = s.modifyLicenseSeatsVersionCount(orgID, svc.ID, len(relationshipUpdates), true)
+	// Step 3 Delete the existing License - Version relationship
+	_, err = s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:     LicenseObjectType,
+			OptionalRelation: LicenseVersionStr,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       LicenseVersionStr,
+				OptionalSubjectId: fmt.Sprintf("%s/%d", currentLicenseVersion, assignedCount),
+			},
+		},
+	})
 	if err != nil {
-		glog.Errorf("Failed to update license version relation :%v", err.Error())
+		glog.Errorf("Failed to delete License Version relation :%v", err.Error())
+		return err
+	}
+	glog.Infof("Deleted license version relation :%v", resp)
+
+	//Step 4 - Write the new License - Version relationship
+	//Get the old Data and perform the modification
+	increment := true
+	count := len(relationshipUpdates)
+	if increment {
+		assignedCount = assignedCount + count
+	} else {
+		assignedCount = assignedCount - count
+	}
+	err = s.writeLicenseVersionRelation(orgID, svc.ID, currentLicenseVersion, assignedCount)
+
+	if err != nil {
+		glog.Errorf("Failed to write new License version relation :%v", err.Error())
 		return err
 	}
 

@@ -146,6 +146,63 @@ func TestRapidAssignments(t *testing.T) {
 	assert.Equal(t, 10, lic.InUse)
 }
 
+func TestAssignBatch(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	// given
+	subs := []domain.SubjectID{
+		"u100", "u101",
+	}
+	oldLic, e1 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e1)
+	assert.Equal(t, 1, oldLic.InUse)
+
+	// when
+	err = client.AssignSeats(subs, "o1", oldLic, domain.Service{ID: "smarts"})
+
+	// then
+	assert.NoError(t, err)
+	newLic, e2 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e2)
+	assert.Equal(t, oldLic.InUse+len(subs), newLic.InUse)
+}
+
+func TestUnassignBatch(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := spicedbTestClient()
+	assert.NoError(t, err)
+
+	// given
+	subs := []domain.SubjectID{
+		"u1",
+	}
+
+	oldLic, e1 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e1)
+	assert.Equal(t, 1, oldLic.InUse)
+
+	// when
+	err = client.UnAssignSeats(subs, "o1", oldLic, domain.Service{ID: "smarts"})
+
+	// then
+	assert.NoError(t, err)
+	newLic, e2 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e2)
+	assert.Equal(t, oldLic.InUse-len(subs), newLic.InUse)
+}
+
 func TestAssignUnassign(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
