@@ -20,7 +20,7 @@ func TestCheckAccess(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Parallel()
-	srv := initializeGrpcServer(t)
+	srv := initializeGrpcServer()
 
 	resp, err := srv.CheckPermission(getContext(), &core.CheckPermissionRequest{
 		Subject:      "u1",
@@ -39,7 +39,7 @@ func TestGetLicense(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Parallel()
-	srv := initializeGrpcServer(t)
+	srv := initializeGrpcServer()
 
 	resp, err := srv.GetLicense(getContext(), &core.GetLicenseRequest{
 		OrgId:     "o1",
@@ -57,7 +57,7 @@ func TestGetAssigned(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Parallel()
-	srv := initializeGrpcServer(t)
+	srv := initializeGrpcServer()
 
 	includeUsers := true
 	filter := core.SeatFilterType_assigned
@@ -78,7 +78,7 @@ func TestModify(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Parallel()
-	srv := initializeGrpcServer(t)
+	srv := initializeGrpcServer()
 
 	_, err := srv.ModifySeats(getContext(), &core.ModifySeatsRequest{
 		OrgId:     "o1",
@@ -100,7 +100,7 @@ func getContext() context.Context {
 
 var container *authzed.LocalSpiceDbContainer
 
-func initializeGrpcServer(t *testing.T) *grpc.Server {
+func initializeGrpcServer() *grpc.Server {
 	token, err := container.NewToken()
 	if err != nil {
 		panic(err)
