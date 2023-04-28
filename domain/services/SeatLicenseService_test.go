@@ -11,8 +11,8 @@ import (
 
 func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 	req := modifyLicRequestFromVars("",
-		"aspian",
-		[]string{"okay"},
+		"o1",
+		[]string{"u2"},
 		[]string{})
 
 	store := mockAuthzRepository()
@@ -31,14 +31,14 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	assert.NoError(t, err)
 
 	//when
-	req := modifyLicRequestFromVars("okay", "aspian", []string{"usernext"}, []string{})
+	req := modifyLicRequestFromVars("okay", "o1", []string{"usernext"}, []string{})
 	err = lic.ModifySeats(req)
 
 	//then
 	assert.ErrorIs(t, err, domain.ErrLicenseLimitExceeded)
 	license, err := lic.GetLicense(domain.GetLicenseEvent{
 		Requestor: "okay",
-		OrgID:     "aspian",
+		OrgID:     "o1",
 		ServiceID: "smarts",
 	})
 
@@ -53,23 +53,25 @@ func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
 
 	err := fillUpLicense(lic)
 	assert.NoError(t, err)
-
+	spicedbContainer.WaitForQuantizationInterval()
 	//when
-	req := modifyLicRequestFromVars("okay", "aspian", []string{"usernext"}, []string{"user0"})
+	req := modifyLicRequestFromVars("okay", "o1", []string{"usernext"}, []string{"user0"})
 	err = lic.ModifySeats(req)
 
 	//then
+	spicedbContainer.WaitForQuantizationInterval()
 	assert.NoError(t, err)
 
 	getevt := domain.GetLicenseEvent{
 		Requestor: "okay",
-		OrgID:     "aspian",
+		OrgID:     "o1",
 		ServiceID: "smarts",
 	}
 	license, err := lic.GetLicense(getevt)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, license.GetAvailableSeats())
 
+	//Flaky due to read-after-write consistency- this call may not reflect changes
 	seats, err := lic.GetAssignedSeats(getevt)
 	assert.NoError(t, err)
 	assert.Contains(t, seats, domain.SubjectID("usernext"))
@@ -80,18 +82,16 @@ func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
 	//given
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
-	err := lic.ModifySeats(modifyLicRequestFromVars("okay", "aspian", []string{"user0"}, []string{}))
-	assert.NoError(t, err)
 
 	// when
-	req := modifyLicRequestFromVars("okay", "aspian", []string{}, []string{"not assigned"})
-	err = lic.ModifySeats(req)
+	req := modifyLicRequestFromVars("okay", "o1", []string{}, []string{"not_assigned"})
+	err := lic.ModifySeats(req)
 
 	// then
 	assert.Error(t, err)
 	license, err := lic.GetLicense(domain.GetLicenseEvent{
 		Requestor: "okay",
-		OrgID:     "aspian",
+		OrgID:     "o1",
 		ServiceID: "smarts",
 	})
 	assert.NoError(t, err)
@@ -99,12 +99,12 @@ func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
 }
 
 func fillUpLicense(lic *SeatLicenseService) error {
-	toAssign := make([]string, 5)
+	toAssign := make([]string, 9) //9 free slots in seed data
 	for i := range toAssign {
 		toAssign[i] = "user" + strconv.Itoa(i)
 	}
 
-	req := modifyLicRequestFromVars("okay", "aspian", toAssign, []string{})
+	req := modifyLicRequestFromVars("okay", "o1", toAssign, []string{})
 	err := lic.ModifySeats(req)
 
 	return err
@@ -113,7 +113,7 @@ func fillUpLicense(lic *SeatLicenseService) error {
 func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
 	req := modifyLicRequestFromVars("bad",
-		"aspian",
+		"o1",
 		[]string{"okay"},
 		[]string{})
 
@@ -127,33 +127,38 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 
 func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 	addReq := modifyLicRequestFromVars("okay",
-		"aspian",
+		"o1",
 		[]string{"okay"},
 		[]string{})
 
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+	license := domain.Resource{Type: "license", ID: "o1/smarts"}
 
-	authz, err := store.CheckAccess(addReq.Assign[0], "use", addReq.Service.AsResource())
+	authz, err := store.CheckAccess(addReq.Assign[0], "access", license)
 	assert.NoError(t, err)
 	assert.False(t, bool(authz), "Should not have been authorized without license.")
 
 	err = lic.ModifySeats(addReq)
 	assert.NoError(t, err)
 
-	authz, err = store.CheckAccess(addReq.Assign[0], "use", addReq.Service.AsResource())
+	spicedbContainer.WaitForQuantizationInterval()
+
+	authz, err = store.CheckAccess(addReq.Assign[0], "access", license)
 	assert.NoError(t, err)
 	assert.True(t, bool(authz), "Should have been authorized with license.")
 
 	remReq := modifyLicRequestFromVars("okay",
-		"aspian",
+		"o1",
 		[]string{},
 		[]string{"okay"})
 
 	err = lic.ModifySeats(remReq)
 	assert.NoError(t, err)
 
-	authz, err = store.CheckAccess(remReq.UnAssign[0], "use", remReq.Service.AsResource())
+	spicedbContainer.WaitForQuantizationInterval()
+
+	authz, err = store.CheckAccess(addReq.Assign[0], "access", license)
 	assert.NoError(t, err)
 	assert.False(t, bool(authz), "Should not have been authorized without license.")
 }

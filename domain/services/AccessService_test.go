@@ -1,17 +1,8 @@
 package services
 
 import (
-	"authz/api"
 	"authz/domain"
 	"authz/domain/contracts"
-	"authz/infrastructure/repository/authzed"
-	"crypto/rand"
-	"encoding/base64"
-	"github.com/ory/dockertest/v3"
-	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -34,10 +25,10 @@ func TestCheckReturnsTrueWhenStoreReturnsTrue(t *testing.T) {
 	access := NewAccessService(mockAuthzRepository())
 	result, err := access.Check(objFromRequest(
 		"system",
-		"okay",
-		"check",
+		"u1",
+		"access",
 		"license",
-		"seat"))
+		"o1/smarts"))
 
 	if err != nil {
 		t.Errorf("Expected a result, got error: %s", err)
@@ -53,9 +44,9 @@ func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
 	result, err := access.Check(objFromRequest(
 		"system",
 		"bad",
-		"check",
+		"access",
 		"license",
-		"seat"))
+		"o1/smarts"))
 
 	if err != nil {
 		t.Errorf("Expected a result, got error: %s", err)
@@ -78,59 +69,9 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 }
 
 func mockAuthzRepository() contracts.AccessRepository {
-	client, err := spicedbTestClient()
+	client, err := spicedbContainer.CreateClient()
 	if err != nil {
 		panic(err)
 	}
 	return client
-}
-
-var port string
-
-func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("") // Empty string uses default docker env
-	if err != nil {
-		return
-	}
-
-	var (
-		_, b, _, _ = runtime.Caller(0)
-		basepath   = filepath.Dir(b)
-	)
-
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   api.SpicedbImage,
-		Tag:          api.SpicedbVersion, // Replace this with an actual version
-		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
-		Mounts:       []string{path.Join(basepath, "../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
-		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
-	})
-	if err != nil {
-		return
-	}
-
-	port = resource.GetPort("50051/tcp")
-
-	result := m.Run()
-	_ = pool.Purge(resource)
-
-	os.Exit(result)
-}
-
-// spicedbTestClient creates a new SpiceDB client with random credentials.
-//
-// The test server gives each set of a credentials its own isolated datastore
-// so that tests can be ran in parallel.
-func spicedbTestClient() (*authzed.SpiceDbAccessRepository, error) {
-	// Generate a random credential to isolate this client from any others.
-	buf := make([]byte, 20)
-	if _, err := rand.Read(buf); err != nil {
-		return nil, err
-	}
-	randomKey := base64.StdEncoding.EncodeToString(buf)
-
-	e := &authzed.SpiceDbAccessRepository{}
-	e.NewConnection("localhost:"+port, randomKey, true, false)
-
-	return e, nil
 }

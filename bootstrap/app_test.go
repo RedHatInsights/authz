@@ -1,20 +1,14 @@
 package bootstrap
 
 import (
-	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc"
+	"authz/infrastructure/repository/authzed"
 	"context"
+	"fmt"
 	"os"
-	"path"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"sync/atomic"
 	"testing"
 
-	"github.com/golang/glog"
-	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/metadata"
 )
@@ -104,52 +98,31 @@ func getContext() context.Context {
 	return metadata.NewIncomingContext(context.Background(), data)
 }
 
-var port string
+var container *authzed.LocalSpiceDbContainer
 
 func initializeGrpcServer(t *testing.T) *grpc.Server {
-	token, err := serialKey()
-	assert.NoError(t, err)
+	token, err := container.NewToken()
+	if err != nil {
+		panic(err)
+	}
 
-	grpc, _ := initialize("localhost:"+port, token, "spicedb", false)
+	grpc, _ := initialize("localhost:"+container.Port(), token, "spicedb", false)
 
 	return grpc
 }
 
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("") // Empty string uses default docker env
+	factory := authzed.NewLocalSpiceDbContainerFactory()
+	var err error
+	container, err = factory.CreateContainer()
+
 	if err != nil {
-		glog.Fatalf("Failed to initialize dockertest pool: %s", err)
-		os.Exit(1)
+		fmt.Printf("Error initializing Docker container: %s", err)
+		os.Exit(-1)
 	}
-
-	var (
-		_, b, _, _ = runtime.Caller(0)
-		basepath   = filepath.Dir(b)
-	)
-
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   api.SpicedbImage,
-		Tag:          api.SpicedbVersion, // Replace this with an actual version
-		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
-		Mounts:       []string{path.Join(basepath, "../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
-		ExposedPorts: []string{"50051/tcp"},
-	})
-	if err != nil {
-		glog.Fatalf("Failed to create SpiceDB container: %s", err)
-		os.Exit(1)
-	}
-
-	port = resource.GetPort("50051/tcp")
 
 	result := m.Run()
-	_ = pool.Purge(resource)
 
+	container.Close()
 	os.Exit(result)
-}
-
-var keyData int32 = 1
-
-func serialKey() (string, error) {
-	atomic.AddInt32(&keyData, 1)
-	return strconv.Itoa(int(keyData)), nil
 }

@@ -1,69 +1,30 @@
 package authzed
 
 import (
-	"authz/api"
 	"authz/domain"
-	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"os"
-	"path"
-	"path/filepath"
-	"runtime"
 	"testing"
 
-	"github.com/ory/dockertest/v3"
 	"github.com/stretchr/testify/assert"
 )
 
-var port string
+var container *LocalSpiceDbContainer
 
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("") // Empty string uses default docker env
+	factory := NewLocalSpiceDbContainerFactory()
+	var err error
+	container, err = factory.CreateContainer()
+
 	if err != nil {
-		return
+		fmt.Printf("Error initializing Docker container: %s", err)
+		os.Exit(-1)
 	}
-
-	var (
-		_, b, _, _ = runtime.Caller(0)
-		basepath   = filepath.Dir(b)
-	)
-
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   api.SpicedbImage,
-		Tag:          api.SpicedbVersion, // Replace this with an actual version
-		Cmd:          []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml"},
-		Mounts:       []string{path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml"},
-		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
-	})
-	if err != nil {
-		return
-	}
-
-	port = resource.GetPort("50051/tcp")
 
 	result := m.Run()
-	_ = pool.Purge(resource)
 
+	container.Close()
 	os.Exit(result)
-}
-
-// spicedbTestClient creates a new SpiceDB client with random credentials.
-//
-// The test server gives each set of a credentials its own isolated datastore
-// so that tests can be ran in parallel.
-func spicedbTestClient() (*SpiceDbAccessRepository, error) {
-	// Generate a random credential to isolate this client from any others.
-	buf := make([]byte, 20)
-	if _, err := rand.Read(buf); err != nil {
-		return nil, err
-	}
-	randomKey := base64.StdEncoding.EncodeToString(buf)
-
-	e := &SpiceDbAccessRepository{}
-	e.NewConnection("localhost:"+port, randomKey, true, false)
-
-	return e, nil
 }
 
 func TestCheckAccess(t *testing.T) {
@@ -71,7 +32,7 @@ func TestCheckAccess(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Parallel()
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	cases := []struct {
@@ -98,7 +59,7 @@ func TestGetLicense(t *testing.T) {
 	}
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	lic, err := client.GetLicense("o1", "smarts")
@@ -116,7 +77,7 @@ func TestGetAssigned(t *testing.T) {
 	}
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	assigned, err := client.GetAssigned("o1", "smarts")
@@ -132,7 +93,7 @@ func TestRapidAssignments(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	for i := 2; i <= 10; i++ {
@@ -153,7 +114,7 @@ func TestAssignBatch(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	// given
@@ -181,7 +142,7 @@ func TestUnassignBatch(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	// given
@@ -210,7 +171,7 @@ func TestAssignUnassign(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	err = client.AssignSeat("u2", "o1", domain.Service{ID: "smarts"})
@@ -237,13 +198,13 @@ func TestUnassignNotAssigned(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	licBefore, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	err = client.UnAssignSeat(domain.SubjectID("not_assigned"), "o1", domain.Service{ID: "smarts"})
+	err = client.UnAssignSeats([]domain.SubjectID{"not_assigned"}, "o1", licBefore, domain.Service{ID: "smarts"})
 	assert.Error(t, err)
 
 	licAfter, err := client.GetLicense("o1", "smarts")
@@ -259,7 +220,7 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 
 	t.Parallel()
 
-	client, err := spicedbTestClient()
+	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	licBefore, err := client.GetLicense("o1", "smarts")
