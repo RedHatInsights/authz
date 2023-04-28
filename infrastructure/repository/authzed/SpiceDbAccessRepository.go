@@ -70,17 +70,12 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 
 // AssignSeats adds a range of assigned relations atomically.
 func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
-	return s.modifySeatsAtomic(subjectIDs, []domain.SubjectID{}, license, orgID, svc)
-}
-
-func (s *SpiceDbAccessRepository) modifySeatsAtomic(assignedSubjectIDs []domain.SubjectID, removedSubjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
-	// Step 1 Add seat changes
 	var relationshipUpdates []*v1.RelationshipUpdate
 
 	var preconditions []*v1.Precondition
 	assignedCount := license.InUse
 
-	for _, subj := range assignedSubjectIDs {
+	for _, subj := range subjectIDs {
 		relationshipUpdates = append(relationshipUpdates, createUserSeatAssignmentRelationshipUpdate(
 			v1.RelationshipUpdate_OPERATION_CREATE,
 			subj,
@@ -90,7 +85,35 @@ func (s *SpiceDbAccessRepository) modifySeatsAtomic(assignedSubjectIDs []domain.
 		assignedCount++
 	}
 
-	for _, subj := range removedSubjectIDs {
+	// Step 2 Add license changes
+	relationshipUpdates, preconditions = addLicenseVersionSwap(relationshipUpdates, preconditions, license, assignedCount)
+
+	// Step 3 submit transaction
+	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		Updates:               relationshipUpdates,
+		OptionalPreconditions: preconditions,
+	})
+
+	// Step 4 examine any errors
+	if err != nil {
+		glog.Errorf("Failed to write modify seats :%v", err.Error())
+
+		return spiceDbErrorToDomainError(err)
+	}
+
+	glog.Infof("Assigned operation :%v", result)
+
+	return nil
+}
+
+// UnAssignSeats deletes a set of relations atomically, using preconditions for OCC
+func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+	var relationshipUpdates []*v1.RelationshipUpdate
+
+	var preconditions []*v1.Precondition
+	assignedCount := license.InUse
+
+	for _, subj := range subjectIDs {
 		relationshipUpdates = append(relationshipUpdates, createUserSeatAssignmentRelationshipUpdate(
 			v1.RelationshipUpdate_OPERATION_DELETE,
 			subj,
@@ -199,11 +222,6 @@ func createSeatAssignedPrecondition(subj domain.SubjectID, orgID string, svc dom
 			},
 		},
 	}
-}
-
-// UnAssignSeats deletes a set of relations atomically, using preconditions for OCC
-func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
-	return s.modifySeatsAtomic([]domain.SubjectID{}, subjectIDs, license, orgID, svc)
 }
 
 // GetLicense - Get the current license infoarmation
