@@ -124,8 +124,6 @@ func TestUnassignBatch(t *testing.T) {
 	client, err := container.CreateClient()
 	assert.NoError(t, err)
 
-	oldLic, err := client.GetLicense("o1", "smarts")
-
 	// given
 	subs := []domain.SubjectID{
 		"u1",

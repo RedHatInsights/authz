@@ -5,6 +5,7 @@ type License struct {
 	OrgID     string
 	ServiceID string
 	MaxSeats  int
+	Version   string
 	InUse     int
 }
 

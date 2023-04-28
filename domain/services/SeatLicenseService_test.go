@@ -92,6 +92,7 @@ func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 	assert.NoError(t, err)
 
 	seats, err := lic.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
 	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
 }
 
