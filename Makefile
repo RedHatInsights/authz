@@ -21,7 +21,7 @@ SHELL = bash
 # builds the binary inside the bin folder
 .PHONY: binary
 binary:
-	$(GO) build -o bin/authz cmd/main.go
+	$(GO) build -tags release -o bin/authz cmd/main.go
 
 # builds the binary inside the bin folder
 .PHONY: binary-delete
