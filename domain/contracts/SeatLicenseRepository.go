@@ -9,7 +9,7 @@ type SeatLicenseRepository interface {
 	// AssignSeat assigns the given principal a seat for the given service
 	AssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error
 	// AssignSeats assigns a given range of principals for a license. When there are unknown values in the range, it fails.
-	AssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error
+	AssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error
 	// UnAssignSeat removes the seat assignment for the given principal for the given service
 	UnAssignSeat(subjectID domain.SubjectID, orgID string, svc domain.Service) error
 	// UnAssignSeats atomically removes a given range of principals for a license. When there are unknown values in the range, it fails.
