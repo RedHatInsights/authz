@@ -162,11 +162,11 @@ func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectI
 		assignedCount = assignedCount - count
 	}
 
-	// Step 3 Add delete license relationship to writes
+	// Step 3 Add delete existing license relationship to writes
 	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
 		Operation: v1.RelationshipUpdate_OPERATION_DELETE, Relationship: licenseRelationship})
 
-	// Step 3.5 Add new license relationship to writes
+	// Step 4 Add new license relationship to writes
 	newSubject, newObject := createSubjectObjectTuple(LicenseVersionStr, fmt.Sprintf("%s/%d", currentLicenseVersion, assignedCount),
 		LicenseObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
 
@@ -177,22 +177,26 @@ func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectI
 			Relation: LicenseVersionStr,
 		}})
 
-	// Step 4 Do writes
+	// Step 5 Do writes
+	var request *v1.WriteRelationshipsRequest
 	var result *v1.WriteRelationshipsResponse
 
 	if increment {
-		result, err = s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		request = &v1.WriteRelationshipsRequest{
 			Updates: relationshipUpdates,
-		})
+		}
 	} else {
-		result, err = s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		// Unassign has preconditions on unassign writes
+		request = &v1.WriteRelationshipsRequest{
 			Updates:               relationshipUpdates,
 			OptionalPreconditions: preconditions,
-		})
+		}
 	}
 
+	result, err = s.client.WriteRelationships(s.ctx, request)
+
 	if err != nil {
-		glog.Errorf("Failed to write new seats state :%v", err.Error())
+		glog.Errorf("Failed to write modify seats :%v", err.Error())
 		return err
 	}
 
