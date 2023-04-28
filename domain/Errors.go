@@ -13,3 +13,6 @@ var ErrInvalidRequest = errors.New("InvalidRequest")
 
 // ErrLicenseLimitExceeded is returned when an operation attempts to allocate more licenses than are available
 var ErrLicenseLimitExceeded = errors.New("LicenseLimitExceeded")
+
+// ErrConflict is returned when a request cannot be processed due to an apparent conflicting request (ex: concurrency)
+var ErrConflict = errors.New("Conflict")

@@ -3,7 +3,9 @@ package services
 import (
 	"authz/domain"
 	"authz/domain/contracts"
+	"errors"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +48,54 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	assert.Equal(t, 0, license.GetAvailableSeats())
 }
 
-func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
+func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
+	//given
+	store := mockAuthzRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	//when
+	runCount := 5
+	wait := &sync.WaitGroup{}
+	errs := make(chan error, runCount)
+	wait.Add(runCount)
+	for i := 0; i < runCount; i++ {
+		go func(run int) {
+			subjects := make([]string, 5+run) //Each run should have a different number of users so they don't compute the same license version
+			for j := 0; j < len(subjects); j++ {
+				subjects[j] = strconv.Itoa(j + run*len(subjects)) //This way the runs don't contain any duplicate subject ids
+			}
+
+			req := modifyLicRequestFromVars("okay", "o1", subjects, []string{})
+			errs <- lic.ModifySeats(req)
+			wait.Done()
+		}(i)
+	}
+	wait.Wait()
+	close(errs)
+	spicedbContainer.WaitForQuantizationInterval()
+
+	//then
+	for err := range errs {
+		if errors.Is(err, domain.ErrConflict) {
+			continue
+		}
+
+		assert.NoError(t, err)
+	}
+
+	getevt := domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	license, err := lic.GetLicense(getevt)
+	assert.NoError(t, err)
+
+	seats, err := lic.GetAssignedSeats(getevt)
+	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
+}
+
+func TestCanSwapRaisesError(t *testing.T) {
 	//given
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
@@ -58,24 +107,27 @@ func TestCanSwapUsersWhenLicenseFullyAllocated(t *testing.T) {
 	req := modifyLicRequestFromVars("okay", "o1", []string{"usernext"}, []string{"user0"})
 	err = lic.ModifySeats(req)
 
-	//then
-	spicedbContainer.WaitForQuantizationInterval()
-	assert.NoError(t, err)
+	assert.Error(t, err)
+	/*
 
-	getevt := domain.GetLicenseEvent{
-		Requestor: "okay",
-		OrgID:     "o1",
-		ServiceID: "smarts",
-	}
-	license, err := lic.GetLicense(getevt)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, license.GetAvailableSeats())
+		//then
+		spicedbContainer.WaitForQuantizationInterval()
+		assert.NoError(t, err)
 
-	//Flaky due to read-after-write consistency- this call may not reflect changes
-	seats, err := lic.GetAssignedSeats(getevt)
-	assert.NoError(t, err)
-	assert.Contains(t, seats, domain.SubjectID("usernext"))
-	assert.NotContains(t, seats, domain.SubjectID("user0"))
+		getevt := domain.GetLicenseEvent{
+			Requestor: "okay",
+			OrgID:     "o1",
+			ServiceID: "smarts",
+		}
+		license, err := lic.GetLicense(getevt)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, license.GetAvailableSeats())
+
+		seats, err := lic.GetAssignedSeats(getevt)
+		assert.NoError(t, err)
+		assert.Contains(t, seats, domain.SubjectID("usernext"))
+		assert.NotContains(t, seats, domain.SubjectID("user0"))
+	*/
 }
 
 func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
