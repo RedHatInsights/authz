@@ -68,12 +68,10 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 
 // AssignSeats adds a range of assigned relations atomically.
 func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
-
-	// eventually below call is generic for assign/unassign, hence the separate function
-	return s.assignSeatsAtomic(subjectIDs, orgID, svc)
+	return s.modifySeatsAtomic(subjectIDs, true, orgID, svc)
 }
 
-func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
+func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectID, increment bool, orgID string, svc domain.Service) error {
 	//Step1 - Read the current License version
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
@@ -122,22 +120,45 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 	// Step 2 Create seat assignment relationships
 	var relationshipUpdates []*v1.RelationshipUpdate
 
-	for _, subj := range subjectIDs {
-		subject, object := createSubjectObjectTuple(SubjectType, string(subj), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
-		relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
-			Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
-				Subject:  subject,
-				Resource: object,
-				Relation: "assigned",
-			}})
-	}
-
-	// Step 2.5 Get new assigned count
-	increment := true
 	count := len(subjectIDs)
+
+	var preconditions []*v1.Precondition // for unassign
+
 	if increment {
+		for _, subj := range subjectIDs {
+			subject, object := createSubjectObjectTuple(SubjectType, string(subj), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
+			relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+				Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
+					Subject:  subject,
+					Resource: object,
+					Relation: "assigned",
+				}})
+		}
+
 		assignedCount = assignedCount + count
 	} else {
+		for _, subj := range subjectIDs {
+			subject, object := createSubjectObjectTuple(SubjectType, string(subj), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
+			relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+				Operation: v1.RelationshipUpdate_OPERATION_DELETE, Relationship: &v1.Relationship{
+					Subject:  subject,
+					Resource: object,
+					Relation: "assigned",
+				}})
+			preconditions = append(preconditions, &v1.Precondition{
+				Operation: v1.Precondition_OPERATION_MUST_MATCH,
+				Filter: &v1.RelationshipFilter{
+					ResourceType:       LicenseSeatObjectType,
+					OptionalResourceId: fmt.Sprintf("%s/%s", orgID, svc.ID),
+					OptionalRelation:   "assigned",
+					OptionalSubjectFilter: &v1.SubjectFilter{
+						SubjectType:       SubjectType,
+						OptionalSubjectId: subject.Object.ObjectId,
+					},
+				},
+			})
+		}
+
 		assignedCount = assignedCount - count
 	}
 
@@ -157,9 +178,18 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 		}})
 
 	// Step 4 Do writes
-	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
-		Updates: relationshipUpdates,
-	})
+	var result *v1.WriteRelationshipsResponse
+
+	if increment {
+		result, err = s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+			Updates: relationshipUpdates,
+		})
+	} else {
+		result, err = s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+			Updates:               relationshipUpdates,
+			OptionalPreconditions: preconditions,
+		})
+	}
 
 	if err != nil {
 		glog.Errorf("Failed to write new seats state :%v", err.Error())
@@ -204,54 +234,8 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID domain.SubjectID, orgID s
 }
 
 // UnAssignSeats deletes a set of relations atomically, using preconditions for OCC
-func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
-	//prepare updates
-	var relationshipUpdates []*v1.RelationshipUpdate
-	var preconditions []*v1.Precondition
-
-	//fill unassign updates
-	for _, subj := range subjectIDs {
-		subject, object := createSubjectObjectTuple(SubjectType, string(subj), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
-		relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
-			Operation: v1.RelationshipUpdate_OPERATION_DELETE, Relationship: &v1.Relationship{
-				Subject:  subject,
-				Resource: object,
-				Relation: "assigned",
-			}})
-		preconditions = append(preconditions, &v1.Precondition{
-			Operation: v1.Precondition_OPERATION_MUST_MATCH,
-			Filter: &v1.RelationshipFilter{
-				ResourceType:       LicenseSeatObjectType,
-				OptionalResourceId: fmt.Sprintf("%s/%s", license.OrgID, license.ServiceID),
-				OptionalRelation:   "assigned",
-				OptionalSubjectFilter: &v1.SubjectFilter{
-					SubjectType:       SubjectType,
-					OptionalSubjectId: subject.Object.ObjectId,
-				},
-			},
-		})
-	}
-
-	//now that we have all at once, send updates
-	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
-		Updates:               relationshipUpdates,
-		OptionalPreconditions: preconditions,
-	})
-
-	glog.Infof("Deleted relation :%v", result)
-
-	if err != nil {
-		glog.Errorf("Failed to delete relation :%v", err.Error())
-		return err
-	}
-
-	//Update the license version count - decrement
-	err = s.modifyLicenseSeatsVersionCount(orgID, svc.ID, 1, false)
-	if err != nil {
-		glog.Errorf("Failed to update license version relation :%v", err.Error())
-		return err
-	}
-	return nil
+func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
+	return s.modifySeatsAtomic(subjectIDs, false, orgID, svc)
 }
 
 // UnAssignSeat delete the relation
