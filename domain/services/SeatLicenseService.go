@@ -33,7 +33,7 @@ func (l *SeatLicenseService) ModifySeats(evt domain.ModifySeatAssignmentEvent) e
 	}
 
 	if len(evt.Assign) > 0 {
-		if err := l.seats.AssignSeats(evt.Assign, evt.Org.ID, license, evt.Service); err != nil {
+		if err := l.seats.AssignSeats(evt.Assign, evt.Org.ID, evt.Service); err != nil {
 			return err
 		}
 	}

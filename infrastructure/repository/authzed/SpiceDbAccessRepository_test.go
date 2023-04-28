@@ -126,7 +126,7 @@ func TestAssignBatch(t *testing.T) {
 	assert.Equal(t, 1, oldLic.InUse)
 
 	// when
-	err = client.AssignSeats(subs, "o1", oldLic, domain.Service{ID: "smarts"})
+	err = client.AssignSeats(subs, "o1", domain.Service{ID: "smarts"})
 
 	// then
 	assert.NoError(t, err)

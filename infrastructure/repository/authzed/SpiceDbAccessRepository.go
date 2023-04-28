@@ -67,13 +67,13 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 }
 
 // AssignSeats adds a range of assigned relations atomically.
-func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
+func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
 
 	// eventually below call is generic for assign/unassign, hence the separate function
-	return s.assignSeatsAtomic(subjectIDs, orgID, license, svc)
+	return s.assignSeatsAtomic(subjectIDs, orgID, svc)
 }
 
-func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
+func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
 	//Step1 - Read the current License version
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
