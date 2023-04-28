@@ -84,7 +84,7 @@ func TestModify(t *testing.T) {
 		OrgId:     "o1",
 		ServiceId: "smarts",
 		Assign:    []string{"u2"},
-		Unassign:  []string{"u1"},
+		Unassign:  []string{}, //Unassign:  []string{"u1"}, //TODO: bring back when swap is reintroduced
 	})
 
 	assert.NoError(t, err)

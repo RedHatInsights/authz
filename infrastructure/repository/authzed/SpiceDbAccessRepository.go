@@ -16,8 +16,10 @@ import (
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
 	"github.com/authzed/grpcutil"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 // SubjectType user
@@ -67,11 +69,11 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 }
 
 // AssignSeats adds a range of assigned relations atomically.
-func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
-	return s.modifySeatsAtomic(subjectIDs, true, orgID, svc)
+func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+	return s.modifySeatsAtomic(subjectIDs, license, true, orgID, svc)
 }
 
-func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectID, increment bool, orgID string, svc domain.Service) error {
+func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectID, license *domain.License, increment bool, orgID string, svc domain.Service) error {
 	//Step1 - Read the current License version
 	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
 		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
@@ -170,6 +172,18 @@ func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectI
 	newSubject, newObject := createSubjectObjectTuple(LicenseVersionStr, fmt.Sprintf("%s/%d", currentLicenseVersion, assignedCount),
 		LicenseObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
 
+	preconditions = append(preconditions, &v1.Precondition{
+		Operation: v1.Precondition_OPERATION_MUST_MATCH,
+		Filter: &v1.RelationshipFilter{
+			ResourceType:       LicenseObjectType,
+			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, svc.ID),
+			OptionalRelation:   LicenseVersionStr,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       LicenseVersionStr,
+				OptionalSubjectId: fmt.Sprintf("%s/%d", currentLicenseVersion, license.InUse),
+			},
+		},
+	})
 	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
 		Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
 			Subject:  newSubject,
@@ -178,25 +192,24 @@ func (s *SpiceDbAccessRepository) modifySeatsAtomic(subjectIDs []domain.SubjectI
 		}})
 
 	// Step 5 Do writes
-	var request *v1.WriteRelationshipsRequest
 	var result *v1.WriteRelationshipsResponse
 
-	if increment {
-		request = &v1.WriteRelationshipsRequest{
-			Updates: relationshipUpdates,
-		}
-	} else {
-		// Unassign has preconditions on unassign writes
-		request = &v1.WriteRelationshipsRequest{
-			Updates:               relationshipUpdates,
-			OptionalPreconditions: preconditions,
-		}
+	request := &v1.WriteRelationshipsRequest{
+		Updates:               relationshipUpdates,
+		OptionalPreconditions: preconditions,
 	}
 
 	result, err = s.client.WriteRelationships(s.ctx, request)
 
 	if err != nil {
 		glog.Errorf("Failed to write modify seats :%v", err.Error())
+
+		if info, ok := unwrapSpiceDbError(err); ok {
+			switch info.Reason {
+			case "ERROR_REASON_WRITE_OR_DELETE_PRECONDITION_FAILURE":
+				return domain.ErrConflict
+			}
+		}
 		return err
 	}
 
@@ -238,8 +251,8 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID domain.SubjectID, orgID s
 }
 
 // UnAssignSeats deletes a set of relations atomically, using preconditions for OCC
-func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, orgID string, svc domain.Service) error {
-	return s.modifySeatsAtomic(subjectIDs, false, orgID, svc)
+func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+	return s.modifySeatsAtomic(subjectIDs, license, false, orgID, svc)
 }
 
 // UnAssignSeat delete the relation
@@ -512,4 +525,16 @@ func createSubjectObjectTuple(subjectType string, subjectValue string, objectTyp
 		ObjectId:   objectValue,
 	}
 	return subject, object
+}
+
+func unwrapSpiceDbError(err error) (*errdetails.ErrorInfo, bool) {
+	if s, ok := status.FromError(err); ok {
+		if len(s.Details()) > 0 {
+			if info := s.Details()[0].(*errdetails.ErrorInfo); ok {
+				return info, true
+			}
+		}
+	}
+
+	return nil, false
 }

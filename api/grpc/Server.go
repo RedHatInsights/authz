@@ -219,6 +219,8 @@ func convertDomainErrorToGrpc(err error) error {
 		return status.Error(codes.PermissionDenied, "Access denied.")
 	case errors.Is(err, domain.ErrLicenseLimitExceeded):
 		return status.Error(codes.FailedPrecondition, "License limits exceeded.")
+	case errors.Is(err, domain.ErrConflict):
+		return status.Error(codes.FailedPrecondition, "Conflict")
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}
