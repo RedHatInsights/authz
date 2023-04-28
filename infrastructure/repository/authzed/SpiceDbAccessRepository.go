@@ -68,14 +68,15 @@ func (s *SpiceDbAccessRepository) CheckAccess(subjectID domain.SubjectID, operat
 	return false, nil
 }
 
-// AssignSeats adds a range of assigned relations atomically.
-func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+// ModifySeats atomically persists changes to seat assignments for a license
+func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.SubjectID, removedSubjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+	// Step 1 Add seat changes
 	var relationshipUpdates []*v1.RelationshipUpdate
 
 	var preconditions []*v1.Precondition
 	assignedCount := license.InUse
 
-	for _, subj := range subjectIDs {
+	for _, subj := range assignedSubjectIDs {
 		relationshipUpdates = append(relationshipUpdates, createUserSeatAssignmentRelationshipUpdate(
 			v1.RelationshipUpdate_OPERATION_CREATE,
 			subj,
@@ -85,35 +86,7 @@ func (s *SpiceDbAccessRepository) AssignSeats(subjectIDs []domain.SubjectID, lic
 		assignedCount++
 	}
 
-	// Step 2 Add license changes
-	relationshipUpdates, preconditions = addLicenseVersionSwap(relationshipUpdates, preconditions, license, assignedCount)
-
-	// Step 3 submit transaction
-	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
-		Updates:               relationshipUpdates,
-		OptionalPreconditions: preconditions,
-	})
-
-	// Step 4 examine any errors
-	if err != nil {
-		glog.Errorf("Failed to write modify seats :%v", err.Error())
-
-		return spiceDbErrorToDomainError(err)
-	}
-
-	glog.Infof("Assigned operation :%v", result)
-
-	return nil
-}
-
-// UnAssignSeats deletes a set of relations atomically, using preconditions for OCC
-func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
-	var relationshipUpdates []*v1.RelationshipUpdate
-
-	var preconditions []*v1.Precondition
-	assignedCount := license.InUse
-
-	for _, subj := range subjectIDs {
+	for _, subj := range removedSubjectIDs {
 		relationshipUpdates = append(relationshipUpdates, createUserSeatAssignmentRelationshipUpdate(
 			v1.RelationshipUpdate_OPERATION_DELETE,
 			subj,
@@ -171,6 +144,10 @@ func addLicenseVersionSwap(updates []*v1.RelationshipUpdate, conditions []*v1.Pr
 			},
 		},
 	})
+
+	if lic.InUse == newCount {
+		return updates, conditions //The version is essentially just the count at the moment, so a swap isn't technically a change. This may change in the future!
+	}
 
 	updates = append(updates, &v1.RelationshipUpdate{
 		Operation: v1.RelationshipUpdate_OPERATION_DELETE,

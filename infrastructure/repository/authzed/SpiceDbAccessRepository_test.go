@@ -105,7 +105,7 @@ func TestAssignBatch(t *testing.T) {
 	assert.Equal(t, 1, oldLic.InUse)
 
 	// when
-	err = client.AssignSeats(subs, oldLic, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
 
 	// then
 	assert.NoError(t, err)
@@ -134,7 +134,7 @@ func TestUnassignBatch(t *testing.T) {
 	assert.Equal(t, 1, oldLic.InUse)
 
 	// when
-	err = client.UnAssignSeats(subs, oldLic, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats([]domain.SubjectID{}, subs, oldLic, "o1", domain.Service{ID: "smarts"})
 
 	// then
 	assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestAssignUnassign(t *testing.T) {
 	oldLic, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	err = client.AssignSeats([]domain.SubjectID{"u2"}, oldLic, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats([]domain.SubjectID{"u2"}, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
 
 	lic, err := client.GetLicense("o1", "smarts")
@@ -164,7 +164,7 @@ func TestAssignUnassign(t *testing.T) {
 
 	assert.Equal(t, 2, lic.InUse)
 
-	err = client.UnAssignSeats([]domain.SubjectID{"u2"}, lic, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats([]domain.SubjectID{}, []domain.SubjectID{"u2"}, lic, "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
 
 	lic, err = client.GetLicense("o1", "smarts")
@@ -186,7 +186,7 @@ func TestUnassignNotAssigned(t *testing.T) {
 	licBefore, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	err = client.UnAssignSeats([]domain.SubjectID{"not_assigned"}, licBefore, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats([]domain.SubjectID{}, []domain.SubjectID{"not_assigned"}, licBefore, "o1", domain.Service{ID: "smarts"})
 	assert.Error(t, err)
 
 	licAfter, err := client.GetLicense("o1", "smarts")
@@ -208,7 +208,7 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 	licBefore, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	err = client.AssignSeats([]domain.SubjectID{"u1"}, licBefore, "o1", domain.Service{ID: "smarts"})
+	err = client.ModifySeats([]domain.SubjectID{"u1"}, []domain.SubjectID{}, licBefore, "o1", domain.Service{ID: "smarts"})
 	assert.Error(t, err)
 
 	licAfter, err := client.GetLicense("o1", "smarts")
