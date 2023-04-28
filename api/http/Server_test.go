@@ -20,7 +20,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "bad",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -28,7 +28,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "",
-		`{"subject": "good", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.Equal(t, 401, resp.StatusCode)
 }
@@ -36,7 +36,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -44,14 +44,14 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
-		`{"subject": "bad", "operation": "op", "resourcetype": "Feature", "resourceid": "smarts"}`))
+		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	resp := runRequest(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"assign": [
 			  "okay"
@@ -63,10 +63,10 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	t.Parallel()
-	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	resp := runRequest(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"unassign": [
-			  "okay"
+			  "u1"
 			]
 		}`))
 
@@ -79,23 +79,25 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 
 	//The user isn't licensed initially, use is denied
 	resp := runRequestWithServer(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "smarts"}`), srv)
+		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`), srv)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
 	//Grant a license
-	resp = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	resp = runRequestWithServer(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
-			"assign": [
-			  "okay"
+		"assign": [
+			"u2"
 			]
-		  }`), srv)
+			}`), srv)
 
 	assertJSONResponse(t, resp, 200, `{}`)
 
+	spicedbContainer.WaitForQuantizationInterval()
+
 	//Should be allowed now
 	resp = runRequestWithServer(post("/v1alpha/check", "system",
-		`{"subject": "okay", "operation": "use", "resourcetype": "service", "resourceid": "smarts"}`), srv)
+		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`), srv)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -110,7 +112,7 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 			]
 		  }`
 
-	req := httptest.NewRequest(http.MethodTrace, "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodTrace, "/v1alpha/orgs/o1/licenses/smarts", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "okay")
 
@@ -128,7 +130,7 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 			]
 		  }`
 
-	req := httptest.NewRequest(http.MethodPost, "/v1alpha/orgs/aspian/licenses/smarts", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPost, "/v1alpha/orgs/o1/licenses/smarts", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "okay")
 	req.Header.Set("AllowAllOrigins", "true")
@@ -143,36 +145,44 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	srv := createTestServer()
 
 	//No one is licensed initially, expect a fixed count and none in use
-	resp := runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":2, "seatsTotal": 2}`)
-	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"users": []}`)
+	resp := runRequestWithServer(get("/v1alpha/orgs/o1/licenses/smarts", "system"), srv)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":9, "seatsTotal": 10}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"), srv)
+	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"User u1","id":"u1"}]}`)
 
 	//Grant a license
-	_ = runRequestWithServer(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	_ = runRequestWithServer(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
 			"assign": [
 			  "okay"
 			]
 		  }`), srv)
+	spicedbContainer.WaitForQuantizationInterval()
 
-	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":1, "seatsTotal": 2}`)
-	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"Okay User","id":"okay"}]}`)
-	resp = runRequestWithServer(get("/v1alpha/orgs/aspian/licenses/smarts/seats?filter=assignable", "token"), srv)
-	assertJSONResponse(t, resp, 200, `{"users":[{"assigned":false,"displayName":"Bad User","id":"bad"}]}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/o1/licenses/smarts", "system"), srv)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"), srv)
+	assertJSONResponse(t, resp, 200, `{"users": ["<<UNORDERED>>", {"assigned":true,"displayName":"Okay User","id":"okay"}, {"assigned":true,"displayName":"User u1","id":"u1"}]}`)
+	resp = runRequestWithServer(get("/v1alpha/orgs/o1/licenses/smarts/seats?filter=assignable", "token"), srv)
+	assertJSONResponse(t, resp, 200, `{"users":["<<UNORDERED>>", {"assigned":false,"displayName":"System User","id":"system"},{"assigned":false,"displayName":"Bad User","id":"bad"}]}`)
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
 	t.Parallel()
 
-	resp := runRequest(post("/v1alpha/orgs/aspian/licenses/smarts", "okay",
+	resp := runRequest(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
 		"assign": [
 			"user1",
 			"user2",
-			"user3"
+			"user3",
+			"user4",
+			"user5",
+			"user6",
+			"user7",
+			"user8",
+			"user9",
+			"user10"
 		]
 	}`))
 
@@ -241,25 +251,21 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func mockAccessRepository() contracts.AccessRepository {
-	return &mock.StubAccessRepository{Data: map[domain.SubjectID]bool{
-		"system": true,
-		"okay":   true,
-		"bad":    false,
-	},
-		LicensedSeats: map[string]map[domain.SubjectID]bool{},
-		Licenses: map[string]domain.License{
-			"smarts": *domain.NewLicense("aspian", "smarts", 2, 0),
-		},
+	client, err := spicedbContainer.CreateClient()
+	if err != nil {
+		panic(err)
 	}
+
+	return client
 }
 
 func mockPrincipalRepository() contracts.PrincipalRepository {
 	return &mock.StubPrincipalRepository{
 		Principals: map[domain.SubjectID]domain.Principal{
-			"system": domain.NewPrincipal("system", "System User", "smarts"),
-			"okay":   domain.NewPrincipal("okay", "Okay User", "aspian"),
-			"bad":    domain.NewPrincipal("bad", "Bad User", "aspian"),
+			"system": domain.NewPrincipal("system", "System User", "o1"),
+			"okay":   domain.NewPrincipal("okay", "Okay User", "o1"),
+			"bad":    domain.NewPrincipal("bad", "Bad User", "o1"),
 		},
-		DefaultOrg: "aspian",
+		DefaultOrg: "o1",
 	}
 }

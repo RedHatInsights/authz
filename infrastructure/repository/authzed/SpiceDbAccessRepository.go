@@ -213,6 +213,7 @@ func (s *SpiceDbAccessRepository) AssignSeat(subjectID domain.SubjectID, orgID s
 func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, orgID string, license *domain.License, svc domain.Service) error {
 	//prepare updates
 	var relationshipUpdates []*v1.RelationshipUpdate
+	var preconditions []*v1.Precondition
 
 	//fill unassign updates
 	for _, subj := range subjectIDs {
@@ -223,11 +224,24 @@ func (s *SpiceDbAccessRepository) UnAssignSeats(subjectIDs []domain.SubjectID, o
 				Resource: object,
 				Relation: "assigned",
 			}})
+		preconditions = append(preconditions, &v1.Precondition{
+			Operation: v1.Precondition_OPERATION_MUST_MATCH,
+			Filter: &v1.RelationshipFilter{
+				ResourceType:       LicenseSeatObjectType,
+				OptionalResourceId: fmt.Sprintf("%s/%s", license.OrgID, license.ServiceID),
+				OptionalRelation:   "assigned",
+				OptionalSubjectFilter: &v1.SubjectFilter{
+					SubjectType:       SubjectType,
+					OptionalSubjectId: subject.Object.ObjectId,
+				},
+			},
+		})
 	}
 
 	//now that we have all at once, send updates
 	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
-		Updates: relationshipUpdates,
+		Updates:               relationshipUpdates,
+		OptionalPreconditions: preconditions,
 	})
 
 	glog.Infof("Deleted relation :%v", result)
