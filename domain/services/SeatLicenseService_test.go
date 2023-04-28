@@ -96,7 +96,7 @@ func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
 }
 
-func TestCanSwapRaisesError(t *testing.T) {
+func TestCanSwapWhenLicenseFull(t *testing.T) {
 	//given
 	store := mockAuthzRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
@@ -107,28 +107,25 @@ func TestCanSwapRaisesError(t *testing.T) {
 	//when
 	req := modifyLicRequestFromVars("okay", "o1", []string{"usernext"}, []string{"user0"})
 	err = lic.ModifySeats(req)
+	assert.NoError(t, err)
 
-	assert.Error(t, err)
-	/*
+	//then
+	spicedbContainer.WaitForQuantizationInterval()
+	assert.NoError(t, err)
 
-		//then
-		spicedbContainer.WaitForQuantizationInterval()
-		assert.NoError(t, err)
+	getevt := domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	license, err := lic.GetLicense(getevt)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, license.GetAvailableSeats())
 
-		getevt := domain.GetLicenseEvent{
-			Requestor: "okay",
-			OrgID:     "o1",
-			ServiceID: "smarts",
-		}
-		license, err := lic.GetLicense(getevt)
-		assert.NoError(t, err)
-		assert.Equal(t, 0, license.GetAvailableSeats())
-
-		seats, err := lic.GetAssignedSeats(getevt)
-		assert.NoError(t, err)
-		assert.Contains(t, seats, domain.SubjectID("usernext"))
-		assert.NotContains(t, seats, domain.SubjectID("user0"))
-	*/
+	seats, err := lic.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+	assert.Contains(t, seats, domain.SubjectID("usernext"))
+	assert.NotContains(t, seats, domain.SubjectID("user0"))
 }
 
 func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
@@ -141,7 +138,7 @@ func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
 	err := lic.ModifySeats(req)
 
 	// then
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrConflict)
 	license, err := lic.GetLicense(domain.GetLicenseEvent{
 		Requestor: "okay",
 		OrgID:     "o1",
