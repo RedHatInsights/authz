@@ -90,6 +90,7 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 
 	var assignedCount int
 	var currentLicenseVersion string
+	var licenseRelationship *v1.Relationship
 	for {
 		v, err := resp.Recv()
 		if err != nil && err == io.EOF {
@@ -99,13 +100,16 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 			glog.Errorf("Failed iterate License read response :%v", err.Error())
 			return err
 		}
+
+		licenseRelationship = v.Relationship
+
 		// The version is of the form: <Versionstring>/currentassignedseatscount
-		if v.Relationship.Relation == "version" {
-			glog.Infof("License - Version : %v", v.Relationship.Subject.Object.ObjectId)
+		if licenseRelationship.Relation == "version" {
+			glog.Infof("License - Version : %v", licenseRelationship.Subject.Object.ObjectId)
 			//spilt with "/" and the second part of the string is the current assigned count
-			versionStrArr := strings.Split(v.Relationship.Subject.Object.ObjectId, "/")
+			versionStrArr := strings.Split(licenseRelationship.Subject.Object.ObjectId, "/")
 			if len(versionStrArr) != 2 {
-				return fmt.Errorf("invalid license version %s", v.Relationship.Subject.Object.ObjectId)
+				return fmt.Errorf("invalid license version %s", licenseRelationship.Subject.Object.ObjectId)
 			}
 			assignedCount, err = strconv.Atoi(versionStrArr[1])
 			if err != nil {
@@ -115,10 +119,9 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 		}
 	}
 
-	//prepare updates
+	// Step 2 Create seat assignment relationships
 	var relationshipUpdates []*v1.RelationshipUpdate
 
-	//fill updates
 	for _, subj := range subjectIDs {
 		subject, object := createSubjectObjectTuple(SubjectType, string(subj), LicenseSeatObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
 		relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
@@ -129,50 +132,41 @@ func (s *SpiceDbAccessRepository) assignSeatsAtomic(subjectIDs []domain.SubjectI
 			}})
 	}
 
-	// Step 2 Create seat assignment relationships
-	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
-		Updates: relationshipUpdates,
-	})
-
-	if err != nil {
-		glog.Errorf("Failed to assign relation :%v", err.Error())
-		return err
-	}
-
-	glog.Infof("Assigned operation :%v", result)
-
-	// Step 3 Delete the existing License - Version relationship
-	_, err = s.client.DeleteRelationships(s.ctx, &v1.DeleteRelationshipsRequest{
-		RelationshipFilter: &v1.RelationshipFilter{
-			ResourceType:     LicenseObjectType,
-			OptionalRelation: LicenseVersionStr,
-			OptionalSubjectFilter: &v1.SubjectFilter{
-				SubjectType:       LicenseVersionStr,
-				OptionalSubjectId: fmt.Sprintf("%s/%d", currentLicenseVersion, assignedCount),
-			},
-		},
-	})
-	if err != nil {
-		glog.Errorf("Failed to delete License Version relation :%v", err.Error())
-		return err
-	}
-	glog.Infof("Deleted license version relation :%v", resp)
-
-	//Step 4 - Write the new License - Version relationship
-	//Get the old Data and perform the modification
+	// Step 2.5 Get new assigned count
 	increment := true
-	count := len(relationshipUpdates)
+	count := len(subjectIDs)
 	if increment {
 		assignedCount = assignedCount + count
 	} else {
 		assignedCount = assignedCount - count
 	}
-	err = s.writeLicenseVersionRelation(orgID, svc.ID, currentLicenseVersion, assignedCount)
+
+	// Step 3 Add delete license relationship to writes
+	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+		Operation: v1.RelationshipUpdate_OPERATION_DELETE, Relationship: licenseRelationship})
+
+	// Step 3.5 Add new license relationship to writes
+	newSubject, newObject := createSubjectObjectTuple(LicenseVersionStr, fmt.Sprintf("%s/%d", currentLicenseVersion, assignedCount),
+		LicenseObjectType, fmt.Sprintf("%s/%s", orgID, svc.ID))
+
+	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+		Operation: v1.RelationshipUpdate_OPERATION_CREATE, Relationship: &v1.Relationship{
+			Subject:  newSubject,
+			Resource: newObject,
+			Relation: LicenseVersionStr,
+		}})
+
+	// Step 4 Do writes
+	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		Updates: relationshipUpdates,
+	})
 
 	if err != nil {
-		glog.Errorf("Failed to write new License version relation :%v", err.Error())
+		glog.Errorf("Failed to write new seats state :%v", err.Error())
 		return err
 	}
+
+	glog.Infof("Assigned operation :%v", result)
 
 	return nil
 }
