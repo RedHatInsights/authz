@@ -13,9 +13,3 @@ type SeatLicenseRepository interface {
 	// GetAssigned retrieves the IDs of the subjects assigned seats in the current license
 	GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error)
 }
-
-// TODO
-// To show license information, we need:
-// GetLicensedUsers(product/service) -> returns user representations for licensed seat
-// GetLicenseInfo(service) -> returns curr & max
-// GetUnlicensedUser(org org) -> returns all users of an org without a license

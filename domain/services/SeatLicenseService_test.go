@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,9 +61,9 @@ func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 	wait.Add(runCount)
 	for i := 0; i < runCount; i++ {
 		go func(run int) {
-			subjects := make([]string, 5+run) //Each run should have a different number of users so they don't compute the same license version
+			subjects := make([]string, run+5) //Each run should have a different number of users so they don't compute the same license version
 			for j := 0; j < len(subjects); j++ {
-				subjects[j] = strconv.Itoa(j + run*len(subjects)) //This way the runs don't contain any duplicate subject ids
+				subjects[j] = "user-" + uuid.NewString()
 			}
 
 			req := modifyLicRequestFromVars("okay", "o1", subjects, []string{})
