@@ -49,6 +49,49 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 	assert.Equal(t, 0, license.GetAvailableSeats())
 }
 
+func TestConcurrentIndividualRequestsCannotExceedLimit(t *testing.T) {
+	//given
+	store := mockAuthzRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	//when
+	runCount := 5
+	wait := &sync.WaitGroup{}
+	errs := make(chan error, runCount)
+	wait.Add(runCount)
+	for i := 0; i < runCount; i++ {
+		go func(run int) {
+			req := modifyLicRequestFromVars("okay", "o1", []string{"user-" + strconv.Itoa(run)}, []string{})
+			errs <- lic.ModifySeats(req)
+			wait.Done()
+		}(i)
+	}
+	wait.Wait()
+	close(errs)
+	spicedbContainer.WaitForQuantizationInterval()
+
+	//then
+	for err := range errs {
+		if errors.Is(err, domain.ErrConflict) {
+			continue
+		}
+
+		assert.NoError(t, err)
+	}
+
+	getevt := domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	license, err := lic.GetLicense(getevt)
+	assert.NoError(t, err)
+
+	seats, err := lic.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
+}
+
 func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 	//given
 	store := mockAuthzRepository()
