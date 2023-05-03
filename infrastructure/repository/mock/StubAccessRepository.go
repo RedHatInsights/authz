@@ -60,3 +60,8 @@ func (s *StubAccessRepository) GetAssigned(_ string, serviceID string) ([]domain
 
 	return subjects, nil
 }
+
+// ModifySeats atomically persists changes to seat assignments for a license
+func (s *StubAccessRepository) ModifySeats(assignedSubjectIDs []domain.SubjectID, removedSubjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error {
+	panic("Not implemented")
+}
