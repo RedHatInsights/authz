@@ -12,6 +12,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
+	"google.golang.org/grpc"
 )
 
 // Server serves a HTTP api based on the generated grpc gateway code
@@ -82,12 +83,15 @@ func (s *Server) GetName() string {
 
 func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (http.Handler, error) {
 	mux := runtime.NewServeMux()
+	options := []grpc.DialOption{
+		grpc.WithInsecure(),
+	}
 
-	if err := core.RegisterCheckPermissionHandlerServer(context.Background(), mux, h1); err != nil {
+	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:50051", options); err != nil {
 		return nil, err
 	}
 
-	if err := core.RegisterLicenseServiceHandlerServer(context.Background(), mux, h2); err != nil {
+	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:50051", options); err != nil {
 		return nil, err
 	}
 
