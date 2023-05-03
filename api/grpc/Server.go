@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -29,13 +28,8 @@ type Server struct {
 
 // GetLicense ToDo - just a stub for now.
 func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
-	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	req := application.GetSeatAssignmentCountsRequest{
-		Requestor: requestor,
+		Requestor: s.getRequestorIdentityFromGrpcContext(ctx),
 		OrgID:     grpcReq.OrgId,
 		ServiceID: grpcReq.ServiceId,
 	}
@@ -52,20 +46,15 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 
 // ModifySeats ToDo - just a stub for now.
 func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
-	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	req := application.ModifySeatAssignmentRequest{
-		Requestor: requestor,
+		Requestor: s.getRequestorIdentityFromGrpcContext(ctx),
 		OrgID:     grpcReq.OrgId,
 		ServiceID: grpcReq.ServiceId,
 		Assign:    grpcReq.Assign,
 		Unassign:  grpcReq.Unassign,
 	}
 
-	err = s.LicenseAppService.ModifySeats(req)
+	err := s.LicenseAppService.ModifySeats(req)
 
 	if err != nil {
 		return nil, convertDomainErrorToGrpc(err)
@@ -75,11 +64,6 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 
 // GetSeats ToDo - just a stub for now.
 func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
-	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	includeUsers := true
 	if grpcReq.IncludeUsers != nil {
 		includeUsers = *grpcReq.IncludeUsers
@@ -97,7 +81,7 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	}
 
 	req := application.GetSeatAssignmentRequest{
-		Requestor:    requestor,
+		Requestor:    s.getRequestorIdentityFromGrpcContext(ctx),
 		OrgID:        grpcReq.OrgId,
 		ServiceID:    grpcReq.ServiceId,
 		IncludeUsers: includeUsers,
@@ -154,7 +138,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	srv := grpc.NewServer(grpc.Creds(creds))
+	oidc := NewOidcInterceptor(nil, []string{"iam.api.authz"}) //TODO: JWKS from idp. JOSE library can parse the response, but something needs to call the JWKS endpoint on the idp. See: https://github.com/go-jose/go-jose/blob/v3/jwk_test.go#L370
+	//TODO: also get urls and scope from config
+
+	srv := grpc.NewServer(grpc.Creds(creds), oidc.Unary())
 	core.RegisterCheckPermissionServer(srv, s)
 	core.RegisterLicenseServiceServer(srv, s)
 	err = srv.Serve(ls)
@@ -172,13 +159,8 @@ func (s *Server) GetName() string {
 
 // CheckPermission processes an authorization check and returns whether or not the operation would be allowed
 func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissionRequest) (*core.CheckPermissionResponse, error) {
-	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	req := application.CheckRequest{
-		Requestor:    requestor,
+		Requestor:    s.getRequestorIdentityFromGrpcContext(ctx),
 		Subject:      rpcReq.Subject,
 		Operation:    rpcReq.Operation,
 		ResourceType: rpcReq.Resourcetype,
@@ -194,17 +176,8 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 	return &core.CheckPermissionResponse{Result: bool(result)}, nil
 }
 
-func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (string, error) {
-	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
-		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			headers := md.Get(name)
-			if len(headers) > 0 {
-				return convertTokenToPrincipalID(headers[0])
-			}
-		}
-	}
-
-	return "", nil
+func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) string {
+	return ctx.Value(RequestorKey).(string) //TODO: what's the idiomatic way to access context values?
 }
 
 func convertTokenToPrincipalID(token string) (string, error) {
