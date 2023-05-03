@@ -5,9 +5,11 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -23,10 +25,10 @@ type Server struct {
 }
 
 // Serve starts serving
-func (s *Server) Serve(wait *sync.WaitGroup) error {
+func (s *Server) Serve(wait *sync.WaitGroup, local api.InProcTransport) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcLicenseService)
+	mux, err := createMultiplexer(s.GrpcCheckService, s.GrpcLicenseService, local)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
@@ -81,10 +83,13 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer) (http.Handler, error) {
+func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServer, local api.InProcTransport) (http.Handler, error) {
 	mux := runtime.NewServeMux()
 	options := []grpc.DialOption{
 		grpc.WithInsecure(),
+		grpc.WithDialer(func(s string, d time.Duration) (net.Conn, error) {
+			return local.Dial()
+		}),
 	}
 
 	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:50051", options); err != nil {

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
+	"google.golang.org/grpc/test/bufconn"
 )
 
 // Run configures and runs the actual bootstrap.
@@ -17,16 +18,17 @@ func Run(endpoint string, token string, store string, useTLS bool) {
 	srv, webSrv := initialize(endpoint, token, store, useTLS)
 
 	wait := sync.WaitGroup{}
+	local := bufconn.Listen(2048)
 
 	go func() {
-		err := srv.Serve(&wait)
+		err := srv.Serve(&wait, local)
 		if err != nil {
 			glog.Fatal("Could not start grpc serving: ", err)
 		}
 	}()
 
 	go func() {
-		err := webSrv.Serve(&wait)
+		err := webSrv.Serve(&wait, local)
 		if err != nil {
 			glog.Fatal("Could not start http serving: ", err)
 		}

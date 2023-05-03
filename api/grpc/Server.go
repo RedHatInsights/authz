@@ -127,7 +127,7 @@ func NewServer(h application.AccessAppService, l application.LicenseAppService, 
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
-func (s *Server) Serve(wait *sync.WaitGroup) error {
+func (s *Server) Serve(wait *sync.WaitGroup, local api.InProcTransport) error {
 	defer wait.Done()
 
 	ls, err := net.Listen("tcp", ":"+s.ServerConfig.GrpcPort)
@@ -157,6 +157,16 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	srv := grpc.NewServer(grpc.Creds(creds))
 	core.RegisterCheckPermissionServer(srv, s)
 	core.RegisterLicenseServiceServer(srv, s)
+
+	go func() {
+		wait.Add(1)
+		err = srv.Serve(local)
+		if err != nil {
+			glog.Errorf("Error hosting gRPC service: %s", err)
+		}
+		wait.Done()
+	}()
+
 	err = srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)
