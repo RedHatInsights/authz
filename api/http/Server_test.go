@@ -1,6 +1,7 @@
 package http
 
 import (
+	"authz/api"
 	"authz/api/grpc"
 	"authz/application"
 	"authz/domain"
@@ -229,7 +230,7 @@ func createTestServer() *grpc.Server {
 }
 
 func runRequestWithServer(req *http.Request, srv *grpc.Server) *http.Response {
-	mux, _ := createMultiplexer(srv, srv)
+	mux, _ := createMultiplexer(&api.ServerConfig{}) // TODO: change
 
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
