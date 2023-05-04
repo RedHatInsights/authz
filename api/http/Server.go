@@ -91,7 +91,7 @@ func createMultiplexer(h1 core.CheckPermissionServer, h2 core.LicenseServiceServ
 		return nil, err
 	}
 
-	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:50051", options); err != nil {
+	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", options); err != nil {
 		return nil, err
 	}
 
