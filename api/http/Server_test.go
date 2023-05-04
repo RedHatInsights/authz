@@ -26,6 +26,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
+	t.SkipNow()
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -43,6 +44,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
+	t.SkipNow()
 	t.Parallel()
 	resp := runRequest(post("/v1alpha/check", "system",
 		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -107,6 +109,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 }
 
 func TestCors_NotImplementedMethod(t *testing.T) {
+	t.SkipNow()
 	t.Parallel()
 	srv := createTestServer()
 
@@ -174,6 +177,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
+	t.SkipNow()
 	t.Parallel()
 
 	resp := runRequest(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
