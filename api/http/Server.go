@@ -5,7 +5,7 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"context"
-	"google.golang.org/grpc/credentials"
+	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
@@ -92,13 +92,17 @@ func createMultiplexer(cnf *api.ServerConfig) (http.Handler, error) {
 		if _, err := os.Stat(cnf.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("Creating multiplexer for HTTP: TLS cert and Key found - connecting to gRPC server in secure TLS mode")
 
-			creds, err := credentials.NewServerTLSFromFile(cnf.TLSConfig.CertPath, cnf.TLSConfig.KeyPath)
 			if err != nil {
 				glog.Errorf("Error loading certs: %s", err)
 				return nil, err
 			}
 
-			opts = append(opts, grpc.WithTransportCredentials(creds))
+			//Skipping cert verification because the cert Subject doesn't cover loopback addresses
+			sysCertOption, err := grpcutil.WithSystemCerts(grpcutil.SkipVerifyCA)
+			if err != nil {
+				return nil, err
+			}
+			opts = append(opts, sysCertOption)
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("Creating multiplexer for HTTP: TLS cert or Key not found  - connecting to  gRPC server in insecure mode on port %s",
