@@ -5,6 +5,7 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"sync"
@@ -20,6 +21,7 @@ import (
 
 // Server serves a HTTP api based on the generated grpc gateway code
 type Server struct {
+	srv                *http.Server
 	ServerConfig       *api.ServerConfig
 	GrpcCheckService   core.CheckPermissionServer
 	GrpcLicenseService core.LicenseServiceServer
@@ -40,11 +42,9 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
 				s.ServerConfig.HTTPSPort)
 
-			err = http.ListenAndServeTLS(
-				":"+s.ServerConfig.HTTPSPort,
-				s.ServerConfig.TLSConfig.CertPath, //TODO: Needs sanity checking.
-				s.ServerConfig.TLSConfig.KeyPath, mux)
-			if err != nil {
+			s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPSPort, Handler: mux}
+			err := s.srv.ListenAndServeTLS(s.ServerConfig.TLSConfig.CertPath, s.ServerConfig.TLSConfig.KeyPath)
+			if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
 			}
@@ -52,14 +52,19 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
 			s.ServerConfig.HTTPPort)
-		err = http.ListenAndServe(":"+s.ServerConfig.HTTPPort, mux)
-
-		if err != nil {
+		s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPPort, Handler: mux}
+		err = s.srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 			glog.Errorf("Error hosting insecure service: %s", err)
 			return err
 		}
 	}
 	return nil
+}
+
+// Stop gracefully shuts down the server
+func (s *Server) Stop() error {
+	return s.srv.Shutdown(context.Background())
 }
 
 // SetCheckRef sets the reference to the grpc CheckPermissionService

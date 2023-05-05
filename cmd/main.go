@@ -5,7 +5,10 @@ import (
 	"authz/bootstrap"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -48,7 +51,22 @@ func serve(cmd *cobra.Command, _ []string) {
 	store := nonEmptyStringFlag("store", cmd.Flags())
 	useTLS := mustGetBool("useTLS", cmd.Flags())
 
+	go handleSignals()
 	bootstrap.Run(endpoint, token, store, useTLS)
+}
+
+func handleSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	for sig := range sigs {
+		glog.Infof("Signal received: %s", sig)
+		switch sig {
+		case syscall.SIGINT, syscall.SIGTERM:
+			bootstrap.Stop()
+			close(sigs)
+		}
+	}
 }
 
 // nonEmptyStringFlag attempts to get a non-empty string flag from the provided flag set or panic
