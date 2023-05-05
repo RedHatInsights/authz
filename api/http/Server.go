@@ -5,11 +5,12 @@ import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"context"
-	"github.com/authzed/grpcutil"
-	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
 	"os"
 	"sync"
+
+	"github.com/authzed/grpcutil"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/golang/glog"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -110,11 +111,11 @@ func createMultiplexer(cnf *api.ServerConfig) (http.Handler, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts); err != nil {
+	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPort, opts); err != nil {
 		return nil, err
 	}
 
-	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:50051", opts); err != nil {
+	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPort, opts); err != nil {
 		return nil, err
 	}
 

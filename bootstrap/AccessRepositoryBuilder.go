@@ -8,8 +8,6 @@ import (
 	"authz/infrastructure/repository/mock"
 )
 
-var singletonSpiceDbRepository *authzed.SpiceDbAccessRepository
-
 // AccessRepositoryBuilder is the builder containing the config for building technical implementations of the server
 type AccessRepositoryBuilder struct {
 	config *api.ServerConfig
@@ -35,7 +33,6 @@ func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	case "spicedb":
 		spicedb := &authzed.SpiceDbAccessRepository{}
 		spicedb.NewConnection(config.Endpoint, config.AuthToken, true, config.UseTLS)
-		singletonSpiceDbRepository = spicedb
 		return spicedb, nil
 	default:
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
