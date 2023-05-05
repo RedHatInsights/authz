@@ -1,7 +1,8 @@
 package bootstrap
 
 import (
-	"authz/api/grpc"
+	"authz/api"
+	"authz/application"
 	"authz/infrastructure/repository/authzed"
 	"fmt"
 	"io"
@@ -15,9 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// container to get the port when re-initializing the service
+var container *authzed.LocalSpiceDbContainer
+
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
@@ -25,7 +29,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckAccess(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -35,7 +39,7 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -45,7 +49,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -55,7 +59,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -65,7 +69,7 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 }
 
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"assign": [
@@ -79,7 +83,7 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"unassign": [
@@ -93,8 +97,8 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestGrantedLicenseAllowsUse(t *testing.T) {
+	reInitializeService()
 	//The user isn't licensed initially, use is denied
-	regenerateSpiceDbToken()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
@@ -109,7 +113,6 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 			}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{}`)
-
 	container.WaitForQuantizationInterval()
 
 	//Should be allowed now
@@ -120,7 +123,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 }
 
 func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	//No one is licensed initially, expect a fixed count and none in use
 	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
 	assert.NoError(t, err)
@@ -156,7 +159,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
 		"assign": [
@@ -179,7 +182,7 @@ func TestOverAssigningLicensesFails(t *testing.T) {
 }
 
 func TestCors_NotImplementedMethod(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	body := `{
 			"assign": [
 			  "okay"
@@ -194,7 +197,7 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 }
 
 func TestCors_AllowAllOrigins(t *testing.T) {
-	regenerateSpiceDbToken()
+	reInitializeService()
 	body := `{
 			"assign": [
 			  "okay"
@@ -209,8 +212,6 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 	assert.Equal(t, resp.Header.Get("Vary"), "Origin")
 	assertJSONResponse(t, resp, 200, `{}`)
 }
-
-var container *authzed.LocalSpiceDbContainer
 
 func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
 	if assert.NotNil(t, resp) {
@@ -250,12 +251,41 @@ func createRequest(method string, relativeURI string, authToken string, body str
 	return req
 }
 
-func regenerateSpiceDbToken() {
+func reInitializeService() {
 	token, err := container.NewToken()
 	if err != nil {
 		panic(err)
 	}
-	singletonSpiceDbRepository.NewConnection("localhost:"+container.Port(), token, true, false)
+
+	//re-initialize the service with new token and container port
+	srvCfg := api.ServerConfig{ //TODO: Discuss config.
+		GrpcPort:  "50051",
+		HTTPPort:  "8081",
+		HTTPSPort: "8443",
+		TLSConfig: api.TLSConfig{
+			CertPath: "/etc/tls/tls.crt",
+			CertName: "",
+			KeyPath:  "/etc/tls/tls.key",
+			KeyName:  "",
+		},
+		StoreConfig: api.StoreConfig{
+			Store:     "spicedb",
+			Endpoint:  "localhost:" + container.Port(),
+			AuthToken: token,
+			UseTLS:    false,
+		},
+	}
+
+	ar := initAccessRepository(&srvCfg)
+	sr := initSeatRepository(&srvCfg, ar)
+	pr := initPrincipalRepository("spicedb")
+
+	aas := application.NewAccessAppService(&ar, pr)
+	sas := application.NewLicenseAppService(&ar, &sr, pr)
+
+	getGrpcServer().AccessAppService = aas
+	getGrpcServer().LicenseAppService = sas
+
 }
 
 func waitForGateway() error {
@@ -276,25 +306,13 @@ func waitForGateway() error {
 	}
 }
 
-func initializeGrpcServer() *grpc.Server {
-	token, err := container.NewToken()
-	if err != nil {
-		panic(err)
-	}
-
-	grpc, _ := initialize("localhost:"+container.Port(), token, "spicedb", false)
-
-	return grpc
-}
-
 func TestMain(m *testing.M) {
 	factory := authzed.NewLocalSpiceDbContainerFactory()
 	var err error
 	container, err = factory.CreateContainer()
 
 	if err != nil {
-		fmt.Printf("Error initializing Docker container: %s", err)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	go Run(fmt.Sprintf("localhost:%s", container.Port()), "initial", "spicedb", false)
@@ -303,7 +321,7 @@ func TestMain(m *testing.M) {
 
 	if err != nil {
 		fmt.Printf("Error waiting for gateway to come online: %s", err)
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	result := m.Run()

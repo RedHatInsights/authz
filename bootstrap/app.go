@@ -12,6 +12,9 @@ import (
 	"github.com/golang/glog"
 )
 
+// grpcServer is used as pointer to access the current server and re-initialize it, mainly for integration testing
+var grpcServer *grpc.Server
+
 // Run configures and runs the actual bootstrap.
 func Run(endpoint string, token string, store string, useTLS bool) {
 	srv, webSrv := initialize(endpoint, token, store, useTLS)
@@ -55,23 +58,24 @@ func initialize(endpoint string, token string, store string, useTLS bool) (*grpc
 		},
 	}
 
-	ar := getAccessRepository(&srvCfg)
-	sr := getSeatRepository(&srvCfg, ar)
-	pr := getPrincipalRepository(store)
+	ar := initAccessRepository(&srvCfg)
+	sr := initSeatRepository(&srvCfg, ar)
+	pr := initPrincipalRepository(store)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
 
-	srv := getGrpcServer(aas, sas, &srvCfg)
+	srv := initGrpcServer(aas, sas, &srvCfg)
 
-	webSrv := getHTTPServer(&srvCfg)
+	webSrv := initHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
 	webSrv.SetSeatRef(srv)
-
+	grpcServer = srv
 	return srv, webSrv
 }
 
-func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
+// initGrpcServer initializes a new grpc server struct
+func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
@@ -84,7 +88,8 @@ func getGrpcServer(aas *application.AccessAppService, sas *application.LicenseAp
 	return srv
 }
 
-func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
+// initHttpServer initializes new http server struct
+func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	srv, err := NewServerBuilder().
 		WithServerConfig(serverConfig).
 		BuildHTTP()
@@ -95,7 +100,12 @@ func getHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
-func getSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
+// getGrpcServer returns the pointer to the current running server struct. Mainly used for re-initializing services in tests.
+func getGrpcServer() *grpc.Server {
+	return grpcServer
+}
+
+func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
@@ -104,7 +114,7 @@ func getSeatRepository(config *api.ServerConfig, potentialStub interface{}) cont
 	return b.WithConfig(config).Build()
 }
 
-func getAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
+func initAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
 	r, err := NewAccessRepositoryBuilder().
 		WithConfig(config).Build()
 
@@ -114,6 +124,6 @@ func getAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
 	return r
 }
 
-func getPrincipalRepository(store string) contracts.PrincipalRepository {
+func initPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
 }
