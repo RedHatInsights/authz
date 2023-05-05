@@ -14,29 +14,48 @@ import (
 
 // grpcServer is used as pointer to access the current server and re-initialize it, mainly for integration testing
 var grpcServer *grpc.Server
+var httpServer *http.Server
+var waitForCompletion *sync.WaitGroup
 
 // Run configures and runs the actual bootstrap.
 func Run(endpoint string, token string, store string, useTLS bool) {
-	srv, webSrv := initialize(endpoint, token, store, useTLS)
+	grpcServer, httpServer = initialize(endpoint, token, store, useTLS)
 
-	wait := sync.WaitGroup{}
+	wait := &sync.WaitGroup{}
+	wait.Add(2)
 
 	go func() {
-		err := srv.Serve(&wait)
+		err := grpcServer.Serve(wait)
 		if err != nil {
 			glog.Fatal("Could not start grpc serving: ", err)
 		}
 	}()
 
 	go func() {
-		err := webSrv.Serve(&wait)
+		err := httpServer.Serve(wait)
 		if err != nil {
 			glog.Fatal("Could not start http serving: ", err)
 		}
 	}()
 
-	wait.Add(2)
+	waitForCompletion = wait
 	wait.Wait()
+}
+
+// Stop shuts down the server endpoints and performs teardown functions and blocks until completed
+func Stop() {
+	glog.Info("Attempting graceful shutdown...")
+	err := httpServer.Stop() //Stop accepting HTTP requests and shut it down
+	if err != nil {
+		glog.Errorf("Error stopping HTTP server: %s", err)
+	}
+	grpcServer.Stop() //Stop accepting gRPC/adapted HTTP requests after shutting down HTTP
+
+	waitForCompletion.Wait()
+
+	grpcServer = nil
+	httpServer = nil
+	waitForCompletion = nil
 }
 
 func initialize(endpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
@@ -98,11 +117,6 @@ func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 		glog.Fatal("Could not initialize http server: ", err)
 	}
 	return srv
-}
-
-// getGrpcServer returns the pointer to the current running server struct. Mainly used for re-initializing services in tests.
-func getGrpcServer() *grpc.Server {
-	return grpcServer
 }
 
 func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {

@@ -22,6 +22,7 @@ import (
 
 // Server represents a Server host service
 type Server struct {
+	srv               *grpc.Server
 	AccessAppService  *application.AccessAppService
 	LicenseAppService *application.LicenseAppService
 	ServerConfig      *api.ServerConfig
@@ -154,15 +155,20 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	srv := grpc.NewServer(grpc.Creds(creds))
-	core.RegisterCheckPermissionServer(srv, s)
-	core.RegisterLicenseServiceServer(srv, s)
-	err = srv.Serve(ls)
+	s.srv = grpc.NewServer(grpc.Creds(creds))
+	core.RegisterCheckPermissionServer(s.srv, s)
+	core.RegisterLicenseServiceServer(s.srv, s)
+	err = s.srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)
 		return err
 	}
 	return nil
+}
+
+// Stop gracefully stops the server.
+func (s *Server) Stop() {
+	s.srv.GracefulStop()
 }
 
 // GetName returns the impl name

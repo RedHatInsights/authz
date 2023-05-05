@@ -1,8 +1,6 @@
 package bootstrap
 
 import (
-	"authz/api"
-	"authz/application"
 	"authz/infrastructure/repository/authzed"
 	"fmt"
 	"io"
@@ -21,7 +19,9 @@ var container *authzed.LocalSpiceDbContainer
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
-	reInitializeService()
+	setupService()
+	defer teardownService()
+
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
@@ -29,7 +29,8 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckAccess(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -39,7 +40,8 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -49,7 +51,8 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -59,7 +62,8 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
@@ -69,7 +73,8 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 }
 
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"assign": [
@@ -83,7 +88,8 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"unassign": [
@@ -97,7 +103,8 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestGrantedLicenseAllowsUse(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	//The user isn't licensed initially, use is denied
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
@@ -123,8 +130,9 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 }
 
 func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
-	reInitializeService()
-	//No one is licensed initially, expect a fixed count and none in use
+	setupService()
+	defer teardownService()
+
 	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":9, "seatsTotal": 10}`)
@@ -159,7 +167,8 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
 		"assign": [
@@ -182,7 +191,8 @@ func TestOverAssigningLicensesFails(t *testing.T) {
 }
 
 func TestCors_NotImplementedMethod(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	body := `{
 			"assign": [
 			  "okay"
@@ -197,7 +207,8 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 }
 
 func TestCors_AllowAllOrigins(t *testing.T) {
-	reInitializeService()
+	setupService()
+	defer teardownService()
 	body := `{
 			"assign": [
 			  "okay"
@@ -251,41 +262,23 @@ func createRequest(method string, relativeURI string, authToken string, body str
 	return req
 }
 
-func reInitializeService() {
+func setupService() {
 	token, err := container.NewToken()
 	if err != nil {
 		panic(err)
 	}
 
-	//re-initialize the service with new token and container port
-	srvCfg := api.ServerConfig{ //TODO: Discuss config.
-		GrpcPort:  "50051",
-		HTTPPort:  "8081",
-		HTTPSPort: "8443",
-		TLSConfig: api.TLSConfig{
-			CertPath: "/etc/tls/tls.crt",
-			CertName: "",
-			KeyPath:  "/etc/tls/tls.key",
-			KeyName:  "",
-		},
-		StoreConfig: api.StoreConfig{
-			Store:     "spicedb",
-			Endpoint:  "localhost:" + container.Port(),
-			AuthToken: token,
-			UseTLS:    false,
-		},
+	go Run(fmt.Sprintf("localhost:%s", container.Port()), token, "spicedb", false)
+	err = waitForGateway()
+
+	if err != nil {
+		fmt.Printf("Error waiting for gateway to come online: %s", err)
+		os.Exit(1)
 	}
+}
 
-	ar := initAccessRepository(&srvCfg)
-	sr := initSeatRepository(&srvCfg, ar)
-	pr := initPrincipalRepository("spicedb")
-
-	aas := application.NewAccessAppService(&ar, pr)
-	sas := application.NewLicenseAppService(&ar, &sr, pr)
-
-	getGrpcServer().AccessAppService = aas
-	getGrpcServer().LicenseAppService = sas
-
+func teardownService() {
+	Stop()
 }
 
 func waitForGateway() error {
@@ -312,15 +305,6 @@ func TestMain(m *testing.M) {
 	container, err = factory.CreateContainer()
 
 	if err != nil {
-		os.Exit(1)
-	}
-
-	go Run(fmt.Sprintf("localhost:%s", container.Port()), "initial", "spicedb", false)
-
-	err = waitForGateway()
-
-	if err != nil {
-		fmt.Printf("Error waiting for gateway to come online: %s", err)
 		os.Exit(1)
 	}
 
