@@ -4,10 +4,12 @@ package grpc
 import (
 	"authz/api"
 	core "authz/api/gen/v1alpha"
+	"authz/api/grpc/interceptor"
 	"authz/application"
 	"authz/domain"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -16,16 +18,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 // Server represents a Server host service
 type Server struct {
-	srv               *grpc.Server
-	AccessAppService  *application.AccessAppService
-	LicenseAppService *application.LicenseAppService
-	ServerConfig      *api.ServerConfig
+	srv                      *grpc.Server
+	UnaryServiceInterceptors *[]grpc.UnaryServerInterceptor
+	AccessAppService         *application.AccessAppService
+	LicenseAppService        *application.LicenseAppService
+	ServerConfig             *api.ServerConfig
 }
 
 // GetLicense ToDo - just a stub for now.
@@ -155,7 +157,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	s.srv = grpc.NewServer(grpc.Creds(creds))
+	logMw := interceptor.NewAuthnInterceptor()
+	s.srv = grpc.NewServer(grpc.Creds(creds), logMw.Unary())
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
 	err = s.srv.Serve(ls)
@@ -201,20 +204,17 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 }
 
 func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (string, error) {
-	for _, name := range []string{"grpcgateway-authorization", "bearer-token"} {
-		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			headers := md.Get(name)
-			if len(headers) > 0 {
-				return convertTokenToPrincipalID(headers[0])
-			}
-		}
+	requestor := ctx.Value(interceptor.RequestorContextKey("Requestor"))
+	reqStr := requestor.(string)
+	if reqStr == "" {
+		return "", fmt.Errorf("invalid subject in the request")
 	}
 
-	return "", nil
+	return reqStr, nil
 }
 
 func convertTokenToPrincipalID(token string) (string, error) {
-	return token, nil //Placeholder for token introspection
+	return "", nil //Placeholder for token introspection
 }
 
 func convertDomainErrorToGrpc(err error) error {
