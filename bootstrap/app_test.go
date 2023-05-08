@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"authz/infrastructure/repository/authzed"
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +11,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
@@ -237,12 +242,12 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 	}
 }
 
-func get(relativeURI string, authToken string) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, authToken, "")
+func get(relativeURI string, subject string) *http.Request {
+	return createRequest(http.MethodGet, relativeURI, subjectIDToToken(subject), "")
 }
 
-func post(relativeURI string, authToken string, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, authToken, body)
+func post(relativeURI string, subject string, body string) *http.Request {
+	return createRequest(http.MethodPost, relativeURI, subjectIDToToken(subject), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
@@ -277,6 +282,29 @@ func setupService() {
 	}
 }
 
+func subjectIDToToken(subject string) string {
+	if subject == "" {
+		return ""
+	}
+
+	data, err := jwt.NewBuilder().
+		Issuer("example.com/issuer").
+		IssuedAt(time.Now()).
+		Subject(subject).Build()
+
+	if err != nil {
+		panic(err)
+	}
+
+	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, tokenSigningKey))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("bearer %s", token)
+}
+
 func teardownService() {
 	Stop()
 }
@@ -299,6 +327,23 @@ func waitForGateway() error {
 	}
 }
 
+var tokenSigningKey *rsa.PrivateKey
+var tokenVerificationKey *rsa.PublicKey
+
+func generateKeys() (signing *rsa.PrivateKey, verification *rsa.PublicKey) {
+	signing, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		panic(err)
+	}
+
+	verification = &rsa.PublicKey{
+		N: signing.N,
+		E: signing.E,
+	}
+
+	return
+}
+
 func TestMain(m *testing.M) {
 	factory := authzed.NewLocalSpiceDbContainerFactory()
 	var err error
@@ -307,6 +352,8 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		os.Exit(1)
 	}
+
+	tokenSigningKey, tokenVerificationKey = generateKeys()
 
 	result := m.Run()
 
