@@ -2,16 +2,20 @@ package interceptor
 
 import (
 	"context"
-	"fmt"
+	"strings"
+
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"strings"
 )
 
 type AuthnInterceptor struct{}
 
-type RequestorContextKey string
+type ContextKey string
+
+const (
+	RequestorContextKey ContextKey = ContextKey("Requestor")
+)
 
 // NewAuthnInterceptor -
 func NewAuthnInterceptor() *AuthnInterceptor {
@@ -22,12 +26,7 @@ func NewAuthnInterceptor() *AuthnInterceptor {
 func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		glog.Info("Hello from AuthnInterceptor %v: ", req)
-		token, err := getBearerTokenFromContext(ctx)
-
-		if err != nil {
-			glog.Error(err)
-			return nil, err
-		}
+		token := getBearerTokenFromContext(ctx)
 
 		if token != "" {
 			glog.Infof("Received placeholder token: %s", token) //Obvs remove
@@ -35,12 +34,11 @@ func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 			glog.Info("No bearer token received")
 		}
 
-		key := RequestorContextKey("Requestor")
-		return handler(context.WithValue(ctx, key, token), req)
+		return handler(context.WithValue(ctx, RequestorContextKey, token), req)
 	})
 }
 
-func getBearerTokenFromContext(ctx context.Context) (string, error) {
+func getBearerTokenFromContext(ctx context.Context) string {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		for _, name := range []string{"grpcgateway-authorization", "authorization"} {
 			headers := md.Get(name)
@@ -49,14 +47,14 @@ func getBearerTokenFromContext(ctx context.Context) (string, error) {
 				parts := strings.Split(value, " ")
 
 				if len(parts) > 1 {
-					return parts[1], nil
-				} else {
-					return parts[0], nil
+					return parts[1]
 				}
+
+				return parts[0]
 			}
 		}
 	}
-	return "", fmt.Errorf("bearer token not found")
+	return ""
 }
 
 func validateBearerToken() error {
@@ -65,7 +63,7 @@ func validateBearerToken() error {
 
 	//Token expiry check
 
-	// JWKS - issuer verificaiton
+	// JWKS - issuer verification
 
 	// extract needed info
 

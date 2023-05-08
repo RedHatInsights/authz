@@ -9,7 +9,6 @@ import (
 	"authz/domain"
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"sync"
@@ -204,17 +203,13 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 }
 
 func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (string, error) {
-	requestor := ctx.Value(interceptor.RequestorContextKey("Requestor"))
+	requestor := ctx.Value(interceptor.RequestorContextKey)
 	reqStr := requestor.(string)
 	if reqStr == "" {
-		return "", fmt.Errorf("invalid subject in the request")
+		return "", convertDomainErrorToGrpc(domain.ErrNotAuthenticated)
 	}
 
 	return reqStr, nil
-}
-
-func convertTokenToPrincipalID(token string) (string, error) {
-	return "", nil //Placeholder for token introspection
 }
 
 func convertDomainErrorToGrpc(err error) error {
