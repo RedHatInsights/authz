@@ -156,7 +156,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	logMw := interceptor.NewAuthnInterceptor()
+	logMw := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
 	s.srv = grpc.NewServer(grpc.Creds(creds), logMw.Unary())
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)

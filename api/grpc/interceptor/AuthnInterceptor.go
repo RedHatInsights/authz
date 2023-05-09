@@ -2,6 +2,7 @@
 package interceptor
 
 import (
+	"authz/api"
 	"context"
 	"strings"
 
@@ -11,7 +12,9 @@ import (
 )
 
 // AuthnInterceptor - Middleware to validate incoming bearer tokens
-type AuthnInterceptor struct{}
+type AuthnInterceptor struct {
+	provider providerJSON
+}
 
 // ContextKey Type to hold Keys that are applied to the request context
 type ContextKey string
@@ -21,12 +24,21 @@ const (
 	RequestorContextKey ContextKey = ContextKey("Requestor")
 )
 
-// NewAuthnInterceptor -
-func NewAuthnInterceptor() *AuthnInterceptor {
+type providerJSON struct {
+	Issuer  string `json:"issuer"`
+	JwksUrl string `json:"jwks_uri"`
+}
+
+// NewAuthnInterceptor constructor
+func NewAuthnInterceptor(config api.AuthConfig) *AuthnInterceptor {
+	//req, err := http.NewRequest("GET", config.DiscoveryEndpoint, nil)
+	//resp, err := http.DefaultClient.Do(req)
+
+	// TODO: jwks etc. initialization goes here
 	return &AuthnInterceptor{}
 }
 
-// Unary -
+// Unary impl of the Unary interceptor
 func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		glog.Info("Hello from AuthnInterceptor %v: ", req)
