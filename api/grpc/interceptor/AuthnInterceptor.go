@@ -1,3 +1,4 @@
+// Package interceptor contains middleware interceptors for unary and stream. Interceptors are applied to calls from HTTP and GRPC
 package interceptor
 
 import (
@@ -9,11 +10,14 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// AuthnInterceptor - Middleware to validate incoming bearer tokens
 type AuthnInterceptor struct{}
 
+// ContextKey Type to hold Keys that are applied to the request context
 type ContextKey string
 
 const (
+	// RequestorContextKey Key for the Requestor value
 	RequestorContextKey ContextKey = ContextKey("Requestor")
 )
 
