@@ -8,6 +8,7 @@ require (
 	github.com/golang/glog v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
 	github.com/kinbiko/jsonassert v1.1.1
+	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -26,7 +27,6 @@ require (
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
-	github.com/lestrrat-go/jwx/v2 v2.0.9 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/lib/pq v0.0.0-20180327071824-d34b9ff171c2 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
