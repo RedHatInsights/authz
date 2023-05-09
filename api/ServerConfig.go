@@ -15,6 +15,7 @@ type ServerConfig struct {
 	HTTPSPort   string
 	TLSConfig   TLSConfig
 	StoreConfig StoreConfig
+	AuthConfig  AuthConfig
 }
 
 // TLSConfig includes a possible TLS configuration.
@@ -31,4 +32,14 @@ type StoreConfig struct {
 	Endpoint  string
 	AuthToken string
 	UseTLS    bool
+}
+
+// AuthConfig holds configuration values for the oAuth client authorization middleware
+type AuthConfig struct {
+	DiscoveryEndpoint string
+	RequiredScope     string
+	// 1) config: includes DiscoveryEndpoint
+	// 2) Struct that holds issuer and JWKS (+ cache handling and retry mechanism) at bootstrap of the interceptor
+	// 3) middleware: use public key and issuer from discovery endpoint to validate token contents against it
+	// 4) check for needed scope to access api (injected also via config) - scope is "api.iam.access"
 }
