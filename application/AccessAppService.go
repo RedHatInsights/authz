@@ -47,3 +47,18 @@ func (p *AccessAppService) Check(req CheckRequest) (domain.AccessDecision, error
 
 	return checkResult.Check(event)
 }
+
+func (p *AccessAppService) CheckRequestor(requestor string) (domain.AccessDecision, error) {
+	// Would be great to just do a standard Check (above) for the Requestor, but what would the
+	// Resource be? Need to amend schema?
+
+	// For now just, your name's not down, you're not getting in.
+	subjectID := domain.SubjectID(requestor)
+	principal, err := p.principalRepo.GetByID(subjectID)
+
+	if err != nil || principal.ID != "anon" {
+		return true, nil
+	}
+
+	return false, nil
+}

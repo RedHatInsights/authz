@@ -22,7 +22,7 @@ func (s *StubPrincipalRepository) GetByID(id domain.SubjectID) (domain.Principal
 		return principal, nil
 	}
 
-	return s.createAndAddMissingPrincipal(id)
+	return s.createAnonPrincipal(id)
 }
 
 // GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
@@ -50,9 +50,9 @@ func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]domain.SubjectID, 
 	return ids, nil
 }
 
-func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id domain.SubjectID) (domain.Principal, error) {
+func (s *StubPrincipalRepository) createAnonPrincipal(id domain.SubjectID) (domain.Principal, error) {
 	p := domain.Principal{
-		ID:          id,
+		ID:          "anon",
 		DisplayName: fmt.Sprintf("User %s", id),
 		OrgID:       s.DefaultOrg,
 	}

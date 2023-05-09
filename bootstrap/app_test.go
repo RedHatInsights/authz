@@ -22,13 +22,27 @@ import (
 // container to get the port when re-initializing the service
 var container *authzed.LocalSpiceDbContainer
 
-func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
-	t.SkipNow() //Skip until meta-authz is in place
+func TestCheckErrorsWhenCallerIsAuthorized(t *testing.T) {
 	setupService()
 	defer teardownService()
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad",
+	authorizedGuy := "token" // a goodGuy in the stub principal repository
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", authorizedGuy,
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+}
+
+func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
+	setupService()
+	defer teardownService()
+
+	notAuthorizedGuy := "badDude"
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", notAuthorizedGuy,
+		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
 	assert.NoError(t, err)
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -36,7 +50,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckAccess(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "token",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
@@ -58,7 +72,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "token",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
@@ -69,7 +83,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "token",
 		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
@@ -80,7 +94,7 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "token",
 		`{
 			"assign": [
 			  "okay"
@@ -95,7 +109,7 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "token",
 		`{
 			"unassign": [
 			  "u1"
@@ -111,13 +125,13 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	setupService()
 	defer teardownService()
 	//The user isn't licensed initially, use is denied
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "token",
 		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
 	//Grant a license
-	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
+	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "token",
 		`{
 		"assign": [
 			"u2"
@@ -128,7 +142,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	container.WaitForQuantizationInterval()
 
 	//Should be allowed now
-	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "token",
 		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
@@ -138,16 +152,16 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	setupService()
 	defer teardownService()
 
-	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
+	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "token"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":9, "seatsTotal": 10}`)
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "token"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"O1 User 1","id":"u1"}]}`)
 
 	//Grant a license
-	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
+	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "token",
 		`{
 			"assign": [
 			  "okay"
@@ -158,11 +172,11 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	container.WaitForQuantizationInterval()
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "token"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "token"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"users": "<<PRESENCE>>"}`)
 
@@ -174,7 +188,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 func TestOverAssigningLicensesFails(t *testing.T) {
 	setupService()
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "token",
 		`{
 		"assign": [
 			"user1",
@@ -204,7 +218,7 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 			]
 		  }`
 
-	req := createRequest(http.MethodTrace, "/v1alpha/orgs/o1/licenses/smarts", "okay", body)
+	req := createRequest(http.MethodTrace, "/v1alpha/orgs/o1/licenses/smarts", "token", body)
 
 	resp, err := http.DefaultClient.Do(req)
 	assert.NoError(t, err)
@@ -220,7 +234,7 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 			]
 		  }`
 
-	req := post("/v1alpha/orgs/o1/licenses/smarts", "okay", body)
+	req := post("/v1alpha/orgs/o1/licenses/smarts", "token", body)
 	req.Header.Set("AllowAllOrigins", "true")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -243,11 +257,11 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func get(relativeURI string, subject string) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, subjectIDToToken(subject), "")
+	return createRequest(http.MethodGet, relativeURI, createFakeBearerToken(subject), "")
 }
 
 func post(relativeURI string, subject string, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, subjectIDToToken(subject), body)
+	return createRequest(http.MethodPost, relativeURI, createFakeBearerToken(subject), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
@@ -282,7 +296,7 @@ func setupService() {
 	}
 }
 
-func subjectIDToToken(subject string) string {
+func createFakeBearerToken(subject string) string {
 	if subject == "" {
 		return ""
 	}

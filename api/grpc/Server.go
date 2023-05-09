@@ -9,6 +9,7 @@ import (
 	"authz/domain"
 	"context"
 	"errors"
+	"github.com/lestrrat-go/jwx/v2/jwt"
 	"net"
 	"os"
 	"sync"
@@ -207,6 +208,17 @@ func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (strin
 	reqStr := requestor.(string)
 	if reqStr == "" {
 		return "", convertDomainErrorToGrpc(domain.ErrNotAuthenticated)
+	}
+
+	// Assuming this will really happen in the interceptor
+	token, parseErr := jwt.Parse([]byte(reqStr), jwt.WithVerify(false))
+	if parseErr != nil {
+		return "", parseErr
+	}
+
+	access, err := s.AccessAppService.CheckRequestor(token.Subject())
+	if !access || err != nil {
+		return "", convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
 
 	return reqStr, nil
