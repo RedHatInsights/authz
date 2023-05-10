@@ -18,8 +18,8 @@ var httpServer *http.Server
 var waitForCompletion *sync.WaitGroup
 
 // Run configures and runs the actual bootstrap.
-func Run(endpoint string, token string, store string, useTLS bool) {
-	grpcServer, httpServer = initialize(endpoint, token, store, useTLS)
+func Run(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) {
+	grpcServer, httpServer = initialize(endpoint, oidcDiscoveryEndpoint, token, store, useTLS)
 
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
@@ -58,7 +58,7 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(endpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
+func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
 	srvCfg := api.ServerConfig{ //TODO: Discuss config.
 		GrpcPort:  "50051",
 		HTTPPort:  "8081",
@@ -74,6 +74,11 @@ func initialize(endpoint string, token string, store string, useTLS bool) (*grpc
 			Endpoint:  endpoint,
 			AuthToken: token,
 			UseTLS:    useTLS,
+		},
+		AuthConfig: api.AuthConfig{
+			DiscoveryEndpoint: oidcDiscoveryEndpoint,
+			Audience:          "authz", //TODO: make these configurable
+			RequiredScope:     "openid",
 		},
 	}
 

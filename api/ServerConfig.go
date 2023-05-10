@@ -37,6 +37,7 @@ type StoreConfig struct {
 // AuthConfig holds configuration values for the oAuth client authorization middleware
 type AuthConfig struct {
 	DiscoveryEndpoint string
+	Audience          string
 	RequiredScope     string
 	// 1) config: includes DiscoveryEndpoint
 	// 2) Struct that holds issuer and JWKS (+ cache handling and retry mechanism) at bootstrap of the interceptor

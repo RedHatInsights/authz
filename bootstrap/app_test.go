@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/infrastructure/repository/authzed"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
@@ -13,7 +14,10 @@ import (
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
+	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+
+	"github.com/mendsley/gojwk"
 
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +25,13 @@ import (
 
 // container to get the port when re-initializing the service
 var container *authzed.LocalSpiceDbContainer
+
+const (
+	testKID           = "test-kid"
+	testIssuer        = "http://localhost:8180/idp"
+	testAudience      = "authz"
+	testRequiredScope = "openid"
+)
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
@@ -273,7 +284,7 @@ func setupService() {
 		panic(err)
 	}
 
-	go Run(fmt.Sprintf("localhost:%s", container.Port()), token, "spicedb", false)
+	go Run(fmt.Sprintf("localhost:%s", container.Port()), oidcDiscoveryURL, token, "spicedb", false)
 	err = waitForGateway()
 
 	if err != nil {
@@ -288,9 +299,12 @@ func subjectIDToToken(subject string) string {
 	}
 
 	data, err := jwt.NewBuilder().
-		Issuer("example.com/issuer").
+		Issuer(testIssuer).
 		IssuedAt(time.Now()).
-		Subject(subject).Build()
+		Audience([]string{testAudience}).
+		Subject(subject).
+		Claim("scope", testRequiredScope).
+		Build()
 
 	if err != nil {
 		panic(err)
@@ -327,24 +341,93 @@ func waitForGateway() error {
 	}
 }
 
-var tokenSigningKey *rsa.PrivateKey
-var tokenVerificationKey *rsa.PublicKey
+var tokenSigningKey jwk.Key
+var tokenVerificationKey crypto.PublicKey
 
-func generateKeys() (signing *rsa.PrivateKey, verification *rsa.PublicKey) {
-	signing, err := rsa.GenerateKey(rand.Reader, 2048)
+func generateKeys() (signing jwk.Key, verification crypto.PublicKey) {
+	private, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		panic(err)
 	}
 
-	verification = &rsa.PublicKey{
-		N: signing.N,
-		E: signing.E,
+	signing, err = jwk.FromRaw(private)
+	if err != nil {
+		panic(err)
 	}
+	err = signing.Set(jwk.KeyIDKey, testKID)
+	if err != nil {
+		panic(err)
+	}
+
+	verification = private.Public()
 
 	return
 }
 
+var oidcDiscoveryURL string
+
+func hostFakeIdp() {
+	mux := http.NewServeMux()
+
+	mux.Handle("/idp/.well-known/openid-configuration", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(fmt.Sprintf(`{
+			"issuer": "%s",
+			"authorization_endpoint": "http://localhost:8180/idp/authorize",
+			"token_endpoint": "http://localhost:8180/idp/token",
+			"userinfo_endpoint": "http://localhost:8180/idp/userinfo",
+			"jwks_uri": "http://localhost:8180/idp/certs",
+			"scopes_supported": [
+				"openid"
+			],
+			"response_types_supported": [
+				"code",
+				"id_token",
+				"token id_token"
+			],
+			"token_endpoint_auth_methods_supported": [
+				"client_secret_basic"
+			]
+		}`, testIssuer))) //Modified from an example OIDC discovery document: https://swagger.io/docs/specification/authentication/openid-connect-discovery/
+		if err != nil {
+			panic(err)
+		}
+	}))
+
+	mux.Handle("/idp/certs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+
+		pubjwk, err := gojwk.PublicKey(tokenVerificationKey)
+		if err != nil {
+			panic(err)
+		}
+
+		pubjwk.Alg = "RS256"
+		pubjwk.Kid = testKID
+		serializedKey, err := gojwk.Marshal(pubjwk)
+		if err != nil {
+			panic(err)
+		}
+
+		response := fmt.Sprintf(`{"keys": [%s]}`, string(serializedKey))
+
+		_, err = w.Write([]byte(response))
+		if err != nil {
+			panic(err)
+		}
+	}))
+
+	oidcDiscoveryURL = "http://localhost:8180/idp/.well-known/openid-configuration"
+	err := http.ListenAndServe("localhost:8180", mux)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestMain(m *testing.M) {
+	tokenSigningKey, tokenVerificationKey = generateKeys()
+	go hostFakeIdp()
+
 	factory := authzed.NewLocalSpiceDbContainerFactory()
 	var err error
 	container, err = factory.CreateContainer()
@@ -352,8 +435,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		os.Exit(1)
 	}
-
-	tokenSigningKey, tokenVerificationKey = generateKeys()
 
 	result := m.Run()
 
