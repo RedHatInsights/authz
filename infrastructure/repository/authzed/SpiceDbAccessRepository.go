@@ -258,7 +258,7 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	return &license, nil
 }
 
-// GetAssigned - todo implementation
+// GetAssigned returns assigned seats for a given organization ID and service ID
 func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{

@@ -57,7 +57,8 @@ func (l *SeatLicenseService) ensureRequestorIsAuthorizedToManageLicenses(request
 		return domain.ErrNotAuthenticated
 	}
 
-	authz, err := true, error(nil) //l.authz.CheckAccess(requestor, "manage_license", org.AsResource()) //Maybe on a per-service basis? //TODO: implement meta-authz
+	//TODO: implement meta-authz
+	authz, err := true, error(nil) //l.authz.CheckAccess(requestor, "manage_license", org.AsResource()) //Maybe on a per-service basis?
 	if err != nil {
 		return err
 	}

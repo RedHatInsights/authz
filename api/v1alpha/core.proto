@@ -24,7 +24,6 @@ message CheckPermissionResponse {
   string description = 2;
 }
 
-// TODO: Use right http status codes - see https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/
 service LicenseService {
   rpc GetLicense (GetLicenseRequest) returns (GetLicenseResponse) {}
   rpc ModifySeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
