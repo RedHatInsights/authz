@@ -29,7 +29,7 @@ type Server struct {
 	ServerConfig             *api.ServerConfig
 }
 
-// GetLicense ToDo - just a stub for now.
+// GetLicense returns licenses for a given org and service
 func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest) (*core.GetLicenseResponse, error) {
 	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 	}, nil
 }
 
-// ModifySeats ToDo - just a stub for now.
+// ModifySeats assigns and/or unassigns users to/from seats for a given org and service
 func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsRequest) (*core.ModifySeatsResponse, error) {
 	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 	return &core.ModifySeatsResponse{}, nil
 }
 
-// GetSeats ToDo - just a stub for now.
+// GetSeats returns seats for a given org and service
 func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
 	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
 	if err != nil {
@@ -158,7 +158,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	logMw, err := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
 	if err != nil {
-		panic(err) //TODO: handle initialization failure
+		glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 	}
 	s.srv = grpc.NewServer(grpc.Creds(creds), logMw.Unary())
 	core.RegisterCheckPermissionServer(s.srv, s)

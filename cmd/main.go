@@ -94,7 +94,7 @@ func undefinedValueMessage(flagName string) string {
 	return fmt.Sprintf("flag %s needs a defined value.", flagName)
 }
 
-func notFoundMessage(flagName string, err error) string { //TODO: evaluate if needed.
+func notFoundMessage(flagName string, err error) string {
 	return fmt.Sprintf("could not get flag %s from flag set: %s", flagName, err.Error())
 }
 

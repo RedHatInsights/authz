@@ -111,7 +111,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 	return principals, nil
 }
 
-// ModifySeats TODO
+// ModifySeats Assign and/or unassign a number of users for a given org and service
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	evt := domain.ModifySeatAssignmentEvent{
 		Org:     domain.Organization{ID: req.OrgID},

@@ -21,8 +21,8 @@ func (a AccessService) Check(req domain.CheckEvent) (domain.AccessDecision, erro
 	if !req.Requestor.HasIdentity() {
 		return false, domain.ErrNotAuthenticated
 	}
-
-	accessResult, err := true, error(nil) //a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"}) //TODO: implement actual meta-authz
+	//TODO: implement actual meta-authz
+	accessResult, err := true, error(nil) //a.accessRepository.CheckAccess(req.Requestor, "call", model.Resource{Type: "endpoint", ID: "checkaccess"})
 	if err != nil {
 		return false, err
 	}
