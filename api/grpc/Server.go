@@ -156,7 +156,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	logMw := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
+	logMw, err := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
+	if err != nil {
+		panic(err) //TODO: handle initialization failure
+	}
 	s.srv = grpc.NewServer(grpc.Creds(creds), logMw.Unary())
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)

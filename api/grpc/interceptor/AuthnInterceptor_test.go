@@ -4,9 +4,6 @@ import (
 	"authz/domain"
 	"crypto/rand"
 	"crypto/rsa"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -116,9 +113,11 @@ func TestInvalidTokenWrongSigningKey(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	maliciousSigning.Set(jwk.KeyIDKey, testKID)
+	err = maliciousSigning.Set(jwk.KeyIDKey, testKID)
+	assert.NoError(t, err)
 
 	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, maliciousSigning))
+	assert.NoError(t, err)
 
 	_, err = interceptor.validateTokenAndExtractSubject(string(token))
 
@@ -132,6 +131,9 @@ func TestInvalidTokenTampered(t *testing.T) {
 
 	parts := strings.Split(token, ".")
 	bodyData, err := base64.RawStdEncoding.DecodeString(parts[1]) //decode body
+	if err != nil {
+		panic(err)
+	}
 
 	bodyJSON := string(bodyData)
 	bodyJSON = strings.Replace(bodyJSON, `"u1"`, `"admin"`, 1)
@@ -157,7 +159,10 @@ func createDefaultTokenBuilder() *jwt.Builder {
 func createInterceptor() *AuthnInterceptor {
 	keyset := jwk.NewSet()
 
-	keyset.AddKey(tokenVerificationKey)
+	err := keyset.AddKey(tokenVerificationKey)
+	if err != nil {
+		panic(err)
+	}
 
 	return newAuthnInterceptorFromData(
 		validIssuer,
@@ -168,7 +173,6 @@ func createInterceptor() *AuthnInterceptor {
 
 var tokenSigningKey jwk.Key
 var tokenVerificationKey jwk.Key
-var testIdpHTTPClient *http.Client
 
 func generateKeys() (signing jwk.Key, verification jwk.Key) {
 	private, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -180,15 +184,24 @@ func generateKeys() (signing jwk.Key, verification jwk.Key) {
 	if err != nil {
 		panic(err)
 	}
-	signing.Set(jwk.KeyIDKey, testKID)
+	err = signing.Set(jwk.KeyIDKey, testKID)
+	if err != nil {
+		panic(err)
+	}
 
 	public := private.Public()
 	verification, err = jwk.FromRaw(public)
 	if err != nil {
 		panic(err)
 	}
-	verification.Set(jwk.KeyIDKey, testKID)
-	verification.Set(jwk.AlgorithmKey, jwa.RS256)
+	err = verification.Set(jwk.KeyIDKey, testKID)
+	if err != nil {
+		panic(err)
+	}
+	err = verification.Set(jwk.AlgorithmKey, jwa.RS256)
+	if err != nil {
+		panic(err)
+	}
 
 	return
 }
@@ -205,33 +218,12 @@ func createToken(builder *jwt.Builder) string {
 		panic(err)
 	}
 
-	return fmt.Sprintf("%s", token)
-}
-
-func createFakeIdp() *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/idp/.well-known/openid-configuration":
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(``))
-			break
-		case "/idp/certs":
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(``))
-			break
-		default:
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte{})
-		}
-	}))
+	return string(token)
 }
 
 func TestMain(m *testing.M) {
 	tokenSigningKey, tokenVerificationKey = generateKeys()
 
-	idp := createFakeIdp()
-	testIdpHTTPClient = idp.Client()
 	result := m.Run()
-	idp.Close()
 	os.Exit(result)
 }

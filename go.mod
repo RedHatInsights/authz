@@ -49,6 +49,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jzelinskie/stringz v0.0.0-20210414224931-d6a8ce844a70 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
+	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect

@@ -38,6 +38,7 @@ func main() {
 	rootCmd.Flags().String("endpoint", "", "endpoint")
 	rootCmd.Flags().String("token", "", "token")
 	rootCmd.Flags().String("store", "stub", "stub or spicedb")
+	rootCmd.Flags().String("oidc-discovery", "", "The full OIDC discovery endpoint of the idp (including the /.well-known/openid-configuration portion)")
 	rootCmd.Flags().Bool("useTLS", false, "false for no tls (local dev) and true for TLS")
 	if err := rootCmd.Execute(); err != nil {
 		glog.Fatalf("error running command: %v", err)
@@ -50,9 +51,10 @@ func serve(cmd *cobra.Command, _ []string) {
 	token := mustGetString("token", cmd.Flags())
 	store := nonEmptyStringFlag("store", cmd.Flags())
 	useTLS := mustGetBool("useTLS", cmd.Flags())
+	oidcDiscoveryEndpoint := mustGetString("oidc-discovery", cmd.Flags())
 
 	go handleSignals()
-	bootstrap.Run(endpoint, token, store, useTLS)
+	bootstrap.Run(endpoint, oidcDiscoveryEndpoint, token, store, useTLS)
 }
 
 func handleSignals() {
