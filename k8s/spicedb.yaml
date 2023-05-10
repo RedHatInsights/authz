@@ -125,6 +125,8 @@ spec:
               value: "true"
             - name: "SPICEDB_GRPC_SHUTDOWN_GRACE_PERIOD"
               value: "1s"
+            - name: "SPICEDB_TELEMETRY_ENDPOINT"
+              value: ""
             - name: "SPICEDB_GRPC_PRESHARED_KEY"
               valueFrom:
                 secretKeyRef:
