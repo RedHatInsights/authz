@@ -52,7 +52,7 @@ kind-deploy:
 # adds the spiceDB schema to the kind clusters configmap
 .PHONY: kind-create-schema-configmap
 kind-create-schema-configmap:
-	@kubectl create configmap spicedb-schema --from-file=schema/spicedb_bootstrap.yaml
+	@kubectl create configmap spicedb-schema --from-file=schema/
 
 # deploys spiceDB
 .PHONY: kind-spicedb-deploy

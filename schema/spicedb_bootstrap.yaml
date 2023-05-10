@@ -1,6 +1,4 @@
 schema: |-
-  // See test relationships for operation guide.
-
   definition license_seats {
       relation assigned: user
   }
@@ -14,7 +12,6 @@ schema: |-
       permission access = seats->assigned
   }
 
-  // not used currently
   definition service {
       relation licensed: license
   }
@@ -26,36 +23,3 @@ schema: |-
   definition version {}
 
   definition max {}
-relationships: |-
-  // OPERATION 1: Entitle an organizatin.
-  // to entitle, create license tuples for the max, the current version, and the seats.
-  // the license resorce ID is in the format {org ID}/{service ID}
-  license:o1/smarts#max@max:10
-
-  // a version is in the format {random_id}/{current_assigned_user_count}.
-  // this is so we can quickly read the number of users.
-  // every update must update the version and keep the current count consistent.
-  // This is commented out because the later example updates the version.
-  // license:o1/smarts#version@version:0DCB176B/0
-  // write a separate seats relation, so that users can be put in a separate type.
-  // this lets us look up the license info quickly, without ALSO looking up all the users.
-  // this uses the same resource ID as the license, because they are effectively a part of the same entity.
-  license:o1/smarts#seats@license_seats:o1/smarts
-
-  // OPERATION 2: Assign a user
-  // 1. read the existing license entity based on org ID & servce ID
-  // 2. check current assigned (found in version relation) < max (found in max relation)
-  // 3. if not, return error
-  // 4. otherwise, add user relation to seats, update version of license, and remove existing version,
-  // IFF there exists a version relation matching the current (OPERATION_MUST_MATCH precondition)
-  license_seats:o1/smarts#assigned@user:u1
-
-  // Note new version is a new uuid and new count
-  license:o1/smarts#version@version:141B2939/1
-
-  // OPERATION 3: Read counts (summary)
-  // zed relationship read license:o1/smarts
-  // OPERATION 4: Read users
-  // zed relationship read license_seats:o1/smarts
-assertions: null
-validation: {}
