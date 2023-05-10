@@ -29,7 +29,7 @@ var container *authzed.LocalSpiceDbContainer
 const (
 	testKID           = "test-kid"
 	testIssuer        = "http://localhost:8180/idp"
-	testAudience      = "authz"
+	testAudience      = "cloud-services"
 	testRequiredScope = "openid"
 )
 

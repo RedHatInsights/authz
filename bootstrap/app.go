@@ -77,7 +77,7 @@ func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, sto
 		},
 		AuthConfig: api.AuthConfig{
 			DiscoveryEndpoint: oidcDiscoveryEndpoint,
-			Audience:          "authz", //TODO: make these configurable
+			Audience:          "cloud-services", //TODO: make these configurable
 			RequiredScope:     "openid",
 		},
 	}
