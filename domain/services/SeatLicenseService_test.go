@@ -143,7 +143,7 @@ func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 
 	//then
 	for err := range errs {
-		if errors.Is(err, domain.ErrConflict) {
+		if errors.Is(err, domain.ErrConflict) || errors.Is(err, domain.ErrLicenseLimitExceeded) {
 			continue
 		}
 
@@ -164,6 +164,8 @@ func assertLicenseCountIsCorrect(t *testing.T, lic *SeatLicenseService) {
 
 	seats, err := lic.GetAssignedSeats(getevt)
 	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, license.InUse, 0)
+	assert.LessOrEqual(t, license.InUse, license.MaxSeats)
 	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
 }
 

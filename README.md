@@ -15,6 +15,7 @@ For abbreviated tests, run `go test -short ./...`
 For smoketests against an environment, run `./scripts/test.sh <BASEURI>` where <BASEURI> is the scheme and authority of the environment where the application is running.
     Ex: ./scripts/test.sh http://localhost:8081
     NOTE: When running locally, it must use the spicedb store.
+To run the test suite many times (ex: checking for flaky tests), run `./scripts/repeat-tests.sh`
 
 
 # Building
