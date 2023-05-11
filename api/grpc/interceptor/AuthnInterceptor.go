@@ -42,7 +42,7 @@ type providerJSON struct {
 
 // NewAuthnInterceptor constructor
 func NewAuthnInterceptor(config api.AuthConfig) (*AuthnInterceptor, error) {
-	providerData, err := getProviderData(config.DiscoveryEndpoint) //TODO: not sure about making a web request from a constructor
+	providerData, err := getProviderData(config.DiscoveryEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func getProviderData(discoveryEndpoint string) (data providerJSON, err error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Unsuccessful response when retrieving provider configuration data from %s: %s", discoveryEndpoint, resp.Status)
+		err = fmt.Errorf("unsuccessful response when retrieving provider configuration data from %s: %s", discoveryEndpoint, resp.Status)
 		return
 	}
 
@@ -94,7 +94,7 @@ func getProviderData(discoveryEndpoint string) (data providerJSON, err error) {
 // Unary impl of the Unary interceptor
 func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		glog.Info("Hello from AuthnInterceptor %v: ", req)
+
 		token := getBearerTokenFromContext(ctx)
 
 		if token == "" {
@@ -112,18 +112,17 @@ func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 }
 
 func (r *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
-	jwtoken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithKeySet(r.verificationKeys), jwt.WithIssuer(r.issuer), jwt.WithAudience(r.audience))
+	jwtToken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithKeySet(r.verificationKeys), jwt.WithIssuer(r.issuer), jwt.WithAudience(r.audience))
 	if err != nil {
 		return
 	}
 
-	err = ensureRequiredScope(r.minimumScope, jwtoken)
+	err = ensureRequiredScope(r.minimumScope, jwtToken)
 	if err != nil {
 		return
 	}
 
-	//TODO Validate the existence of the subject ?
-	result.SubjectID = jwtoken.Subject()
+	result.SubjectID = jwtToken.Subject()
 	if result.SubjectID == "" {
 		err = domain.ErrNotAuthenticated
 	}
