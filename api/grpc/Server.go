@@ -22,11 +22,10 @@ import (
 
 // Server represents a Server host service
 type Server struct {
-	srv                      *grpc.Server
-	UnaryServiceInterceptors *[]grpc.UnaryServerInterceptor
-	AccessAppService         *application.AccessAppService
-	LicenseAppService        *application.LicenseAppService
-	ServerConfig             *api.ServerConfig
+	srv               *grpc.Server
+	AccessAppService  *application.AccessAppService
+	LicenseAppService *application.LicenseAppService
+	ServerConfig      *api.ServerConfig
 }
 
 // GetLicense returns licenses for a given org and service
@@ -156,11 +155,11 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	logMw, err := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
+	authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
 	if err != nil {
 		glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 	}
-	s.srv = grpc.NewServer(grpc.Creds(creds), logMw.Unary())
+	s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
 	err = s.srv.Serve(ls)
