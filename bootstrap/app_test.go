@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 
 	"github.com/mendsley/gojwk"
 
+	"github.com/bradhe/stopwatch"
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
 )
@@ -279,13 +281,16 @@ func createRequest(method string, relativeURI string, authToken string, body str
 }
 
 func setupService() {
-	token, err := container.NewToken()
+	spicedbToken, err := container.NewToken()
 	if err != nil {
 		panic(err)
 	}
 
-	go Run(fmt.Sprintf("localhost:%s", container.Port()), oidcDiscoveryURL, token, "spicedb", false)
-	err = waitForGateway()
+	go Run(fmt.Sprintf("localhost:%s", container.Port()), oidcDiscoveryURL, spicedbToken, "spicedb", false)
+	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
+		return post("/v1alpha/check", "system",
+			`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
+	})
 
 	if err != nil {
 		fmt.Printf("Error waiting for gateway to come online: %s", err)
@@ -323,13 +328,19 @@ func teardownService() {
 	Stop()
 }
 
-func waitForGateway() error {
+func waitForSuccess(reqFactory func() *http.Request) error {
+	watch := stopwatch.Start()
+	defer func(w stopwatch.Watch) {
+		w.Stop()
+		fmt.Printf("Waited %s for gateway to start.", w.Milliseconds())
+	}(watch)
 	ch := time.After(10 * time.Second)
 
 	for {
-		resp, err := http.Get("http://localhost:8081/")
+		req := reqFactory()
+		resp, err := http.DefaultClient.Do(req)
 
-		if err == nil && resp.StatusCode == http.StatusNotFound {
+		if err == nil && resp.StatusCode == http.StatusOK {
 			return nil
 		}
 
@@ -427,12 +438,25 @@ func hostFakeIdp() {
 func TestMain(m *testing.M) {
 	tokenSigningKey, tokenVerificationKey = generateKeys()
 	go hostFakeIdp()
+	err := waitForSuccess(func() *http.Request {
+		req, err := http.NewRequest(http.MethodGet, oidcDiscoveryURL, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		return req
+	})
+
+	if err != nil {
+		glog.Errorf("Error waiting for fake idp: %s", err)
+		os.Exit(1)
+	}
 
 	factory := authzed.NewLocalSpiceDbContainerFactory()
-	var err error
 	container, err = factory.CreateContainer()
 
 	if err != nil {
+		glog.Errorf("Error initializing SpiceDB container: %s", err)
 		os.Exit(1)
 	}
 
