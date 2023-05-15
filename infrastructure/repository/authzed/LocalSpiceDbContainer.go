@@ -57,7 +57,7 @@ func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: api.SpicedbImage,
 		Tag:        api.SpicedbVersion, // Replace this with an actual version
-		Cmd:        []string{"serve-testing", "--load-configs", "/mnt/spicedb_bootstrap.yaml,/mnt/spicedb_bootstrap_relations.yaml"},
+		Cmd:        []string{"serve-testing", "--skip-release-check=true", "--load-configs", "/mnt/spicedb_bootstrap.yaml,/mnt/spicedb_bootstrap_relations.yaml"},
 		Mounts: []string{
 			path.Join(basepath, "../../../schema/spicedb_bootstrap.yaml") + ":/mnt/spicedb_bootstrap.yaml",
 			path.Join(basepath, "../../../schema/spicedb_bootstrap_relations.yaml") + ":/mnt/spicedb_bootstrap_relations.yaml",
