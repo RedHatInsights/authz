@@ -82,17 +82,13 @@ func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer
 			grpcutil.WithInsecureBearerToken("test"),
 		)
 		if err != nil {
-			return fmt.Errorf("Error connecting to spiceDB: %v", err.Error())
+			return fmt.Errorf("error connecting to spiceDB: %v", err.Error())
 		}
 
 		client := v1.NewSchemaServiceClient(conn)
 
 		//read scheme we add via mount
 		_, err = client.ReadSchema(context.Background(), &v1.ReadSchemaRequest{})
-
-		if err != nil {
-			log.Printf("Error in health-read from spiceDB: %v", err.Error())
-		}
 
 		return err
 	})
