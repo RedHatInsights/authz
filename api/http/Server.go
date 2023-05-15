@@ -42,7 +42,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
 				s.ServerConfig.HTTPSPort)
 
-			s.srv = &http.Server{Addr: "localhost:" + s.ServerConfig.HTTPSPort, Handler: mux}
+			s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPSPort, Handler: mux}
 			err := s.srv.ListenAndServeTLS(s.ServerConfig.TLSConfig.CertPath, s.ServerConfig.TLSConfig.KeyPath)
 			if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 				glog.Errorf("Error hosting TLS service: %s", err)
@@ -52,7 +52,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
 			s.ServerConfig.HTTPPort)
-		s.srv = &http.Server{Addr: "localhost:" + s.ServerConfig.HTTPPort, Handler: mux}
+		s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPPort, Handler: mux}
 		err = s.srv.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 			glog.Errorf("Error hosting insecure service: %s", err)
