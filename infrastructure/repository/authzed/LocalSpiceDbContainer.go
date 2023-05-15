@@ -4,12 +4,20 @@ package authzed
 
 import (
 	"authz/api"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"log"
 	"path"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/grpcutil"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/golang/glog"
 
@@ -18,6 +26,13 @@ import (
 
 // LocalSpiceDbContainerFactory is only used for test setup and not included in builds with the release tag
 type LocalSpiceDbContainerFactory struct {
+}
+
+// LocalSpiceDbContainer struct that holds pointers to the container, dockertest pool and exposes the port
+type LocalSpiceDbContainer struct {
+	port      string
+	container *dockertest.Resource
+	pool      *dockertest.Pool
 }
 
 // NewLocalSpiceDbContainerFactory constructor for the factory
@@ -29,8 +44,10 @@ func NewLocalSpiceDbContainerFactory() *LocalSpiceDbContainerFactory {
 func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer, error) {
 	pool, err := dockertest.NewPool("") // Empty string uses default docker env
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not connect to docker: %w", err)
 	}
+
+	pool.MaxWait = 3 * time.Minute
 
 	var (
 		_, b, _, _ = runtime.Caller(0)
@@ -48,22 +65,47 @@ func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer
 
 		ExposedPorts: []string{"50051/tcp", "50052/tcp"},
 	})
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not start spicedb resource: %w", err)
+	}
+
+	port := resource.GetPort("50051/tcp")
+
+	// Give the service time to boot.
+	cErr := pool.Retry(func() error {
+		log.Print("Attempting to connect to spicedb...")
+
+		conn, err := grpc.Dial(
+			fmt.Sprintf("localhost:%s", port),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpcutil.WithInsecureBearerToken("test"),
+		)
+		if err != nil {
+			return fmt.Errorf("Error connecting to spiceDB: %v", err.Error())
+		}
+
+		client := v1.NewSchemaServiceClient(conn)
+
+		//read scheme we add via mount
+		_, err = client.ReadSchema(context.Background(), &v1.ReadSchemaRequest{})
+
+		if err != nil {
+			log.Printf("Error in health-read from spiceDB: %v", err.Error())
+		}
+
+		return err
+	})
+
+	if cErr != nil {
+		return nil, cErr
 	}
 
 	return &LocalSpiceDbContainer{
-		port:      resource.GetPort("50051/tcp"),
+		port:      port,
 		container: resource,
 		pool:      pool,
 	}, nil
-}
-
-// LocalSpiceDbContainer struct that holds pointers to the container, dockertest pool and exposes the port
-type LocalSpiceDbContainer struct {
-	port      string
-	container *dockertest.Resource
-	pool      *dockertest.Pool
 }
 
 // Port returns the Port the container is listening
