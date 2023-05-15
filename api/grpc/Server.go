@@ -131,7 +131,7 @@ func NewServer(h application.AccessAppService, l application.LicenseAppService, 
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", "localhost:"+s.ServerConfig.GrpcPort)
+	ls, err := net.Listen("tcp", ":"+s.ServerConfig.GrpcPort)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
