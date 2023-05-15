@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -293,7 +294,7 @@ func setupService() {
 	})
 
 	if err != nil {
-		fmt.Printf("Error waiting for gateway to come online: %s", err)
+		log.Printf("Error waiting for gateway to come online: %s", err)
 		os.Exit(1)
 	}
 }
@@ -332,7 +333,7 @@ func waitForSuccess(reqFactory func() *http.Request) error {
 	watch := stopwatch.Start()
 	defer func(w stopwatch.Watch) {
 		w.Stop()
-		fmt.Printf("Waited %s for gateway to start.", w.Milliseconds())
+		log.Printf("Waited %s for gateway to start.", w.Milliseconds())
 	}(watch)
 	ch := time.After(10 * time.Second)
 
