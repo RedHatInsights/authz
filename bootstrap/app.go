@@ -7,7 +7,6 @@ import (
 	"authz/application"
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
-	"authz/infrastructure/config"
 	"strconv"
 	"sync"
 
@@ -26,7 +25,7 @@ var Cfg *serviceconfig.ServiceConfig
 
 // getConfig loads the config based on the technical implementation "viper".
 func getConfig(configPath string) serviceconfig.Config {
-	cfg, err := config.NewBuilder().
+	cfg, err := NewConfigurationBuilder().
 		ConfigName("config").
 		ConfigType("yaml").
 		ConfigPaths(

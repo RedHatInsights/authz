@@ -184,7 +184,7 @@ test-short:
 test:
 	@echo ""
 	@echo "Running tests."
-	@$(GO) test $(PWD)/...
+	@$(GO) test $(PWD)/... -count=1
 
 # mimics the CI that runs on PR
 .PHONY: pr-check

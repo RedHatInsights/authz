@@ -27,14 +27,14 @@ app:
         debug: true
         maxAge: 0
     server:
-        grpcPort: 50051
+        grpcPort: 50052
         httpPort: 8081
         httpsPort: 8443
         logRequests: true
     store:
-        endpoint: localhost:49196
+        endpoint: localhost:50051
         kind: spicedb
-        token: Ui75r3FRkjHgq+Mo6cDlKB1aVGc=
+        token: foo
         useTLS: false
     tls:
         certFile: /etc/tls/tls.crt
