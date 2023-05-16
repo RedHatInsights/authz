@@ -124,15 +124,7 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 			return nil, status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 		}
 
-		var result tokenIntrospectionResult
-
-		for _, provider := range authnInterceptor.providers {
-			result, err = validateTokenAndExtractSubject(provider, token)
-
-			if err != nil && err != domain.ErrNotAuthenticated {
-				break // with any other error, we choose not to check any other providers
-			}
-		}
+		result, err := authnInterceptor.validateTokenAndExtractSubject(token)
 
 		if err != nil {
 			glog.Errorf("Error processing token: %s", err)
@@ -141,6 +133,18 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 
 		return handler(context.WithValue(ctx, RequestorContextKey, result.SubjectID), req)
 	})
+}
+
+func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
+	for _, provider := range authnInterceptor.providers {
+		result, err = validateTokenAndExtractSubject(provider, token)
+
+		if err == nil {
+			return // we got a hit with this provider
+		}
+	}
+
+	return
 }
 
 func validateTokenAndExtractSubject(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
