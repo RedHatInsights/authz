@@ -19,57 +19,58 @@ import (
 )
 
 const (
-	validIssuer1   = "example.com/issuer"
-	validAudience1 = "example.com"
+	validIssuer1    = "example.com/issuer"
+	validAudience1  = "example.com"
+	defaultSubject1 = "u1"
 
-	validIssuer2   = "classy.com/issuer"
-	validAudience2 = "classy.com"
+	validIssuer2    = "classy.com/issuer"
+	validAudience2  = "classy.com"
+	defaultSubject2 = "u2"
 
-	minimumScope   = "openid"
-	defaultSubject = "u1"
-	testKID        = "test-kid"
+	minimumScope = "openid"
+	testKID      = "test-kid"
 )
 
 func TestInterceptorHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
-	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider()}}
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
 	assert.NoError(t, err)
-	assert.Equal(t, defaultSubject, result.SubjectID)
+	assert.Equal(t, defaultSubject1, result.SubjectID)
 }
 
 func TestInterceptorHoldsValuesFromSecondDiscoveryEndpoint(t *testing.T) {
 	interceptor := AuthnInterceptor{[]*authnProvider{
-		createAuthnProvider(), createAuthnProvider2(),
+		createAuthnProvider1(), createAuthnProvider2(),
 	}}
 
 	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder2(), tokenSigningKey2))
 
 	assert.NoError(t, err)
-	assert.Equal(t, defaultSubject, result.SubjectID)
+	assert.Equal(t, defaultSubject2, result.SubjectID)
 }
 
 func TestInterceptorHoldsValuesFromFirstDiscoveryEndpoint(t *testing.T) {
 	interceptor := AuthnInterceptor{[]*authnProvider{
-		createAuthnProvider(), createAuthnProvider2(),
+		createAuthnProvider1(), createAuthnProvider2(),
 	}}
 
 	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
 	assert.NoError(t, err)
-	assert.Equal(t, defaultSubject, result.SubjectID)
+	assert.Equal(t, defaultSubject1, result.SubjectID)
 }
 
 func TestAllOkWhen2SameProviders(t *testing.T) {
 	interceptor := AuthnInterceptor{[]*authnProvider{
-		createAuthnProvider(), createAuthnProvider(),
+		createAuthnProvider1(), createAuthnProvider1(),
 	}}
 
 	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
 	assert.NoError(t, err)
-	assert.Equal(t, defaultSubject, result.SubjectID)
+	assert.Equal(t, defaultSubject1, result.SubjectID)
 }
 
 func TestFailedValidationWhenAuthnProviderAbsent(t *testing.T) {
@@ -83,16 +84,16 @@ func TestFailedValidationWhenAuthnProviderAbsent(t *testing.T) {
 }
 
 func TestAuthnProviderHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	result, err := validateTokenAndExtractSubject(authnProvider, createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
 	assert.NoError(t, err)
-	assert.Equal(t, defaultSubject, result.SubjectID)
+	assert.Equal(t, defaultSubject1, result.SubjectID)
 }
 
 func TestInvalidTokenMissingSubject(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1)
 	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
@@ -101,7 +102,7 @@ func TestInvalidTokenMissingSubject(t *testing.T) {
 }
 
 func TestInvalidTokenExpired(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	builder := createDefaultTokenBuilder1().
 		NotBefore(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)).
@@ -112,7 +113,7 @@ func TestInvalidTokenExpired(t *testing.T) {
 }
 
 func TestInvalidTokenFromTheFuture(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	builder := createDefaultTokenBuilder1().
 		NotBefore(time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC)).
@@ -123,7 +124,7 @@ func TestInvalidTokenFromTheFuture(t *testing.T) {
 }
 
 func TestInvalidAudience(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	builder := createDefaultTokenBuilder1().
 		Audience([]string{"invalid-audience"})
@@ -133,7 +134,7 @@ func TestInvalidAudience(t *testing.T) {
 }
 
 func TestInvalidIssuer(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	builder := createDefaultTokenBuilder1().Issuer("example.com/invalidissuer")
 
@@ -143,9 +144,9 @@ func TestInvalidIssuer(t *testing.T) {
 }
 
 func TestInvalidTokenMissingScope(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
-	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1).Subject(defaultSubject)
+	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1).Subject(defaultSubject1)
 
 	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
 
@@ -153,7 +154,7 @@ func TestInvalidTokenMissingScope(t *testing.T) {
 }
 
 func TestInvalidTokenWrongSigningKey(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	data, err := createDefaultTokenBuilder1().Build()
 	if err != nil {
@@ -181,7 +182,7 @@ func TestInvalidTokenWrongSigningKey(t *testing.T) {
 }
 
 func TestInvalidTokenTampered(t *testing.T) {
-	authnProvider := createAuthnProvider()
+	authnProvider := createAuthnProvider1()
 
 	token := createToken(createDefaultTokenBuilder1(), tokenSigningKey1)
 
@@ -205,7 +206,7 @@ func TestInvalidTokenTampered(t *testing.T) {
 
 func createDefaultTokenBuilder1() *jwt.Builder {
 	return jwt.NewBuilder().
-		Subject(defaultSubject).
+		Subject(defaultSubject1).
 		IssuedAt(time.Now()).
 		Audience([]string{validAudience1}).
 		Issuer(validIssuer1).
@@ -214,14 +215,14 @@ func createDefaultTokenBuilder1() *jwt.Builder {
 
 func createDefaultTokenBuilder2() *jwt.Builder {
 	return jwt.NewBuilder().
-		Subject(defaultSubject).
+		Subject(defaultSubject2).
 		IssuedAt(time.Now()).
 		Audience([]string{validAudience2}).
 		Issuer(validIssuer2).
 		Claim("scope", minimumScope)
 }
 
-func createAuthnProvider() *authnProvider {
+func createAuthnProvider1() *authnProvider {
 	keyset := jwk.NewSet()
 
 	err := keyset.AddKey(tokenVerificationKey1)
