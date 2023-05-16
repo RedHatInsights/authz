@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -283,14 +284,20 @@ func createRequest(method string, relativeURI string, authToken string, body str
 	return req
 }
 
+var temporaryConfigFile *os.File
+
 func setupService() {
 	spicedbToken, err := container.NewToken()
 	if err != nil {
 		panic(err)
 	}
+	temporaryConfigFile, err = ioutil.TempFile("", "authz-test-config-*.yaml")
+	if err != nil {
+		panic(err)
+	}
 	writeTestEnvToYaml(spicedbToken)
 
-	go Run("../")
+	go Run(temporaryConfigFile.Name())
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
 		return post("/v1alpha/check", "system",
 			`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
@@ -324,7 +331,7 @@ func writeTestEnvToYaml(token string) {
 		os.Exit(1)
 	}
 
-	e := os.WriteFile("../config.yaml", res, 0644)
+	_, e := temporaryConfigFile.Write(res)
 	if e != nil {
 		fmt.Printf("Error writing new yaml in test: %s\n", err)
 		os.Exit(1)
@@ -359,6 +366,8 @@ func subjectIDToToken(subject string) string {
 
 func teardownService() {
 	Stop()
+	os.Remove(temporaryConfigFile.Name())
+	temporaryConfigFile = nil
 }
 
 func waitForSuccess(reqFactory func() *http.Request) error {

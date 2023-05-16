@@ -26,10 +26,11 @@ var Cfg *serviceconfig.ServiceConfig
 // getConfig loads the config based on the technical implementation "viper".
 func getConfig(configPath string) serviceconfig.Config {
 	cfg, err := NewConfigurationBuilder().
-		ConfigName("config").
+		ConfigName(configPath).
 		ConfigType("yaml").
 		ConfigPaths(
-			configPath,
+			".",
+			"/",
 		).
 		Defaults(map[string]interface{}{}).
 		Options().
