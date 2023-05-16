@@ -1,4 +1,8 @@
 app:
+    auth:
+        audience: cloud-services
+        discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration
+        requiredScope: openid
     cors:
         allowCredentials: false
         allowedHeaders:
@@ -28,9 +32,9 @@ app:
         httpsPort: 8443
         logRequests: true
     store:
-        endpoint: localhost:50051
-        kind: stub
-        token: YDYnXYge9SXGA6EpxhbsMDqmr0E=
+        endpoint: localhost:49196
+        kind: spicedb
+        token: Ui75r3FRkjHgq+Mo6cDlKB1aVGc=
         useTLS: false
     tls:
         certFile: /etc/tls/tls.crt

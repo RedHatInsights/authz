@@ -190,5 +190,10 @@ func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
 			MaxAge:           cfg.GetInt("app.cors.maxAge"),
 			Debug:            cfg.GetBool("app.cors.debug"),
 		},
+		AuthConfig: serviceconfig.AuthConfig{
+			DiscoveryEndpoint: cfg.GetString("app.auth.discoveryEndpoint"),
+			Audience:          cfg.GetString("app.auth.audience"),
+			RequiredScope:     cfg.GetString("app.auth.requiredScope"),
+		},
 	}
 }

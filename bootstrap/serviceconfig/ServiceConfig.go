@@ -19,6 +19,7 @@ type ServiceConfig struct {
 	CorsConfig   CorsConfig
 	TLSConfig    TLSConfig
 	StoreConfig  StoreConfig
+	AuthConfig   AuthConfig
 	LogRequests  bool
 }
 
@@ -44,4 +45,11 @@ type CorsConfig struct {
 	AllowCredentials bool
 	MaxAge           int
 	Debug            bool
+}
+
+// AuthConfig holds the configuration for the client authz middleware
+type AuthConfig struct {
+	DiscoveryEndpoint string
+	Audience          string
+	RequiredScope     string
 }
