@@ -21,6 +21,10 @@ import (
 
 // AuthnInterceptor - Middleware to validate incoming bearer tokens
 type AuthnInterceptor struct {
+	providers []*authnProvider
+}
+
+type authnProvider struct {
 	issuer           string
 	audience         string
 	minimumScope     string
@@ -40,8 +44,27 @@ type providerJSON struct {
 	JwksURL string `json:"jwks_uri"`
 }
 
-// NewAuthnInterceptor constructor
-func NewAuthnInterceptor(config api.AuthConfig) (*AuthnInterceptor, error) {
+// NewAuthnInterceptor creates a new AuthnInterceptor
+func NewAuthnInterceptor(configs []api.AuthConfig) (*AuthnInterceptor, error) {
+	if configs == nil {
+		return nil, fmt.Errorf("configs should not be nil")
+	}
+
+	var providers []*authnProvider
+	for _, config := range configs {
+		provider, err := configureAuthnProvider(config)
+		if err != nil {
+			return nil, fmt.Errorf("error creating authn provider")
+		}
+
+		providers = append(providers, provider)
+	}
+
+	return &AuthnInterceptor{providers}, nil
+}
+
+// configureAuthnProvider constructor
+func configureAuthnProvider(config api.AuthConfig) (*authnProvider, error) {
 	providerData, err := getProviderData(config.DiscoveryEndpoint)
 	if err != nil {
 		return nil, err
@@ -52,11 +75,11 @@ func NewAuthnInterceptor(config api.AuthConfig) (*AuthnInterceptor, error) {
 		return nil, err
 	}
 
-	return newAuthnInterceptorFromData(providerData.Issuer, config.Audience, config.RequiredScope, keyCache), nil
+	return newAuthnProviderFromData(providerData.Issuer, config.Audience, config.RequiredScope, keyCache), nil
 }
 
-func newAuthnInterceptorFromData(issuer string, audience string, minimumScope string, keys jwk.Set) *AuthnInterceptor {
-	return &AuthnInterceptor{issuer: issuer, audience: audience, minimumScope: minimumScope, verificationKeys: keys}
+func newAuthnProviderFromData(issuer string, audience string, minimumScope string, keys jwk.Set) *authnProvider {
+	return &authnProvider{issuer: issuer, audience: audience, minimumScope: minimumScope, verificationKeys: keys}
 }
 
 func createKeyCache(jwksURL string) (jwk.Set, error) {
@@ -92,7 +115,7 @@ func getProviderData(discoveryEndpoint string) (data providerJSON, err error) {
 }
 
 // Unary impl of the Unary interceptor
-func (r *AuthnInterceptor) Unary() grpc.ServerOption {
+func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 
 		token := getBearerTokenFromContext(ctx)
@@ -101,7 +124,16 @@ func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 			return nil, status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 		}
 
-		result, err := r.validateTokenAndExtractSubject(token)
+		var result tokenIntrospectionResult
+
+		for _, provider := range authnInterceptor.providers {
+			result, err = validateTokenAndExtractSubject(provider, token)
+
+			if err != nil && err != domain.ErrNotAuthenticated {
+				break // with any other error, we choose not to check any other providers
+			}
+		}
+
 		if err != nil {
 			glog.Errorf("Error processing token: %s", err)
 			return nil, status.Error(codes.Unauthenticated, "Invalid or expired identity token.")
@@ -111,13 +143,13 @@ func (r *AuthnInterceptor) Unary() grpc.ServerOption {
 	})
 }
 
-func (r *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
-	jwtToken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithKeySet(r.verificationKeys), jwt.WithIssuer(r.issuer), jwt.WithAudience(r.audience))
+func validateTokenAndExtractSubject(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
+	jwtToken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience))
 	if err != nil {
 		return
 	}
 
-	err = ensureRequiredScope(r.minimumScope, jwtToken)
+	err = ensureRequiredScope(p.minimumScope, jwtToken)
 	if err != nil {
 		return
 	}

@@ -27,77 +27,77 @@ const (
 )
 
 func TestInterceptorHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
-	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder()))
+	result, err := validateTokenAndExtractSubject(authnProvider, createToken(createDefaultTokenBuilder()))
 
 	assert.NoError(t, err)
 	assert.Equal(t, defaultSubject, result.SubjectID)
 }
 
 func TestInvalidTokenMissingSubject(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := jwt.NewBuilder().Audience([]string{validAudience}).IssuedAt(time.Now()).Issuer(validIssuer)
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
 }
 
 func TestInvalidTokenExpired(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := createDefaultTokenBuilder().
 		NotBefore(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)).
 		Expiration(time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC))
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.ErrorIs(t, err, jwt.ErrTokenExpired())
 }
 
 func TestInvalidTokenFromTheFuture(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := createDefaultTokenBuilder().
 		NotBefore(time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC)).
 		Expiration(time.Date(2200, 1, 2, 0, 0, 0, 0, time.UTC))
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.ErrorIs(t, err, jwt.ErrTokenNotYetValid())
 }
 
 func TestInvalidAudience(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := createDefaultTokenBuilder().
 		Audience([]string{"invalid-audience"})
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.ErrorIs(t, err, jwt.ErrInvalidAudience())
 }
 
 func TestInvalidIssuer(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := createDefaultTokenBuilder().Issuer("example.com/invalidissuer")
 
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.ErrorIs(t, err, jwt.ErrInvalidIssuer())
 }
 
 func TestInvalidTokenMissingScope(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	builder := jwt.NewBuilder().Audience([]string{validAudience}).IssuedAt(time.Now()).Issuer(validIssuer).Subject(defaultSubject)
 
-	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder))
+	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder))
 
 	assert.Error(t, err)
 }
 
 func TestInvalidTokenWrongSigningKey(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	data, err := createDefaultTokenBuilder().Build()
 	if err != nil {
@@ -119,13 +119,13 @@ func TestInvalidTokenWrongSigningKey(t *testing.T) {
 	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, maliciousSigning))
 	assert.NoError(t, err)
 
-	_, err = interceptor.validateTokenAndExtractSubject(string(token))
+	_, err = validateTokenAndExtractSubject(authnProvider, string(token))
 
 	assert.Error(t, err) //No specific error for this. See: https://github.com/lestrrat-go/jwx/blob/0121992a0875d2263d99cc90c676276e143580a6/jws/jws.go#L412
 }
 
 func TestInvalidTokenTampered(t *testing.T) {
-	interceptor := createInterceptor()
+	authnProvider := createAuthnProvider()
 
 	token := createToken(createDefaultTokenBuilder())
 
@@ -142,7 +142,7 @@ func TestInvalidTokenTampered(t *testing.T) {
 
 	tamperedToken := strings.Join(parts, ".")
 
-	_, err = interceptor.validateTokenAndExtractSubject(tamperedToken)
+	_, err = validateTokenAndExtractSubject(authnProvider, tamperedToken)
 
 	assert.Error(t, err) //No specific error for this. See: https://github.com/lestrrat-go/jwx/blob/0121992a0875d2263d99cc90c676276e143580a6/jws/jws.go#L412
 }
@@ -156,7 +156,7 @@ func createDefaultTokenBuilder() *jwt.Builder {
 		Claim("scope", minimumScope)
 }
 
-func createInterceptor() *AuthnInterceptor {
+func createAuthnProvider() *authnProvider {
 	keyset := jwk.NewSet()
 
 	err := keyset.AddKey(tokenVerificationKey)
@@ -164,7 +164,7 @@ func createInterceptor() *AuthnInterceptor {
 		panic(err)
 	}
 
-	return newAuthnInterceptorFromData(
+	return newAuthnProviderFromData(
 		validIssuer,
 		validAudience,
 		minimumScope,

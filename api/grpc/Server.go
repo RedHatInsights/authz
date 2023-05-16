@@ -155,7 +155,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServerConfig.GrpcPort)
 	}
 
-	authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServerConfig.AuthConfig)
+	authConfigs := []api.AuthConfig{s.ServerConfig.AuthConfig}
+	authMiddleware, err := interceptor.NewAuthnInterceptor(authConfigs)
 	if err != nil {
 		glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 	}
