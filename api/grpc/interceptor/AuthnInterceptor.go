@@ -72,11 +72,11 @@ func validateAuthConfigs(configs []api.AuthConfig) (err error) {
 
 	for _, config := range configs {
 		if config == (api.AuthConfig{}) {
-			return fmt.Errorf("authnconfig should not be zero value")
+			return fmt.Errorf("authnconfig should not be empty")
 		}
 
 		if checked[config] {
-			return fmt.Errorf("authnconfigs should not have duplicates")
+			return fmt.Errorf("authnconfigs should not have duplicates: %v", config)
 		}
 
 		checked[config] = true

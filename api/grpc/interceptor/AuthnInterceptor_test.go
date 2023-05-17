@@ -5,6 +5,7 @@ import (
 	"authz/domain"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -230,6 +231,9 @@ func TestInvalidTokenTampered(t *testing.T) {
 	token := createToken(createDefaultTokenBuilder1(), tokenSigningKey1)
 
 	parts := strings.Split(token, ".")
+	if len(parts) < 3 {
+		panic(fmt.Sprintf("Token did not result in at least 3 parts: %s", token))
+	}
 	bodyData, err := base64.RawStdEncoding.DecodeString(parts[1]) //decode body
 	if err != nil {
 		panic(err)
