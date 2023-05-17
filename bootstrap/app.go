@@ -191,6 +191,7 @@ func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
 			Debug:            cfg.GetBool("app.cors.debug"),
 		},
 		AuthConfig: serviceconfig.AuthConfig{
+			Enabled:           cfg.GetBool("app.auth.enabled"),
 			DiscoveryEndpoint: cfg.GetString("app.auth.discoveryEndpoint"),
 			Audience:          cfg.GetString("app.auth.audience"),
 			RequiredScope:     cfg.GetString("app.auth.requiredScope"),

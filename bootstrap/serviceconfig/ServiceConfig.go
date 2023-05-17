@@ -52,4 +52,5 @@ type AuthConfig struct {
 	DiscoveryEndpoint string
 	Audience          string
 	RequiredScope     string
+	Enabled           bool
 }

@@ -155,12 +155,19 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServiceConfig.GrpcPortStr)
 	}
 
-	authConfigs := []serviceconfig.AuthConfig{s.ServiceConfig.AuthConfig} // TODO: wire up with new file-based config functionality
-	authMiddleware, err := interceptor.NewAuthnInterceptor(authConfigs)
-	if err != nil {
-		glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
+	// TODO: Evaluate better way to init. This impl is ugly, but `...ServerOptions` (2nd param in NewServer call) is an interface
+	if s.ServiceConfig.AuthConfig.Enabled {
+		authConfigs := []serviceconfig.AuthConfig{s.ServiceConfig.AuthConfig} // TODO: wire up with new file-based config functionality
+		authMiddleware, err := interceptor.NewAuthnInterceptor(authConfigs)
+		if err != nil {
+			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
+		}
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+	} else {
+		glog.Warning("Client authorization disabled. Do not use in production use cases!")
+		s.srv = grpc.NewServer(grpc.Creds(creds))
 	}
-	s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
 	err = s.srv.Serve(ls)

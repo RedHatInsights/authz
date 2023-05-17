@@ -324,6 +324,19 @@ func writeTestEnvToYaml(token string) {
 	storeKey := y["app"].(map[string]interface{})["store"].(map[string]interface{})
 	storeKey["token"] = token
 	storeKey["endpoint"] = "localhost:" + container.Port()
+
+	authKey := y["app"].(map[string]interface{})["auth"].(map[string]interface{})
+
+	if storeKey["kind"] == "stub" {
+		log.Printf("Enabling spicedb store for tests.")
+		storeKey["kind"] = "spicedb"
+	}
+
+	if authKey["enabled"] == false {
+		log.Printf("Enabling authn middleware for tests.")
+		authKey["enabled"] = true
+	}
+
 	res, err := yaml.Marshal(y)
 	if err != nil {
 		fmt.Printf("Error marshalling yaml in test: %s\n", err)

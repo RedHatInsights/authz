@@ -1,7 +1,7 @@
 package interceptor
 
 import (
-	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"crypto/rand"
 	"crypto/rsa"
@@ -88,7 +88,7 @@ func TestFailedValidationWhenAuthnProviderAbsent(t *testing.T) {
 }
 
 func TestFailNoAuthConfigs(t *testing.T) {
-	var authConfigs []api.AuthConfig
+	var authConfigs []serviceconfig.AuthConfig
 
 	err := validateAuthConfigs(authConfigs)
 
@@ -96,7 +96,7 @@ func TestFailNoAuthConfigs(t *testing.T) {
 }
 
 func TestValidateAuthConfig(t *testing.T) {
-	authConfigs := []api.AuthConfig{createAuthConfig1()}
+	authConfigs := []serviceconfig.AuthConfig{createAuthConfig1()}
 
 	err := validateAuthConfigs(authConfigs)
 
@@ -104,7 +104,7 @@ func TestValidateAuthConfig(t *testing.T) {
 }
 
 func TestValidateMultipleAuthConfigs(t *testing.T) {
-	authConfigs := []api.AuthConfig{createAuthConfig1(), createAuthConfig2()}
+	authConfigs := []serviceconfig.AuthConfig{createAuthConfig1(), createAuthConfig2()}
 
 	err := validateAuthConfigs(authConfigs)
 
@@ -112,7 +112,7 @@ func TestValidateMultipleAuthConfigs(t *testing.T) {
 }
 
 func TestFailForAZeroValueAuthconfig(t *testing.T) {
-	authConfigs := []api.AuthConfig{api.AuthConfig{}}
+	authConfigs := []serviceconfig.AuthConfig{{}}
 
 	err := validateAuthConfigs(authConfigs)
 
@@ -120,7 +120,7 @@ func TestFailForAZeroValueAuthconfig(t *testing.T) {
 }
 
 func TestFailForDuplicateAuthconfigs(t *testing.T) {
-	authConfigs := []api.AuthConfig{createAuthConfig1(), createAuthConfig1()}
+	authConfigs := []serviceconfig.AuthConfig{createAuthConfig1(), createAuthConfig1()}
 
 	err := validateAuthConfigs(authConfigs)
 
@@ -269,16 +269,16 @@ func createDefaultTokenBuilder2() *jwt.Builder {
 		Claim("scope", minimumScope)
 }
 
-func createAuthConfig1() api.AuthConfig {
-	return api.AuthConfig{
+func createAuthConfig1() serviceconfig.AuthConfig {
+	return serviceconfig.AuthConfig{
 		DiscoveryEndpoint: discoveryEndpoint1,
 		Audience:          validAudience1,
 		RequiredScope:     minimumScope,
 	}
 }
 
-func createAuthConfig2() api.AuthConfig {
-	return api.AuthConfig{
+func createAuthConfig2() serviceconfig.AuthConfig {
+	return serviceconfig.AuthConfig{
 		DiscoveryEndpoint: discoveryEndpoint2,
 		Audience:          validAudience2,
 		RequiredScope:     minimumScope,

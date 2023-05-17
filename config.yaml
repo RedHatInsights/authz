@@ -1,5 +1,6 @@
 app:
     auth:
+        enabled: false
         audience: cloud-services
         discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration
         requiredScope: openid
@@ -33,7 +34,7 @@ app:
         logRequests: true
     store:
         endpoint: localhost:50051
-        kind: spicedb
+        kind: stub
         token: foo
         useTLS: false
     tls:
