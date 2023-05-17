@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -291,7 +290,7 @@ func setupService() {
 	if err != nil {
 		panic(err)
 	}
-	temporaryConfigFile, err = ioutil.TempFile("", "authz-test-config-*.yaml")
+	temporaryConfigFile, err = os.CreateTemp("", "authz-test-config-*.yaml")
 	if err != nil {
 		panic(err)
 	}
@@ -366,7 +365,12 @@ func subjectIDToToken(subject string) string {
 
 func teardownService() {
 	Stop()
-	os.Remove(temporaryConfigFile.Name())
+	err := os.Remove(temporaryConfigFile.Name())
+
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorf("Error deleting temporary config file %s from temp directory: %v", temporaryConfigFile.Name(), err)
+	}
+
 	temporaryConfigFile = nil
 }
 
