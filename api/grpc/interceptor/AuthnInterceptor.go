@@ -46,8 +46,8 @@ type providerJSON struct {
 
 // NewAuthnInterceptor creates a new AuthnInterceptor
 func NewAuthnInterceptor(configs []api.AuthConfig) (*AuthnInterceptor, error) {
-	if configs == nil {
-		return nil, fmt.Errorf("configs should not be nil")
+	if err := validateAuthConfigs(configs); err != nil {
+		return nil, err
 	}
 
 	var providers []*authnProvider
@@ -61,6 +61,28 @@ func NewAuthnInterceptor(configs []api.AuthConfig) (*AuthnInterceptor, error) {
 	}
 
 	return &AuthnInterceptor{providers}, nil
+}
+
+func validateAuthConfigs(configs []api.AuthConfig) (err error) {
+	if configs == nil {
+		return fmt.Errorf("configs should not be nil")
+	}
+
+	checked := make(map[api.AuthConfig]bool)
+
+	for _, config := range configs {
+		if config == (api.AuthConfig{}) {
+			return fmt.Errorf("authnconfig should not be zero value")
+		}
+
+		if checked[config] {
+			return fmt.Errorf("authnconfigs should not have duplicates")
+		}
+
+		checked[config] = true
+	}
+
+	return
 }
 
 // configureAuthnProvider constructor

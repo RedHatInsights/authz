@@ -1,6 +1,7 @@
 package interceptor
 
 import (
+	"authz/api"
 	"authz/domain"
 	"crypto/rand"
 	"crypto/rsa"
@@ -19,13 +20,15 @@ import (
 )
 
 const (
-	validIssuer1    = "example.com/issuer"
-	validAudience1  = "example.com"
-	defaultSubject1 = "u1"
+	validIssuer1       = "example.com/issuer"
+	validAudience1     = "example.com"
+	defaultSubject1    = "u1"
+	discoveryEndpoint1 = "discovery.example.com"
 
-	validIssuer2    = "classy.com/issuer"
-	validAudience2  = "classy.com"
-	defaultSubject2 = "u2"
+	validIssuer2       = "classy.com/issuer"
+	validAudience2     = "classy.com"
+	defaultSubject2    = "u2"
+	discoveryEndpoint2 = "discovery.classy.com"
 
 	minimumScope = "openid"
 	testKID      = "test-kid"
@@ -80,7 +83,47 @@ func TestFailedValidationWhenAuthnProviderAbsent(t *testing.T) {
 
 	_, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
-	assert.Error(t, err) // TODO: Would like to assert domain.ErrNotAuthenticated, but fails on signature verification error
+	assert.Error(t, err)
+}
+
+func TestFailNoAuthConfigs(t *testing.T) {
+	var authConfigs []api.AuthConfig
+
+	err := validateAuthConfigs(authConfigs)
+
+	assert.Error(t, err)
+}
+
+func TestValidateAuthConfig(t *testing.T) {
+	authConfigs := []api.AuthConfig{createAuthConfig1()}
+
+	err := validateAuthConfigs(authConfigs)
+
+	assert.NoError(t, err)
+}
+
+func TestValidateMultipleAuthConfigs(t *testing.T) {
+	authConfigs := []api.AuthConfig{createAuthConfig1(), createAuthConfig2()}
+
+	err := validateAuthConfigs(authConfigs)
+
+	assert.NoError(t, err)
+}
+
+func TestFailForAZeroValueAuthconfig(t *testing.T) {
+	authConfigs := []api.AuthConfig{api.AuthConfig{}}
+
+	err := validateAuthConfigs(authConfigs)
+
+	assert.Error(t, err)
+}
+
+func TestFailForDuplicateAuthconfigs(t *testing.T) {
+	authConfigs := []api.AuthConfig{createAuthConfig1(), createAuthConfig1()}
+
+	err := validateAuthConfigs(authConfigs)
+
+	assert.Error(t, err)
 }
 
 func TestAuthnProviderHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
@@ -220,6 +263,22 @@ func createDefaultTokenBuilder2() *jwt.Builder {
 		Audience([]string{validAudience2}).
 		Issuer(validIssuer2).
 		Claim("scope", minimumScope)
+}
+
+func createAuthConfig1() api.AuthConfig {
+	return api.AuthConfig{
+		DiscoveryEndpoint: discoveryEndpoint1,
+		Audience:          validAudience1,
+		RequiredScope:     minimumScope,
+	}
+}
+
+func createAuthConfig2() api.AuthConfig {
+	return api.AuthConfig{
+		DiscoveryEndpoint: discoveryEndpoint2,
+		Audience:          validAudience2,
+		RequiredScope:     minimumScope,
+	}
 }
 
 func createAuthnProvider1() *authnProvider {
