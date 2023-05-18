@@ -19,9 +19,6 @@ var grpcServer *grpc.Server
 var httpServer *http.Server
 var waitForCompletion *sync.WaitGroup
 
-// Cfg holds the parsed and validated service config.
-var Cfg *serviceconfig.ServiceConfig
-
 // getConfig loads the config based on the technical implementation "viper".
 func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 	cfg, err := NewConfigurationBuilder().
@@ -51,8 +48,6 @@ func Run(configPath string) {
 		}
 		glog.Fatal("Can not start service with wrong configuration.")
 	}
-	//set global Config now that it is parsed and validated.
-	Cfg = &srvCfg
 
 	grpcServer, httpServer = initialize(srvCfg)
 
