@@ -46,7 +46,7 @@ func Run(configPath string) {
 		for _, e := range err.(validator.ValidationErrors) {
 			glog.Errorf("Error in configuration: %v", e)
 		}
-		glog.Fatal("Can not start service with wrong configuration.")
+		glog.Fatal("Can not start service with invalid configuration.")
 	}
 
 	grpcServer, httpServer = initialize(srvCfg)
