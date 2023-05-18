@@ -7,7 +7,6 @@ import (
 	"authz/application"
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
-	"strconv"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -24,30 +23,27 @@ var waitForCompletion *sync.WaitGroup
 var Cfg *serviceconfig.ServiceConfig
 
 // getConfig loads the config based on the technical implementation "viper".
-func getConfig(configPath string) serviceconfig.Config {
+func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 	cfg, err := NewConfigurationBuilder().
-		ConfigName(configPath).
-		ConfigType("yaml").
-		ConfigPaths(
-			".",
-			"/",
-		).
-		Defaults(map[string]interface{}{}).
-		Options().
+		ConfigFilePath(configPath).
+		NoDefaults().
 		Build()
 
 	if err != nil {
 		glog.Fatalf("Could not initialize config: %v", err)
 	}
-	return cfg
+
+	return cfg.Load()
 }
 
 // Run configures and runs the actual bootstrap.
 func Run(configPath string) {
-	configProvider := getConfig(configPath)
-	srvCfg := parseServiceConfig(configProvider)
+	srvCfg, err := getConfig(configPath)
+	if err != nil {
+		glog.Fatal("Unable to load configuration: %v", err)
+	}
 	vl := validator.New()
-	err := vl.Struct(srvCfg)
+	err = vl.Struct(srvCfg)
 
 	if err != nil {
 		for _, e := range err.(validator.ValidationErrors) {
@@ -164,6 +160,7 @@ func initPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
 }
 
+/*
 func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
 	return serviceconfig.ServiceConfig{
 		GrpcPort:     cfg.GetInt("app.server.grpcPort"),
@@ -198,3 +195,4 @@ func parseServiceConfig(cfg serviceconfig.Config) serviceconfig.ServiceConfig {
 		},
 	}
 }
+*/

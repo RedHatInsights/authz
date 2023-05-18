@@ -1,42 +1,40 @@
-app:
-    auth:
-        enabled: false
-        audience: cloud-services
-        discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration
-        requiredScope: openid
-    cors:
-        allowCredentials: false
-        allowedHeaders:
-            - Accept
-            - ResponseType
-            - Content-Length
-            - Accept-Encoding
-            - Accept-Language
-            - Authorization
-            - Content-Type
-            - User-Agent
-        allowedMethods:
-            - HEAD
-            - GET
-            - POST
-            - PATCH
-            - PUT
-            - DELETE
-            - OPTIONS
-        allowedOrigins:
-            - '*'
-        debug: true
-        maxAge: 0
-    server:
-        grpcPort: 50052
-        httpPort: 8081
-        httpsPort: 8443
-        logRequests: true
-    store:
-        endpoint: localhost:50051
-        kind: stub
-        token: foo
-        useTLS: false
-    tls:
-        certFile: /etc/tls/tls.crt
-        keyFile: /etc/tls/tls.key
+grpcPort: 50052
+httpPort: 8081
+httpsPort: 8443
+logRequests: true
+auth:
+        -   enabled: false
+            audience: cloud-services
+            discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration
+            requiredScope: openid
+cors:
+    allowCredentials: false
+    allowedHeaders:
+        - Accept
+        - ResponseType
+        - Content-Length
+        - Accept-Encoding
+        - Accept-Language
+        - Authorization
+        - Content-Type
+        - User-Agent
+    allowedMethods:
+        - HEAD
+        - GET
+        - POST
+        - PATCH
+        - PUT
+        - DELETE
+        - OPTIONS
+    allowedOrigins:
+        - '*'
+    debug: true
+    maxAge: 0
+store:
+    endpoint: localhost:50051
+    kind: stub
+    token: foo
+    useTLS: false
+tls:
+    certFile: /etc/tls/tls.crt
+    keyFile: /etc/tls/tls.key

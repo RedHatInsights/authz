@@ -10,16 +10,16 @@ const (
 
 // ServiceConfig contains all server-related configuration.
 type ServiceConfig struct {
-	GrpcPort     int `validate:"required,gte=0,lte=65535"`
-	GrpcPortStr  string
-	HTTPPort     int `validate:"required,gte=0,lte=65535"`
-	HTTPPortStr  string
-	HTTPSPort    int `validate:"omitempty,gte=0,lte=65535"`
-	HTTPSPortStr string
-	CorsConfig   CorsConfig
-	TLSConfig    TLSConfig
-	StoreConfig  StoreConfig
-	AuthConfig   AuthConfig
+	GrpcPort     int          `validate:"required,gte=0,lte=65535"`
+	GrpcPortStr  string       `mapstructure:"grpcport"`
+	HTTPPort     int          `validate:"required,gte=0,lte=65535"`
+	HTTPPortStr  string       `mapstructure:"httpport"`
+	HTTPSPort    int          `validate:"omitempty,gte=0,lte=65535"`
+	HTTPSPortStr string       `mapstructure:"httpsport"`
+	CorsConfig   CorsConfig   `mapstructure:"cors"`
+	TLSConfig    TLSConfig    `mapstructure:"tls"`
+	StoreConfig  StoreConfig  `mapstructure:"store"`
+	AuthConfigs  []AuthConfig `mapstructure:"auth"`
 	LogRequests  bool
 }
 
@@ -33,7 +33,7 @@ type TLSConfig struct {
 type StoreConfig struct {
 	Kind      string
 	Endpoint  string
-	AuthToken string
+	AuthToken string `mapstructure:"token"`
 	UseTLS    bool
 }
 

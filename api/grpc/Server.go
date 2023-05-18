@@ -156,9 +156,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	}
 
 	// TODO: Evaluate better way to init. This impl is ugly, but `...ServerOptions` (2nd param in NewServer call) is an interface
-	if s.ServiceConfig.AuthConfig.Enabled {
-		authConfigs := []serviceconfig.AuthConfig{s.ServiceConfig.AuthConfig} // TODO: wire up with new file-based config functionality
-		authMiddleware, err := interceptor.NewAuthnInterceptor(authConfigs)
+	if anyEnabled(s.ServiceConfig.AuthConfigs) {
+		authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServiceConfig.AuthConfigs)
 		if err != nil {
 			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 		}
@@ -176,6 +175,16 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 	return nil
+}
+
+func anyEnabled(authConfigs []serviceconfig.AuthConfig) bool {
+	for _, config := range authConfigs {
+		if config.Enabled {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Stop gracefully stops the server.

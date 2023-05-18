@@ -321,11 +321,11 @@ func writeTestEnvToYaml(token string) {
 		os.Exit(1)
 	}
 
-	storeKey := y["app"].(map[string]interface{})["store"].(map[string]interface{})
+	storeKey := y["store"].(map[string]interface{})
 	storeKey["token"] = token
 	storeKey["endpoint"] = "localhost:" + container.Port()
 
-	authKey := y["app"].(map[string]interface{})["auth"].(map[string]interface{})
+	authKey := y["auth"].([]interface{})[0].(map[string]interface{})
 
 	if storeKey["kind"] == "stub" {
 		log.Printf("Enabling spicedb store for tests.")
