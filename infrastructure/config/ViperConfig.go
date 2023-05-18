@@ -3,7 +3,6 @@ package config
 
 import (
 	"authz/bootstrap/serviceconfig"
-	"fmt"
 
 	"github.com/spf13/viper"
 )
@@ -23,7 +22,6 @@ func (c *ViperConfig) Load() (serviceconfig.ServiceConfig, error) {
 
 	cfg := c.defaults //Value-assignment to copy the defaults into a new object
 	err = c.v.Unmarshal(&cfg)
-	fmt.Printf("Loaded SpiceDB preshared key: %s", cfg.StoreConfig.AuthToken)
 	return cfg, err
 }
 
