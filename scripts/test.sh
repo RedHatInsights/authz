@@ -36,17 +36,24 @@ function assert() {
     fi
 }
 
+testUserIsAssigned=0
+
 function cleanup() {
     #always unassign synthetic_test on exit to avoid pollution on the next run. Also ignore all output- this will fail except when the test is exiting early before the second quantization interval
-    curl -s -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["synthetic_test"]}' > /dev/null
+    if [ $testUserIsAssigned -eq 1 ]
+    then
+        echo "Exiting while synthetic_test user should be assigned. Unassigning.."
+        curl -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["synthetic_test"]}'
+    fi
 }
 
 login
+trap cleanup EXIT #always run cleanup
 
 msg='Granting license to synthetic_test (should succeed)'
 curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"assign": ["synthetic_test"]}' || fail "Failed request: $msg"
 
-trap cleanup EXIT #once the synthetic_test user has been assigned, ensure unassign gets called on exit. This will always be redundant (and cause an error) on successful runs but ensures that it's not left behind on failure.
+testUserIsAssigned=1 #from this point, the test user is assigned and must be unassigned on exit
 
 msg='Getting number of seats available - should be less than the license allows'
 previousAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg") | jq ".seatsAvailable"`
@@ -65,6 +72,8 @@ assert "$ret = true" "$msg"
 
 msg='Revoking license for synthetic_test (should succeed)'
 curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["synthetic_test"]}' || fail "Failed request: $msg"
+
+testUserIsAssigned=0 #from this point, the test user is NOT assigned, and does not need to be unassigned on exit
 
 echo "Waiting for quantization interval"
 sleep 5
