@@ -42,7 +42,7 @@ func serve(cmd *cobra.Command, _ []string) {
 	configPath, err := nonEmptyStringFlag("config", cmd.Flags())
 
 	if err != nil {
-		cmd.Usage()
+		_ = cmd.Usage()
 		return
 	}
 
