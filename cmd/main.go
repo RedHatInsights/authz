@@ -24,7 +24,7 @@ func main() {
 	}
 
 	var rootCmd = &cobra.Command{
-		Use:   "authz",
+		Use:   "authz --config <config.yaml>",
 		Short: "authz service, alpha.",
 		Long:  `authz service based on zanzibar access systems. alpha`,
 		Run:   serve,
@@ -39,7 +39,13 @@ func main() {
 }
 
 func serve(cmd *cobra.Command, _ []string) {
-	configPath := nonEmptyStringFlag("config", cmd.Flags())
+	configPath, err := nonEmptyStringFlag("config", cmd.Flags())
+
+	if err != nil {
+		cmd.Usage()
+		return
+	}
+
 	glog.Infof("Starting authz service with config from: %v", configPath)
 
 	go handleSignals()
@@ -61,14 +67,14 @@ func handleSignals() {
 }
 
 // nonEmptyStringFlag attempts to get a non-empty string flag from the provided flag set or panic
-func nonEmptyStringFlag(flagName string, flags *pflag.FlagSet) string {
+func nonEmptyStringFlag(flagName string, flags *pflag.FlagSet) (string, error) {
 	flagVal := mustGetString(flagName, flags)
 
 	//also check for leading/trailing whitespaces
 	if strings.TrimSpace(flagVal) == "" {
-		glog.Fatal(undefinedValueMessage(flagName))
+		return "", fmt.Errorf(undefinedValueMessage(flagName))
 	}
-	return flagVal
+	return flagVal, nil
 }
 
 func mustGetString(flagName string, flags *pflag.FlagSet) string {
