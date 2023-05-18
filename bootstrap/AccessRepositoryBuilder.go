@@ -32,8 +32,12 @@ func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":
 		spicedb := &authzed.SpiceDbAccessRepository{}
-		spicedb.NewConnection(config.Endpoint, config.AuthToken, true, config.UseTLS)
-		return spicedb, nil
+		token, err := config.ReadToken()
+		if err != nil {
+			return nil, err
+		}
+		err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
+		return spicedb, err
 	default:
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	}

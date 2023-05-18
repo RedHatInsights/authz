@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 
@@ -289,7 +288,7 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
-func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) {
+func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) error {
 
 	var opts []grpc.DialOption
 
@@ -312,11 +311,12 @@ func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token st
 	)
 
 	if err != nil {
-		log.Fatalf("unable to initialize client: %s", err)
+		return err
 	}
 
 	s.client = client
 	s.ctx = context.Background()
+	return nil
 }
 
 func createSubjectObjectTuple(subjectType string, subjectValue string, objectType string, objectValue string) (*v1.SubjectReference, *v1.ObjectReference) {

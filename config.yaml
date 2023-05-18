@@ -33,7 +33,7 @@ cors: # (Refer to https://github.com/rs/cors for settings)
 store:
     endpoint: localhost:50051 # End point where the spiceDB store runs, GRPC endpoint
     kind: stub # stub - local stub implementation within the code, spicedb - external store
-    token: foo # Needed for store=spicedb, pre-shared token
+    tokenFile: .secrets/spice-db-local # Needed for store=spicedb, path to the pre-shared token
     useTLS: false # TLS enabled/disabled between authz service and store (spiceDB)
 tls:
     certFile: /etc/tls/tls.crt # TLS Certificate path

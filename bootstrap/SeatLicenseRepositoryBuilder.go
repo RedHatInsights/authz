@@ -30,16 +30,20 @@ func (b *SeatLicenseRepositoryBuilder) WithStub(stub contracts.SeatLicenseReposi
 }
 
 // Build constructs the repository
-func (b *SeatLicenseRepositoryBuilder) Build() contracts.SeatLicenseRepository {
+func (b *SeatLicenseRepositoryBuilder) Build() (contracts.SeatLicenseRepository, error) {
 	config := b.config.StoreConfig
 	switch config.Kind {
 	case "spicedb":
 		spicedb := authzed.SpiceDbAccessRepository{}
-		spicedb.NewConnection(config.Endpoint, config.AuthToken, true, config.UseTLS)
-		return &spicedb
+		token, err := config.ReadToken()
+		if err != nil {
+			return nil, err
+		}
+		err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
+		return &spicedb, err
 	case "stub":
-		return b.stub
+		return b.stub, nil
 	default:
-		return b.stub
+		return b.stub, nil
 	}
 }

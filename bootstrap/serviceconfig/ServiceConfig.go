@@ -1,6 +1,8 @@
 // Package serviceconfig contains the typed configuration for different parts of the application.
 package serviceconfig
 
+import "os"
+
 const (
 	// SpicedbImage is the image used for containerized spiceDB in tests
 	SpicedbImage = "authzed/spicedb"
@@ -33,8 +35,18 @@ type TLSConfig struct {
 type StoreConfig struct {
 	Kind      string
 	Endpoint  string
-	AuthToken string `mapstructure:"token"`
+	TokenFile string
 	UseTLS    bool
+}
+
+// ReadToken reads token from the TokenFile
+func (c StoreConfig) ReadToken() (string, error) {
+	bytes, err := os.ReadFile(c.TokenFile)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bytes), nil
 }
 
 // CorsConfig includes the CORS middleware configuration

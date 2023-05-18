@@ -132,7 +132,10 @@ func (l *LocalSpiceDbContainer) CreateClient() (*SpiceDbAccessRepository, error)
 	}
 
 	e := &SpiceDbAccessRepository{}
-	e.NewConnection("localhost:"+l.port, randomKey, true, false)
+	err = e.NewConnection("localhost:"+l.port, randomKey, true, false)
+	if err != nil {
+		return nil, err
+	}
 
 	return e, nil
 }

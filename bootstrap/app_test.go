@@ -284,6 +284,7 @@ func createRequest(method string, relativeURI string, authToken string, body str
 }
 
 var temporaryConfigFile *os.File
+var temporarySecretDirectory string
 
 func setupService() {
 	spicedbToken, err := container.NewToken()
@@ -314,18 +315,27 @@ func writeTestEnvToYaml(token string) {
 		fmt.Printf("Error reading config.yaml: %s\n", err)
 		os.Exit(1)
 	}
-	y := make(map[string]interface{})
-	err = yaml.Unmarshal(data, &y)
+	yml := make(map[string]interface{})
+	err = yaml.Unmarshal(data, &yml)
 	if err != nil {
 		fmt.Printf("Error parsing yaml: %s\n", err)
 		os.Exit(1)
 	}
 
-	storeKey := y["store"].(map[string]interface{})
-	storeKey["token"] = token
+	tempSecretFile, err := os.CreateTemp(temporarySecretDirectory, "")
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(tempSecretFile.Name(), []byte(token), 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	storeKey := yml["store"].(map[string]interface{})
+	storeKey["tokenFile"] = tempSecretFile.Name()
 	storeKey["endpoint"] = "localhost:" + container.Port()
 
-	authKey := y["auth"].([]interface{})[0].(map[string]interface{})
+	authKey := yml["auth"].([]interface{})[0].(map[string]interface{})
 
 	if storeKey["kind"] == "stub" {
 		log.Printf("Enabling spicedb store for tests.")
@@ -337,7 +347,7 @@ func writeTestEnvToYaml(token string) {
 		authKey["enabled"] = true
 	}
 
-	res, err := yaml.Marshal(y)
+	res, err := yaml.Marshal(yml)
 	if err != nil {
 		fmt.Printf("Error marshalling yaml in test: %s\n", err)
 		os.Exit(1)
@@ -518,8 +528,21 @@ func TestMain(m *testing.M) {
 		glog.Errorf("Error initializing SpiceDB container: %s", err)
 		os.Exit(1)
 	}
+
+	temporarySecretDirectory, err = os.MkdirTemp(".", ".secrets")
+	if err != nil {
+		glog.Error("Error setting up secret directory: ", err)
+		os.Exit(1)
+	}
+
 	result := m.Run()
 
 	container.Close()
+
+	err = os.RemoveAll(temporarySecretDirectory)
+	if err != nil {
+		panic(err)
+	}
+
 	os.Exit(result)
 }

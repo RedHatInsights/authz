@@ -51,7 +51,11 @@ func Run(configPath string) {
 		return
 	}
 
-	grpcServer, httpServer = initialize(srvCfg)
+	grpcServer, httpServer, err = initialize(srvCfg)
+	if err != nil {
+		glog.Error("Error in service initialization: ", err)
+		return
+	}
 
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
@@ -90,10 +94,17 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server) {
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, error) {
 
-	ar := initAccessRepository(&srvCfg)
-	sr := initSeatRepository(&srvCfg, ar)
+	ar, err := initAccessRepository(&srvCfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sr, err := initSeatRepository(&srvCfg, ar)
+	if err != nil {
+		return nil, nil, err
+	}
 	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
 
 	aas := application.NewAccessAppService(&ar, pr)
@@ -105,7 +116,7 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server)
 	webSrv.SetCheckRef(srv)
 	webSrv.SetSeatRef(srv)
 	grpcServer = srv
-	return srv, webSrv
+	return srv, webSrv, nil
 }
 
 // initGrpcServer initializes a new grpc server struct
@@ -134,7 +145,7 @@ func initHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 	return srv
 }
 
-func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
+func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) (contracts.SeatLicenseRepository, error) {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
@@ -143,14 +154,9 @@ func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub inter
 	return b.WithConfig(config).Build()
 }
 
-func initAccessRepository(config *serviceconfig.ServiceConfig) contracts.AccessRepository {
-	r, err := NewAccessRepositoryBuilder().
+func initAccessRepository(config *serviceconfig.ServiceConfig) (contracts.AccessRepository, error) {
+	return NewAccessRepositoryBuilder().
 		WithConfig(config).Build()
-
-	if err != nil {
-		glog.Fatal("Could not initialize access repository: ", err)
-	}
-	return r
 }
 
 func initPrincipalRepository(store string) contracts.PrincipalRepository {
