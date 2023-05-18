@@ -37,7 +37,8 @@ func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 func Run(configPath string) {
 	srvCfg, err := getConfig(configPath)
 	if err != nil {
-		glog.Fatal("Unable to load configuration: %v", err)
+		glog.Errorf("Unable to load configuration: %v", err)
+		return
 	}
 	vl := validator.New()
 	err = vl.Struct(srvCfg)
@@ -46,7 +47,8 @@ func Run(configPath string) {
 		for _, e := range err.(validator.ValidationErrors) {
 			glog.Errorf("Error in configuration: %v", e)
 		}
-		glog.Fatal("Can not start service with invalid configuration.")
+		glog.Error("Can not start service with invalid configuration.")
+		return
 	}
 
 	grpcServer, httpServer = initialize(srvCfg)

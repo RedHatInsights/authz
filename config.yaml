@@ -1,13 +1,13 @@
-grpcPort: 50052
-httpPort: 8081
-httpsPort: 8443
-logRequests: true
+grpcPort: 50052 # GRPC port of the AuthZ service
+httpPort: 8081 # HTTP port of the Authz Service
+httpsPort: 8443 # HTTPS port of the AuthZ service
+logRequests: true # Request logging midddleware on/off - true/false
 auth:
-        -   enabled: false
-            audience: cloud-services
-            discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration
-            requiredScope: openid
-cors:
+        -   enabled: false # Recommended for local dev, when there is no AuthN server integration, no checks for the tokens
+            audience: cloud-services # Used when auth in enabled, audience of the token
+            discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration # Used when auth in enabled, discovery endpoint of the token issuer
+            requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
+cors: # (Refer to https://github.com/rs/cors for settings)
     allowCredentials: false
     allowedHeaders:
         - Accept
@@ -31,10 +31,10 @@ cors:
     debug: true
     maxAge: 0
 store:
-    endpoint: localhost:50051
-    kind: stub
-    token: foo
-    useTLS: false
+    endpoint: localhost:50051 # End point where the spiceDB store runs, GRPC endpoint
+    kind: stub # stub - local stub implementation within the code, spicedb - external store
+    token: foo # Needed for store=spicedb, pre-shared token
+    useTLS: false # TLS enabled/disabled between authz service and store (spiceDB)
 tls:
-    certFile: /etc/tls/tls.crt
-    keyFile: /etc/tls/tls.key
+    certFile: /etc/tls/tls.crt # TLS Certificate path
+    keyFile: /etc/tls/tls.key # TLS key path
