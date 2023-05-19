@@ -158,29 +158,41 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 }
 
 func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
-	for _, provider := range authnInterceptor.providers {
-		result, err = validateTokenAndExtractSubject(provider, token)
+	jwtoken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithValidate(false)) //Parse without any validation to peek issuer
 
-		if err == nil {
-			return // we got a hit with this provider
+	if err != nil {
+		return
+	}
+
+	issuer := jwtoken.Issuer()
+
+	for _, provider := range authnInterceptor.providers {
+		if issuer == provider.issuer {
+			result, err = validateTokenAndExtractSubject(provider, token)
+
+			return
 		}
 	}
+
+	err = jwt.ErrInvalidIssuer()
 
 	return
 }
 
 func validateTokenAndExtractSubject(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
-	jwtToken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience))
+	//Parse with signature verification and token validation. Second parse is necessary because WithKeySet cannot be passed to jwt.Validate
+	jwtoken, err := jwt.ParseString(token, jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience))
+
 	if err != nil {
 		return
 	}
 
-	err = ensureRequiredScope(p.minimumScope, jwtToken)
+	err = ensureRequiredScope(p.minimumScope, jwtoken)
 	if err != nil {
 		return
 	}
 
-	result.SubjectID = jwtToken.Subject()
+	result.SubjectID = jwtoken.Subject()
 	if result.SubjectID == "" {
 		err = domain.ErrNotAuthenticated
 	}

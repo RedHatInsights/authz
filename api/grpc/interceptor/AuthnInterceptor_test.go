@@ -87,6 +87,15 @@ func TestFailedValidationWhenAuthnProviderAbsent(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestFailsWithErrorFromFirstConfigWhenInvalid(t *testing.T) {
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1(), createAuthnProvider2()}}
+	token := createToken(createDefaultTokenBuilder1().Expiration(time.Now().Add(-5*time.Minute)), tokenSigningKey1)
+
+	_, err := interceptor.validateTokenAndExtractSubject(token)
+
+	assert.ErrorIs(t, err, jwt.ErrTokenExpired())
+}
+
 func TestFailNoAuthConfigs(t *testing.T) {
 	var authConfigs []serviceconfig.AuthConfig
 
@@ -128,77 +137,77 @@ func TestFailForDuplicateAuthconfigs(t *testing.T) {
 }
 
 func TestAuthnProviderHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
-	result, err := validateTokenAndExtractSubject(authnProvider, createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
+	result, err := interceptor.validateTokenAndExtractSubject(createToken(createDefaultTokenBuilder1(), tokenSigningKey1))
 
 	assert.NoError(t, err)
 	assert.Equal(t, defaultSubject1, result.SubjectID)
 }
 
 func TestInvalidTokenMissingSubject(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1)
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
 }
 
 func TestInvalidTokenExpired(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := createDefaultTokenBuilder1().
 		NotBefore(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)).
 		Expiration(time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC))
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, jwt.ErrTokenExpired())
 }
 
 func TestInvalidTokenFromTheFuture(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := createDefaultTokenBuilder1().
 		NotBefore(time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC)).
 		Expiration(time.Date(2200, 1, 2, 0, 0, 0, 0, time.UTC))
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, jwt.ErrTokenNotYetValid())
 }
 
 func TestInvalidAudience(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := createDefaultTokenBuilder1().
 		Audience([]string{"invalid-audience"})
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, jwt.ErrInvalidAudience())
 }
 
 func TestInvalidIssuer(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := createDefaultTokenBuilder1().Issuer("example.com/invalidissuer")
 
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, jwt.ErrInvalidIssuer())
 }
 
 func TestInvalidTokenMissingScope(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1).Subject(defaultSubject1)
 
-	_, err := validateTokenAndExtractSubject(authnProvider, createToken(builder, tokenSigningKey1))
+	_, err := interceptor.validateTokenAndExtractSubject(createToken(builder, tokenSigningKey1))
 
 	assert.Error(t, err)
 }
 
 func TestInvalidTokenWrongSigningKey(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	data, err := createDefaultTokenBuilder1().Build()
 	if err != nil {
@@ -220,13 +229,13 @@ func TestInvalidTokenWrongSigningKey(t *testing.T) {
 	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, maliciousSigning))
 	assert.NoError(t, err)
 
-	_, err = validateTokenAndExtractSubject(authnProvider, string(token))
+	_, err = interceptor.validateTokenAndExtractSubject(string(token))
 
 	assert.Error(t, err) //No specific error for this. See: https://github.com/lestrrat-go/jwx/blob/0121992a0875d2263d99cc90c676276e143580a6/jws/jws.go#L412
 }
 
 func TestInvalidTokenTampered(t *testing.T) {
-	authnProvider := createAuthnProvider1()
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	token := createToken(createDefaultTokenBuilder1(), tokenSigningKey1)
 
@@ -246,7 +255,7 @@ func TestInvalidTokenTampered(t *testing.T) {
 
 	tamperedToken := strings.Join(parts, ".")
 
-	_, err = validateTokenAndExtractSubject(authnProvider, tamperedToken)
+	_, err = interceptor.validateTokenAndExtractSubject(tamperedToken)
 
 	assert.Error(t, err) //No specific error for this. See: https://github.com/lestrrat-go/jwx/blob/0121992a0875d2263d99cc90c676276e143580a6/jws/jws.go#L412
 }
@@ -313,6 +322,15 @@ func createAuthnProvider2() *authnProvider {
 		validAudience2,
 		minimumScope,
 		keyset2)
+}
+
+func BenchmarkTokenParsing(b *testing.B) {
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1(), createAuthnProvider2()}}
+	token := createToken(createDefaultTokenBuilder2(), tokenSigningKey2)
+
+	for i := 0; i < b.N; i++ {
+		_, _ = interceptor.validateTokenAndExtractSubject(token)
+	}
 }
 
 var tokenSigningKey1 jwk.Key
