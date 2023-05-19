@@ -2,7 +2,7 @@
 package interceptor
 
 import (
-	"authz/api"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"context"
 	"encoding/json"
@@ -45,7 +45,7 @@ type providerJSON struct {
 }
 
 // NewAuthnInterceptor creates a new AuthnInterceptor
-func NewAuthnInterceptor(configs []api.AuthConfig) (*AuthnInterceptor, error) {
+func NewAuthnInterceptor(configs []serviceconfig.AuthConfig) (*AuthnInterceptor, error) {
 	if err := validateAuthConfigs(configs); err != nil {
 		return nil, err
 	}
@@ -63,15 +63,15 @@ func NewAuthnInterceptor(configs []api.AuthConfig) (*AuthnInterceptor, error) {
 	return &AuthnInterceptor{providers}, nil
 }
 
-func validateAuthConfigs(configs []api.AuthConfig) (err error) {
+func validateAuthConfigs(configs []serviceconfig.AuthConfig) (err error) {
 	if configs == nil {
 		return fmt.Errorf("configs should not be nil")
 	}
 
-	checked := make(map[api.AuthConfig]bool)
+	checked := make(map[serviceconfig.AuthConfig]bool)
 
 	for _, config := range configs {
-		if config == (api.AuthConfig{}) {
+		if config == (serviceconfig.AuthConfig{}) {
 			return fmt.Errorf("authnconfig should not be empty")
 		}
 
@@ -86,7 +86,7 @@ func validateAuthConfigs(configs []api.AuthConfig) (err error) {
 }
 
 // configureAuthnProvider constructor
-func configureAuthnProvider(config api.AuthConfig) (*authnProvider, error) {
+func configureAuthnProvider(config serviceconfig.AuthConfig) (*authnProvider, error) {
 	providerData, err := getProviderData(config.DiscoveryEndpoint)
 	if err != nil {
 		return nil, err

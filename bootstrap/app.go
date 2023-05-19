@@ -2,12 +2,14 @@
 package bootstrap
 
 import (
-	"authz/api"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"sync"
+
+	"github.com/go-playground/validator/v10"
 
 	"github.com/golang/glog"
 )
@@ -17,9 +19,43 @@ var grpcServer *grpc.Server
 var httpServer *http.Server
 var waitForCompletion *sync.WaitGroup
 
+// getConfig loads the config based on the technical implementation "viper".
+func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
+	cfg, err := NewConfigurationBuilder().
+		ConfigFilePath(configPath).
+		NoDefaults().
+		Build()
+
+	if err != nil {
+		glog.Fatalf("Could not initialize config: %v", err)
+	}
+
+	return cfg.Load()
+}
+
 // Run configures and runs the actual bootstrap.
-func Run(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) {
-	grpcServer, httpServer = initialize(endpoint, oidcDiscoveryEndpoint, token, store, useTLS)
+func Run(configPath string) {
+	srvCfg, err := getConfig(configPath)
+	if err != nil {
+		glog.Errorf("Unable to load configuration: %v", err)
+		return
+	}
+	vl := validator.New()
+	err = vl.Struct(srvCfg)
+
+	if err != nil {
+		for _, e := range err.(validator.ValidationErrors) {
+			glog.Errorf("Error in configuration: %v", e)
+		}
+		glog.Error("Can not start service with invalid configuration.")
+		return
+	}
+
+	grpcServer, httpServer, err = initialize(srvCfg)
+	if err != nil {
+		glog.Error("Error in service initialization: ", err)
+		return
+	}
 
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
@@ -58,33 +94,18 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, store string, useTLS bool) (*grpc.Server, *http.Server) {
-	srvCfg := api.ServerConfig{ //TODO: Discuss config.
-		GrpcPort:  "50051",
-		HTTPPort:  "8081",
-		HTTPSPort: "8443",
-		TLSConfig: api.TLSConfig{
-			CertPath: "/etc/tls/tls.crt",
-			CertName: "",
-			KeyPath:  "/etc/tls/tls.key",
-			KeyName:  "",
-		},
-		StoreConfig: api.StoreConfig{
-			Store:     store,
-			Endpoint:  endpoint,
-			AuthToken: token,
-			UseTLS:    useTLS,
-		},
-		AuthConfig: api.AuthConfig{
-			DiscoveryEndpoint: oidcDiscoveryEndpoint,
-			Audience:          "cloud-services", //TODO: make these configurable
-			RequiredScope:     "openid",
-		},
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, error) {
+
+	ar, err := initAccessRepository(&srvCfg)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	ar := initAccessRepository(&srvCfg)
-	sr := initSeatRepository(&srvCfg, ar)
-	pr := initPrincipalRepository(store)
+	sr, err := initSeatRepository(&srvCfg, ar)
+	if err != nil {
+		return nil, nil, err
+	}
+	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(&ar, &sr, pr)
@@ -95,15 +116,15 @@ func initialize(endpoint string, oidcDiscoveryEndpoint string, token string, sto
 	webSrv.SetCheckRef(srv)
 	webSrv.SetSeatRef(srv)
 	grpcServer = srv
-	return srv, webSrv
+	return srv, webSrv, nil
 }
 
 // initGrpcServer initializes a new grpc server struct
-func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serverConfig *api.ServerConfig) *grpc.Server {
+func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serviceConfig *serviceconfig.ServiceConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
 		WithLicenseAppService(sas).
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildGrpc()
 
 	if err != nil {
@@ -113,9 +134,9 @@ func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseA
 }
 
 // initHttpServer initializes new http server struct
-func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
+func initHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 	srv, err := NewServerBuilder().
-		WithServerConfig(serverConfig).
+		WithServiceConfig(serviceConfig).
 		BuildHTTP()
 
 	if err != nil {
@@ -124,7 +145,7 @@ func initHTTPServer(serverConfig *api.ServerConfig) *http.Server {
 	return srv
 }
 
-func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) contracts.SeatLicenseRepository {
+func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) (contracts.SeatLicenseRepository, error) {
 	b := NewSeatLicenseRepositoryBuilder()
 	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
 		b.WithStub(stub)
@@ -133,14 +154,9 @@ func initSeatRepository(config *api.ServerConfig, potentialStub interface{}) con
 	return b.WithConfig(config).Build()
 }
 
-func initAccessRepository(config *api.ServerConfig) contracts.AccessRepository {
-	r, err := NewAccessRepositoryBuilder().
+func initAccessRepository(config *serviceconfig.ServiceConfig) (contracts.AccessRepository, error) {
+	return NewAccessRepositoryBuilder().
 		WithConfig(config).Build()
-
-	if err != nil {
-		glog.Fatal("Could not initialize access repository: ", err)
-	}
-	return r
 }
 
 func initPrincipalRepository(store string) contracts.PrincipalRepository {

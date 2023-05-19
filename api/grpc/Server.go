@@ -2,10 +2,10 @@
 package grpc
 
 import (
-	"authz/api"
 	core "authz/api/gen/v1alpha"
 	"authz/api/grpc/interceptor"
 	"authz/application"
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"context"
 	"errors"
@@ -25,7 +25,7 @@ type Server struct {
 	srv               *grpc.Server
 	AccessAppService  *application.AccessAppService
 	LicenseAppService *application.LicenseAppService
-	ServerConfig      *api.ServerConfig
+	ServiceConfig     *serviceconfig.ServiceConfig
 }
 
 // GetLicense returns licenses for a given org and service
@@ -123,15 +123,15 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(h application.AccessAppService, l application.LicenseAppService, c api.ServerConfig) *Server {
-	return &Server{AccessAppService: &h, ServerConfig: &c, LicenseAppService: &l}
+func NewServer(h application.AccessAppService, l application.LicenseAppService, c serviceconfig.ServiceConfig) *Server {
+	return &Server{AccessAppService: &h, ServiceConfig: &c, LicenseAppService: &l}
 }
 
 // Serve exposes a GRPC endpoint and blocks until processing ends, at which point the waitgroup is signalled. This should be run as a goroutine.
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	ls, err := net.Listen("tcp", ":"+s.ServerConfig.GrpcPort)
+	ls, err := net.Listen("tcp", ":"+s.ServiceConfig.GrpcPortStr)
 
 	if err != nil {
 		glog.Errorf("Error opening TCP port: %s", err)
@@ -140,11 +140,11 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	var creds credentials.TransportCredentials
 
-	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
-		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { // Cert and key exists start server in TLS mode
+	if _, err = os.Stat(s.ServiceConfig.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(s.ServiceConfig.TLSConfig.KeyFile); err == nil { // Cert and key exists start server in TLS mode
 			glog.Info("TLS cert and Key found  - Starting gRPC server in secure TLS mode")
 
-			creds, err = credentials.NewServerTLSFromFile(s.ServerConfig.TLSConfig.CertPath, s.ServerConfig.TLSConfig.KeyPath)
+			creds, err = credentials.NewServerTLSFromFile(s.ServiceConfig.TLSConfig.CertFile, s.ServiceConfig.TLSConfig.KeyFile)
 			if err != nil {
 				glog.Errorf("Error loading certs: %s", err)
 				return err
@@ -152,15 +152,21 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting gRPC server in insecure mode on port %s",
-			s.ServerConfig.GrpcPort)
+			s.ServiceConfig.GrpcPortStr)
 	}
 
-	authConfigs := []api.AuthConfig{s.ServerConfig.AuthConfig} // TODO: wire up with new file-based config functionality
-	authMiddleware, err := interceptor.NewAuthnInterceptor(authConfigs)
-	if err != nil {
-		glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
+	// TODO: Evaluate better way to init. This impl is ugly, but `...ServerOptions` (2nd param in NewServer call) is an interface
+	if anyEnabled(s.ServiceConfig.AuthConfigs) {
+		authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServiceConfig.AuthConfigs)
+		if err != nil {
+			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
+		}
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+	} else {
+		glog.Warning("Client authorization disabled. Do not use in production use cases!")
+		s.srv = grpc.NewServer(grpc.Creds(creds))
 	}
-	s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
 	err = s.srv.Serve(ls)
@@ -169,6 +175,16 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		return err
 	}
 	return nil
+}
+
+func anyEnabled(authConfigs []serviceconfig.AuthConfig) bool {
+	for _, config := range authConfigs {
+		if config.Enabled {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Stop gracefully stops the server.

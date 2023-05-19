@@ -2,8 +2,8 @@
 package http
 
 import (
-	"authz/api"
 	core "authz/api/gen/v1alpha"
+	"authz/bootstrap/serviceconfig"
 	"context"
 	"errors"
 	"net/http"
@@ -19,10 +19,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Server serves a HTTP api based on the generated grpc gateway code
+// Server serves an HTTP api based on the generated grpc gateway code
 type Server struct {
 	srv                *http.Server
-	ServerConfig       *api.ServerConfig
+	ServiceConfig      *serviceconfig.ServiceConfig
 	GrpcCheckService   core.CheckPermissionServer
 	GrpcLicenseService core.LicenseServiceServer
 }
@@ -31,19 +31,19 @@ type Server struct {
 func (s *Server) Serve(wait *sync.WaitGroup) error {
 	defer wait.Done()
 
-	mux, err := createMultiplexer(s.ServerConfig)
+	mux, err := createMultiplexer(s.ServiceConfig)
 	if err != nil {
 		glog.Errorf("Error creating multiplexer: %s", err)
 		return err
 	}
 
-	if _, err = os.Stat(s.ServerConfig.TLSConfig.CertPath); err == nil {
-		if _, err := os.Stat(s.ServerConfig.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in HTTPS mode
+	if _, err = os.Stat(s.ServiceConfig.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(s.ServiceConfig.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in HTTPS mode
 			glog.Infof("TLS cert and Key found  - Starting server in secure HTTPS mode on port %s",
-				s.ServerConfig.HTTPSPort)
+				s.ServiceConfig.HTTPSPortStr)
 
-			s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPSPort, Handler: mux}
-			err := s.srv.ListenAndServeTLS(s.ServerConfig.TLSConfig.CertPath, s.ServerConfig.TLSConfig.KeyPath)
+			s.srv = &http.Server{Addr: ":" + s.ServiceConfig.HTTPSPortStr, Handler: mux}
+			err := s.srv.ListenAndServeTLS(s.ServiceConfig.TLSConfig.CertFile, s.ServiceConfig.TLSConfig.KeyFile)
 			if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 				glog.Errorf("Error hosting TLS service: %s", err)
 				return err
@@ -51,8 +51,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 	} else { // For all cases of error - we start a plain HTTP server
 		glog.Infof("TLS cert or Key not found  - Starting server in insecure plain HTTP mode on Port %s",
-			s.ServerConfig.HTTPPort)
-		s.srv = &http.Server{Addr: ":" + s.ServerConfig.HTTPPort, Handler: mux}
+			s.ServiceConfig.HTTPPortStr)
+		s.srv = &http.Server{Addr: ":" + s.ServiceConfig.HTTPPortStr, Handler: mux}
 		err = s.srv.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) { //ErrServerClosed is returned when the server stops serving
 			glog.Errorf("Error hosting insecure service: %s", err)
@@ -78,9 +78,9 @@ func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
 }
 
 // NewServer creates a new Server object to use.
-func NewServer(c api.ServerConfig) *Server {
+func NewServer(c serviceconfig.ServiceConfig) *Server {
 	return &Server{
-		ServerConfig: &c,
+		ServiceConfig: &c,
 	}
 }
 
@@ -89,13 +89,13 @@ func (s *Server) GetName() string {
 	return "grpcweb"
 }
 
-func createMultiplexer(cnf *api.ServerConfig) (http.Handler, error) {
+func createMultiplexer(cnf *serviceconfig.ServiceConfig) (http.Handler, error) {
 	mux := runtime.NewServeMux()
 
 	var opts []grpc.DialOption
 
-	if _, err := os.Stat(cnf.TLSConfig.CertPath); err == nil {
-		if _, err := os.Stat(cnf.TLSConfig.KeyPath); err == nil { //Cert and key exists start server in TLS mode
+	if _, err := os.Stat(cnf.TLSConfig.CertFile); err == nil {
+		if _, err := os.Stat(cnf.TLSConfig.KeyFile); err == nil { //Cert and key exists start server in TLS mode
 			glog.Info("Creating multiplexer for HTTP: TLS cert and Key found - connecting to gRPC server in secure TLS mode")
 
 			if err != nil {
@@ -116,35 +116,42 @@ func createMultiplexer(cnf *api.ServerConfig) (http.Handler, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPort, opts); err != nil {
+	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
 		return nil, err
 	}
 
-	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPort, opts); err != nil {
+	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
 		return nil, err
 	}
 
-	chain := createChain(logMiddleware, corsMiddleware).then(mux)
+	chain := createChain(logMiddleware(*cnf), corsMiddleware(*cnf)).then(mux)
 
 	return chain, nil
 }
 
-func corsMiddleware(h http.Handler) http.Handler {
-	return cors.New(cors.Options{
-		AllowedMethods:   []string{http.MethodHead, http.MethodGet, http.MethodPost, http.MethodPatch, http.MethodPut, http.MethodDelete, http.MethodOptions},
-		AllowedHeaders:   []string{"Accept", "ResponseType", "Content-Length", "Accept-Encoding", "Authorization", "Content-Type", "User-Agent"},
-		AllowCredentials: true,
-		MaxAge:           300,
-		Debug:            true,
-	}).Handler(h)
+func corsMiddleware(c serviceconfig.ServiceConfig) middleware {
+	return func(h http.Handler) http.Handler {
+		return cors.New(cors.Options{
+			AllowedOrigins:   c.CorsConfig.AllowedOrigins,
+			AllowedMethods:   c.CorsConfig.AllowedMethods,
+			AllowedHeaders:   c.CorsConfig.AllowedHeaders,
+			AllowCredentials: c.CorsConfig.AllowCredentials,
+			MaxAge:           c.CorsConfig.MaxAge,
+			Debug:            c.CorsConfig.Debug,
+		}).Handler(h)
+	}
 }
 
-func logMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func logMiddleware(c serviceconfig.ServiceConfig) middleware {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		glog.V(0).Infof("Request incoming: %s %s", r.Method, r.RequestURI)
-		glog.V(1).Infof("Request dump: %+v", *r)
+			if c.LogRequests {
+				glog.V(0).Infof("Request incoming: %s %s", r.Method, r.RequestURI)
+				glog.V(1).Infof("Request dump: %+v", *r)
+			}
 
-		h.ServeHTTP(w, r)
-	})
+			h.ServeHTTP(w, r)
+		})
+	}
 }

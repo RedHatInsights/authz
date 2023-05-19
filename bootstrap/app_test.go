@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/golang/glog"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -281,13 +283,21 @@ func createRequest(method string, relativeURI string, authToken string, body str
 	return req
 }
 
+var temporaryConfigFile *os.File
+var temporarySecretDirectory string
+
 func setupService() {
 	spicedbToken, err := container.NewToken()
 	if err != nil {
 		panic(err)
 	}
+	temporaryConfigFile, err = os.CreateTemp("", "authz-test-config-*.yaml")
+	if err != nil {
+		panic(err)
+	}
+	writeTestEnvToYaml(spicedbToken)
 
-	go Run(fmt.Sprintf("localhost:%s", container.Port()), oidcDiscoveryURL, spicedbToken, "spicedb", false)
+	go Run(temporaryConfigFile.Name())
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
 		return post("/v1alpha/check", "system",
 			`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
@@ -295,6 +305,57 @@ func setupService() {
 
 	if err != nil {
 		log.Printf("Error waiting for gateway to come online: %s", err)
+		os.Exit(1)
+	}
+}
+
+func writeTestEnvToYaml(token string) {
+	var data, err = os.ReadFile("../config.yaml")
+	if err != nil {
+		fmt.Printf("Error reading config.yaml: %s\n", err)
+		os.Exit(1)
+	}
+	yml := make(map[string]interface{})
+	err = yaml.Unmarshal(data, &yml)
+	if err != nil {
+		fmt.Printf("Error parsing yaml: %s\n", err)
+		os.Exit(1)
+	}
+
+	tempSecretFile, err := os.CreateTemp(temporarySecretDirectory, "")
+	if err != nil {
+		panic(err)
+	}
+	err = os.WriteFile(tempSecretFile.Name(), []byte(token), 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	storeKey := yml["store"].(map[string]interface{})
+	storeKey["tokenFile"] = tempSecretFile.Name()
+	storeKey["endpoint"] = "localhost:" + container.Port()
+
+	authKey := yml["auth"].([]interface{})[0].(map[string]interface{})
+
+	if storeKey["kind"] == "stub" {
+		log.Printf("Enabling spicedb store for tests.")
+		storeKey["kind"] = "spicedb"
+	}
+
+	if authKey["enabled"] == false {
+		log.Printf("Enabling authn middleware for tests.")
+		authKey["enabled"] = true
+	}
+
+	res, err := yaml.Marshal(yml)
+	if err != nil {
+		fmt.Printf("Error marshalling yaml in test: %s\n", err)
+		os.Exit(1)
+	}
+
+	_, e := temporaryConfigFile.Write(res)
+	if e != nil {
+		fmt.Printf("Error writing new yaml in test: %s\n", err)
 		os.Exit(1)
 	}
 }
@@ -327,6 +388,13 @@ func subjectIDToToken(subject string) string {
 
 func teardownService() {
 	Stop()
+	err := os.Remove(temporaryConfigFile.Name())
+
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorf("Error deleting temporary config file %s from temp directory: %v", temporaryConfigFile.Name(), err)
+	}
+
+	temporaryConfigFile = nil
 }
 
 func waitForSuccess(reqFactory func() *http.Request) error {
@@ -461,8 +529,20 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	temporarySecretDirectory, err = os.MkdirTemp(".", ".secrets")
+	if err != nil {
+		glog.Error("Error setting up secret directory: ", err)
+		os.Exit(1)
+	}
+
 	result := m.Run()
 
 	container.Close()
+
+	err = os.RemoveAll(temporarySecretDirectory)
+	if err != nil {
+		panic(err)
+	}
+
 	os.Exit(result)
 }
