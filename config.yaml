@@ -1,40 +1,40 @@
-grpcPort: 50052 # GRPC port of the AuthZ service
-httpPort: 8081 # HTTP port of the Authz Service
-httpsPort: 8443 # HTTPS port of the AuthZ service
-logRequests: true # Request logging midddleware on/off - true/false
+#grpcPort: 50052 # GRPC port of the AuthZ service
+httpPort: 8081 # HTTP port of the Authz Service. Defaults to 8080
+#httpsPort: 8443 # HTTPS port of the AuthZ service
+logRequests: true # Request logging midddleware on/off - true/false. Defaults to false
 auth:
-        -   enabled: false # Recommended for local dev, when there is no AuthN server integration, no checks for the tokens
+        -   enabled: false # Recommended for local dev, when there is no AuthN server integration, no checks for the tokens.
             audience: cloud-services # Used when auth in enabled, audience of the token
             discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration # Used when auth in enabled, discovery endpoint of the token issuer
             requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
 cors: # (Refer to https://github.com/rs/cors for settings)
-    allowCredentials: false
-    allowedHeaders:
-        - Accept
-        - ResponseType
-        - Content-Length
-        - Accept-Encoding
-        - Accept-Language
-        - Authorization
-        - Content-Type
-        - User-Agent
-    allowedMethods:
-        - HEAD
-        - GET
-        - POST
-        - PATCH
-        - PUT
-        - DELETE
-        - OPTIONS
+    #allowCredentials: false
     allowedOrigins:
         - '*'
-    debug: true
-    maxAge: 0
+    #allowedHeaders:
+    #    - Accept
+    #    - ResponseType
+    #    - Content-Length
+    #    - Accept-Encoding
+    #    - Accept-Language
+    #    - Authorization
+    #    - Content-Type
+    #    - User-Agent
+    #allowedMethods:
+    #    - HEAD
+    #    - GET
+    #    - POST
+    #    - PATCH
+    #    - PUT
+    #    - DELETE
+    #    - OPTIONS
+    debug: true #Default: false
+    #maxAge: 300
 store:
     endpoint: localhost:50051 # End point where the spiceDB store runs, GRPC endpoint
-    kind: stub # stub - local stub implementation within the code, spicedb - external store
+    #kind: stub # stub - local stub implementation within the code, spicedb - external store
     tokenFile: .secrets/spice-db-local # Needed for store=spicedb, path to the pre-shared token
-    useTLS: false # TLS enabled/disabled between authz service and store (spiceDB)
-tls:
-    certFile: /etc/tls/tls.crt # TLS Certificate path
-    keyFile: /etc/tls/tls.key # TLS key path
+    useTLS: false # TLS enabled/disabled between authz service and store (spiceDB) Defaults to true
+#tls:
+#    certFile: /etc/tls/tls.crt # TLS Certificate path
+#    keyFile: /etc/tls/tls.key # TLS key path

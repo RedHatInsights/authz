@@ -23,7 +23,38 @@ var waitForCompletion *sync.WaitGroup
 func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 	cfg, err := NewConfigurationBuilder().
 		ConfigFilePath(configPath).
-		NoDefaults().
+		Defaults(serviceconfig.ServiceConfig{
+			GrpcPort:     50051,
+			GrpcPortStr:  "50051",
+			HTTPPort:     8080,
+			HTTPPortStr:  "8080",
+			HTTPSPort:    8443,
+			HTTPSPortStr: "8443",
+			CorsConfig: serviceconfig.CorsConfig{
+				AllowedMethods: []string{"HEAD", "GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
+				AllowedHeaders: []string{
+					"Accept",
+					"ResponseType",
+					"Content-Length",
+					"Accept-Encoding",
+					"Accept-Language",
+					"Authorization",
+					"Content-Type",
+					"User-Agent"},
+				AllowCredentials: false,
+				MaxAge:           300,
+				Debug:            false,
+			},
+			StoreConfig: serviceconfig.StoreConfig{
+				Kind:   "spicedb",
+				UseTLS: true,
+			},
+			TLSConfig: serviceconfig.TLSConfig{
+				CertFile: "/etc/tls/tls.crt",
+				KeyFile:  "/etc/tls/tls.key ",
+			},
+			LogRequests: false,
+		}).
 		Build()
 
 	if err != nil {
