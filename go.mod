@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/authzed/authzed-go v0.8.0
 	github.com/authzed/grpcutil v0.0.0-20230109193425-40ce0530e048
-	github.com/go-playground/validator/v10 v10.13.0
+	github.com/go-playground/validator/v10 v10.14.0
 	github.com/golang/glog v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
 	github.com/kinbiko/jsonassert v1.1.1
@@ -24,12 +24,13 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/leodido/go-urn v1.2.3 // indirect
+	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
