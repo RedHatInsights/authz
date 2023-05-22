@@ -1,3 +1,15 @@
+# Minimum required configuration:
+# auth:
+#     -   enabled: true
+#         audience: <audience>
+#         discoveryEndpoint: <discoveryEndpoint>
+# cors:
+#     allowedOrigins:
+#         - <origin>
+# store:
+#     endpoint: <spicedb endpoint>
+#     tokenFile: <path to file containing spicedb preshared key>
+
 #grpcPort: 50052 # GRPC port of the AuthZ service
 httpPort: 8081 # HTTP port of the Authz Service. Defaults to 8080
 #httpsPort: 8443 # HTTPS port of the AuthZ service
