@@ -163,8 +163,10 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		}
 		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
 	} else {
+		// local dev: no authconfig given, so we enable a passthrough middleware to get the requestor from authorization header.
+		authMiddleware := interceptor.NewPassthroughAuthnInterceptor()
 		glog.Warning("Client authorization disabled. Do not use in production use cases!")
-		s.srv = grpc.NewServer(grpc.Creds(creds))
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
 	}
 
 	core.RegisterCheckPermissionServer(s.srv, s)
