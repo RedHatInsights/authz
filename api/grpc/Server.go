@@ -159,14 +159,15 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 	if anyEnabled(s.ServiceConfig.AuthConfigs) {
 		authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServiceConfig.AuthConfigs)
 		if err != nil {
-			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
+			return err
 		}
 		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
 	} else {
-		// local dev: no authconfig given, so we enable a passthrough middleware to get the requestor from authorization header.
-		authMiddleware := interceptor.NewPassthroughAuthnInterceptor()
-		glog.Warning("Client authorization disabled. Do not use in production use cases!")
-		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+		authMiddleware, err := createNoAuthnProvidersHandler()
+		if err != nil {
+			return err
+		}
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware)
 	}
 
 	core.RegisterCheckPermissionServer(s.srv, s)

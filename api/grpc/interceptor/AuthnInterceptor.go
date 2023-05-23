@@ -54,7 +54,7 @@ func NewAuthnInterceptor(configs []serviceconfig.AuthConfig) (*AuthnInterceptor,
 	for _, config := range configs {
 		provider, err := configureAuthnProvider(config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating authn provider")
+			return nil, fmt.Errorf("error creating authn provider: %w", err)
 		}
 
 		providers = append(providers, provider)

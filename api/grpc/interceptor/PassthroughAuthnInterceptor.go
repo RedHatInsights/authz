@@ -1,7 +1,11 @@
+//go:build local
+// +build local
+
 package interceptor
 
 import (
 	"context"
+
 	"google.golang.org/grpc"
 )
 
