@@ -3,6 +3,7 @@ package authzed
 
 import (
 	"authz/domain"
+	"authz/infrastructure/grpcutil"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
-	"github.com/authzed/grpcutil"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

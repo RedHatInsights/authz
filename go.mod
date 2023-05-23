@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/authzed/authzed-go v0.8.0
-	github.com/authzed/grpcutil v0.0.0-20230109193425-40ce0530e048
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/golang/glog v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
@@ -15,7 +14,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.3
-	google.golang.org/grpc v1.54.0
+	google.golang.org/grpc v1.55.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -54,7 +53,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/bradhe/stopwatch v0.0.0-20190618212248-a58cccc508ea
-	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect
+	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -62,7 +61,6 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.10.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jzelinskie/stringz v0.0.0-20210414224931-d6a8ce844a70 // indirect
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103

@@ -4,13 +4,13 @@ package http
 import (
 	core "authz/api/gen/v1alpha"
 	"authz/bootstrap/serviceconfig"
+	"authz/infrastructure/grpcutil"
 	"context"
 	"errors"
 	"net/http"
 	"os"
 	"sync"
 
-	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/golang/glog"
