@@ -13,12 +13,12 @@
 #grpcPort: 50052 # GRPC port of the AuthZ service
 httpPort: 8081 # HTTP port of the Authz Service. Defaults to 8080
 #httpsPort: 8443 # HTTPS port of the AuthZ service
-logRequests: true # Request logging midddleware on/off - true/false. Defaults to false
+logRequests: true # Request logging middleware on/off - true/false. Defaults to false
 auth:
-        -   enabled: false # Recommended for local dev, when there is no AuthN server integration, no checks for the tokens.
-            audience: cloud-services # Used when auth in enabled, audience of the token
-            discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration # Used when auth in enabled, discovery endpoint of the token issuer
-            requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
+    -   enabled: false # Recommended for local dev, when there is no AuthN server integration, no checks for the tokens.
+        audience: cloud-services # Used when auth in enabled, audience of the token
+        discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration # Used when auth in enabled, discovery endpoint of the token issuer
+        requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
 cors: # (Refer to https://github.com/rs/cors for settings)
     #allowCredentials: false
     allowedOrigins:
