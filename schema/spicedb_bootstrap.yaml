@@ -4,13 +4,13 @@ schema: |-
   }
 
   definition license {
-      relation licensed: org
+      relation org: org
       relation version: version
       relation max: max
       relation seats: license_seats
 
       permission access = seats->assigned
-      permission assignable = licensed->enabled_users - seats->assigned
+      permission assignable = org->enabled_users - seats->assigned
   }
 
   definition service {
@@ -18,10 +18,10 @@ schema: |-
   }
 
   definition org {
-      relation users: user
+      relation member: user
       relation disabled: user
 
-      permission enabled_users = users - disabled
+      permission enabled_users = member - disabled
   }
 
   definition user {}
