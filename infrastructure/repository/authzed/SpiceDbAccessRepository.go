@@ -262,7 +262,7 @@ func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) 
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{
 			ObjectType: LicenseObjectType,
-			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
+			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID), // TODO: we are leveraging the fact that license has the orgID encoded rather than using the actual relation between license and org.
 		},
 		Permission:        "assignable",
 		SubjectObjectType: SubjectType,

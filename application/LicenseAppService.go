@@ -129,22 +129,3 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 
 	return seatService.ModifySeats(evt)
 }
-
-//func subtract(first []domain.SubjectID, second []domain.SubjectID) []domain.SubjectID { //Move to a SubjectSet or something?
-//	subtrahend := map[domain.SubjectID]interface{}{} //idiomatic set
-//	for _, id := range second {
-//		subtrahend[id] = struct{}{}
-//	}
-//
-//	result := make([]domain.SubjectID, 0, len(first))
-//
-//	for _, id := range first {
-//		if _, ok := subtrahend[id]; ok {
-//			continue
-//		}
-//
-//		result = append(result, id)
-//	}
-//
-//	return result
-//}
