@@ -257,6 +257,36 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	return &license, nil
 }
 
+// GetAssignable returns assigned seats for a given organization ID and service ID
+func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
+	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
+		Resource: &v1.ObjectReference{
+			ObjectType: LicenseObjectType,
+			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
+		},
+		Permission:        "assignable",
+		SubjectObjectType: SubjectType,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]domain.SubjectID, 0)
+	for {
+		next, err := result.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, domain.SubjectID(next.Subject.SubjectObjectId))
+	}
+	return ids, nil
+}
+
 // GetAssigned returns assigned seats for a given organization ID and service ID
 func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{

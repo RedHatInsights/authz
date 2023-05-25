@@ -38,6 +38,15 @@ func (l *SeatLicenseService) GetLicense(evt domain.GetLicenseEvent) (*domain.Lic
 	return l.seats.GetLicense(evt.OrgID, evt.ServiceID)
 }
 
+func (l *SeatLicenseService) GetAssignableSeats(evt domain.GetLicenseEvent) ([]domain.SubjectID, error) {
+	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
+		return nil, err
+	}
+
+	// TODO: return new GetAssignable in SeatRepositoryService contract
+	return nil, nil
+}
+
 // GetAssignedSeats gets the subjects assigned to the given license
 func (l *SeatLicenseService) GetAssignedSeats(evt domain.GetLicenseEvent) ([]domain.SubjectID, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {

@@ -83,6 +83,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
+	// TODO: we should alternatively call a new seatService method, GetAssignableSeats(), as required
 	assigned, err := seatService.GetAssignedSeats(evt)
 	if err != nil {
 		return nil, err
@@ -92,6 +93,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 	if req.Assigned {
 		resultIds = assigned
 	} else {
+		// TODO: this is not all users anymore, and also not a call to principal repo
 		allUsers, err := s.principalRepo.GetByOrgID(req.OrgID)
 		if err != nil {
 			return nil, err
