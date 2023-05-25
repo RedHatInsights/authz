@@ -38,6 +38,7 @@ func (l *SeatLicenseService) GetLicense(evt domain.GetLicenseEvent) (*domain.Lic
 	return l.seats.GetLicense(evt.OrgID, evt.ServiceID)
 }
 
+// GetAssignableSeats get the subject that can be assigned to a given license
 func (l *SeatLicenseService) GetAssignableSeats(evt domain.GetLicenseEvent) ([]domain.SubjectID, error) {
 	if err := l.ensureRequestorIsAuthorizedToManageLicenses(evt.Requestor); err != nil {
 		return nil, err
