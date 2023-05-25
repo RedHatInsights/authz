@@ -43,8 +43,7 @@ func (l *SeatLicenseService) GetAssignableSeats(evt domain.GetLicenseEvent) ([]d
 		return nil, err
 	}
 
-	// TODO: return new GetAssignable in SeatRepositoryService contract
-	return nil, nil
+	return l.seats.GetAssignable(evt.OrgID, evt.ServiceID)
 }
 
 // GetAssignedSeats gets the subjects assigned to the given license

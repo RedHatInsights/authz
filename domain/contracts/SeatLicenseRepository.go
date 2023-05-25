@@ -10,7 +10,8 @@ type SeatLicenseRepository interface {
 	ModifySeats(assignedSubjectIDs []domain.SubjectID, removedSubjectIDs []domain.SubjectID, license *domain.License, orgID string, svc domain.Service) error
 	// GetLicense retrieves the stored license for the given organization and service, if any.
 	GetLicense(orgID string, serviceID string) (*domain.License, error)
-	// TODO: GetAssignable
+	// GetAssignable retrieves the IDs of the subjects who are assignable to seats in the current license
+	GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error)
 	// GetAssigned retrieves the IDs of the subjects assigned seats in the current license
 	GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error)
 }

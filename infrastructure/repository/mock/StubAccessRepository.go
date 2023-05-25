@@ -47,6 +47,13 @@ func (s *StubAccessRepository) GetLicense(_ string, serviceID string) (*domain.L
 	return &lic, nil
 }
 
+// GetAssignable retrieves the IDs of the subjects who are assignable to seats in the current license
+func (s *StubAccessRepository) GetAssignable(_ string, serviceID string) ([]domain.SubjectID, error) {
+	// TODO: GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) to maintain the contract
+
+	return nil, nil
+}
+
 // GetAssigned retrieves the IDs of the subjects assigned seats in the current license
 func (s *StubAccessRepository) GetAssigned(_ string, serviceID string) ([]domain.SubjectID, error) {
 	subjects := make([]domain.SubjectID, 0)
