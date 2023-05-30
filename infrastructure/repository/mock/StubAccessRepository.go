@@ -48,10 +48,9 @@ func (s *StubAccessRepository) GetLicense(_ string, serviceID string) (*domain.L
 }
 
 // GetAssignable retrieves the IDs of the subjects who are assignable to seats in the current license
-func (s *StubAccessRepository) GetAssignable(_ string, serviceID string) ([]domain.SubjectID, error) {
-	// TODO: GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) to maintain the contract
-
-	return nil, nil
+func (s *StubAccessRepository) GetAssignable(_ string, _ string) ([]domain.SubjectID, error) {
+	// TODO: We need to decide whether to continue to support this stub/fake. The impl is straightforward, but tests required, etc.
+	panic("Not implemented")
 }
 
 // GetAssigned retrieves the IDs of the subjects assigned seats in the current license
