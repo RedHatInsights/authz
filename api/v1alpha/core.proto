@@ -27,7 +27,7 @@ message CheckPermissionResponse {
 service LicenseService {
   rpc GetLicense (GetLicenseRequest) returns (GetLicenseResponse) {}
   rpc ModifySeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
-  rpc GetSeats (GetSeatsRequest) returns (GetSeatsResponse) {}
+  rpc GetSeats (GetSeatsRequest) returns (stream GetSeatsUserRepresentation) {}
 }
 
 
@@ -62,10 +62,6 @@ message GetSeatsRequest {
 enum SeatFilterType {
   assigned = 0;
   assignable = 1;
-}
-
-message GetSeatsResponse {
-  repeated GetSeatsUserRepresentation users = 1; // Just user IDs, unless "includeUsers" = true.
 }
 
 //we may return more userinfo, this is a starting point.

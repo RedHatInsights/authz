@@ -75,10 +75,10 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 }
 
 // GetSeats returns seats for a given org and service
-func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*core.GetSeatsResponse, error) {
-	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+func (s *Server) GetSeats(grpcReq *core.GetSeatsRequest, srv core.LicenseService_GetSeatsServer) error {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(srv.Context())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	includeUsers := true
@@ -107,19 +107,22 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 
 	principals, err := s.LicenseAppService.GetSeatAssignments(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	resp := &core.GetSeatsResponse{Users: make([]*core.GetSeatsUserRepresentation, len(principals))}
-	for i, p := range principals {
-		resp.Users[i] = &core.GetSeatsUserRepresentation{
+	for _, p := range principals {
+		err = srv.SendMsg(&core.GetSeatsUserRepresentation{
 			DisplayName: p.DisplayName,
 			Id:          string(p.ID),
 			Assigned:    assigned,
+		})
+
+		if err != nil {
+			return err
 		}
 	}
 
-	return resp, nil
+	return nil
 }
 
 // NewServer creates a new Server object to use.
@@ -161,12 +164,12 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		if err != nil {
 			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 		}
-		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary(), authMiddleware.Stream())
 	} else {
 		// local dev: no authconfig given, so we enable a passthrough middleware to get the requestor from authorization header.
 		authMiddleware := interceptor.NewPassthroughAuthnInterceptor()
 		glog.Warning("Client authorization disabled. Do not use in production use cases!")
-		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary(), authMiddleware.Stream())
 	}
 
 	core.RegisterCheckPermissionServer(s.srv, s)
