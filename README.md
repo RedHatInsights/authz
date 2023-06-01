@@ -1,14 +1,13 @@
 # Authz service
 
 # Start up
+run `go run cmd/main.go < -c / --config > <path/to/config.yaml>`
 
-run `go run cmd/main.go < -c / --config > < path-to-directory-where-config-file-lives >`
+## Example: Running with the provided config.yaml in this repo
+* from the root directory: `go run cmd/main.go -c config.yaml` 
+  or `go run cmd/main.go --config config.yaml` 
 
-## Example: Running with the provided config.yml in this repo
-* from the root directory: `go run cmd/main.go -c .` 
-  or `go run cmd/maing.go --config $PWD` 
-
-* from the `cmd` directory: go run main.go -c ../
+* from the `cmd` directory: go run main.go -c ../config.yaml
 
 ## Configuring the underlying Store
 Set 
