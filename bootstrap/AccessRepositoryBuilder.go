@@ -6,6 +6,8 @@ import (
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
 	"authz/infrastructure/repository/mock"
+
+	"github.com/golang/glog"
 )
 
 // AccessRepositoryBuilder is the builder containing the config for building technical implementations of the server
@@ -29,6 +31,7 @@ func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	config := e.config.StoreConfig
 	switch config.Kind {
 	case "stub":
+		glog.Warning("Stub store implementation used. Do not use in production use cases!")
 		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":
 		spicedb := &authzed.SpiceDbAccessRepository{}
