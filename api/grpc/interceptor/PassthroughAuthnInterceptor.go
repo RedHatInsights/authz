@@ -22,9 +22,10 @@ func (authnInterceptor *PassthroughAuthnInterceptor) Unary() grpc.ServerOption {
 	})
 }
 
-func (AuthnInterceptor *PassthroughAuthnInterceptor) Stream() grpc.ServerOption {
+// Stream impl of the Stream passthrough interceptor, returning static value in the context..
+func (authnInterceptor *PassthroughAuthnInterceptor) Stream() grpc.ServerOption {
 	return grpc.StreamInterceptor(func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		wrappedStream := AuthnServerStream{}
+		wrappedStream := authnServerStream{}
 		wrappedStream.ServerStream = ss
 		wrappedStream.ctx = context.WithValue(ss.Context(), RequestorContextKey, "static-subject")
 

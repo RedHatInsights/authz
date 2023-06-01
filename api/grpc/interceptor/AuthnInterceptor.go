@@ -157,6 +157,7 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 	})
 }
 
+// Stream impl of the Stream interceptor
 func (authnInterceptor *AuthnInterceptor) Stream() grpc.ServerOption {
 	return grpc.StreamInterceptor(func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		token := getBearerTokenFromContext(ss.Context())
@@ -171,7 +172,7 @@ func (authnInterceptor *AuthnInterceptor) Stream() grpc.ServerOption {
 			return err
 		}
 
-		wrappedStream := AuthnServerStream{}
+		wrappedStream := authnServerStream{}
 		wrappedStream.ServerStream = ss
 		wrappedStream.ctx = context.WithValue(ss.Context(), RequestorContextKey, result.SubjectID)
 
@@ -179,12 +180,12 @@ func (authnInterceptor *AuthnInterceptor) Stream() grpc.ServerOption {
 	})
 }
 
-type AuthnServerStream struct {
+type authnServerStream struct {
 	grpc.ServerStream
 	ctx context.Context
 }
 
-func (s AuthnServerStream) Context() context.Context {
+func (s authnServerStream) Context() context.Context {
 	return s.ctx
 }
 
