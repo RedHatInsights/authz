@@ -21,6 +21,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// OrgType org
+const OrgType = "org"
+
 // SubjectType user
 const SubjectType = "user"
 
@@ -81,6 +84,7 @@ func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.Subjec
 			subj,
 			orgID,
 			svc))
+		preconditions = append(preconditions, createUserNotDisabledPrecondition(subj, orgID))
 
 		assignedCount++
 	}
@@ -192,6 +196,21 @@ func createSeatAssignedPrecondition(subj domain.SubjectID, orgID string, svc dom
 			ResourceType:       LicenseSeatObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, svc.ID),
 			OptionalRelation:   "assigned",
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       SubjectType,
+				OptionalSubjectId: string(subj),
+			},
+		},
+	}
+}
+
+func createUserNotDisabledPrecondition(subj domain.SubjectID, orgID string) *v1.Precondition {
+	return &v1.Precondition{
+		Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
+		Filter: &v1.RelationshipFilter{
+			ResourceType:       OrgType,
+			OptionalResourceId: orgID,
+			OptionalRelation:   "disabled",
 			OptionalSubjectFilter: &v1.SubjectFilter{
 				SubjectType:       SubjectType,
 				OptionalSubjectId: string(subj),

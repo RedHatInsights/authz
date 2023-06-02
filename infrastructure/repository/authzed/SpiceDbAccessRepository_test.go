@@ -71,6 +71,21 @@ func TestGetLicense(t *testing.T) {
 	assert.Equal(t, 1, lic.InUse)
 }
 
+func TestGetAssignable(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+	t.Parallel()
+
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	assignable, err := client.GetAssignable("o1", "smarts")
+	assert.NoError(t, err)
+
+	assert.ElementsMatch(t, []domain.SubjectID{"u2", "u5"}, assignable)
+}
+
 func TestGetAssigned(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
@@ -114,6 +129,31 @@ func TestAssignBatch(t *testing.T) {
 	assert.Equal(t, oldLic.InUse+len(subs), newLic.InUse)
 }
 
+func TestFailAssignBatchIfOneDisabled(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	// given
+	subs := []domain.SubjectID{
+		"u4", "u101",
+	}
+	oldLic, e1 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e1)
+	assert.Equal(t, 1, oldLic.InUse)
+
+	// when
+	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
+
+	// then
+	assert.Error(t, err)
+}
+
 func TestUnassignBatch(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
@@ -142,6 +182,11 @@ func TestUnassignBatch(t *testing.T) {
 	assert.NoError(t, e2)
 	assert.Equal(t, oldLic.InUse-len(subs), newLic.InUse)
 }
+
+// TODO: Test that an assigned but disabled user can be unassigned (sanity check) since we'll need to do this explicitly
+// In general, I'm not in favour of testing races and manipulating "disabled" with other things, since we never do the
+// disabling (that is user service) *but* it would be good to induce it for this case. Simply seeding spicedb with an
+// assigned but disabled user breaks some tests, so work to be done there too...
 
 func TestAssignUnassign(t *testing.T) {
 	if testing.Short() {
@@ -215,4 +260,22 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+}
+
+func TestFailAssignForDisabled(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	t.Parallel()
+
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	licBefore, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	err = client.ModifySeats([]domain.SubjectID{"u4"}, []domain.SubjectID{}, licBefore, "o1", domain.Service{ID: "smarts"})
+
+	assert.Error(t, err)
 }

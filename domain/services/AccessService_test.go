@@ -8,7 +8,7 @@ import (
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
-	access := NewAccessService(mockAuthzRepository())
+	access := NewAccessService(spicedbSeatLicenseRepository())
 	_, err := access.Check(objFromRequest(
 		"other system",
 		"okay",
@@ -22,7 +22,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenStoreReturnsTrue(t *testing.T) {
-	access := NewAccessService(mockAuthzRepository())
+	access := NewAccessService(spicedbSeatLicenseRepository())
 	result, err := access.Check(objFromRequest(
 		"system",
 		"u1",
@@ -40,7 +40,7 @@ func TestCheckReturnsTrueWhenStoreReturnsTrue(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenStoreReturnsFalse(t *testing.T) {
-	access := NewAccessService(mockAuthzRepository())
+	access := NewAccessService(spicedbSeatLicenseRepository())
 	result, err := access.Check(objFromRequest(
 		"system",
 		"bad",
@@ -68,7 +68,7 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 	}
 }
 
-func mockAuthzRepository() contracts.AccessRepository {
+func spicedbSeatLicenseRepository() contracts.AccessRepository {
 	client, err := spicedbContainer.CreateClient()
 	if err != nil {
 		panic(err)

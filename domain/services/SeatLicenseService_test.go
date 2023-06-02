@@ -18,7 +18,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 		[]string{"u2"},
 		[]string{})
 
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	err := lic.ModifySeats(req)
@@ -26,9 +26,47 @@ func TestLicensingModifySeatsErrorsWhenNotAuthenticated(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
 }
 
+func TestNewAssignedUserNotAssignableButNewUnassignedUserIs(t *testing.T) {
+	//given
+	store := spicedbSeatLicenseRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	// when
+	req := modifyLicRequestFromVars("okay", "o1", []string{"u2"}, []string{"u1"})
+	err := lic.ModifySeats(req)
+	assert.NoError(t, err)
+
+	// then
+	getevt := domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	assignable, err := lic.GetAssignableSeats(getevt)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []domain.SubjectID{"u1", "u5"}, assignable)
+
+	assigned, err := lic.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []domain.SubjectID{"u2"}, assigned)
+}
+
+func TestDisabledUserNotAssignable(t *testing.T) {
+	//given
+	store := spicedbSeatLicenseRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	// when
+	req := modifyLicRequestFromVars("okay", "o1", []string{"u3"}, nil)
+	err := lic.ModifySeats(req)
+
+	// then
+	assert.Error(t, err)
+}
+
 func TestSeatLicenseOverAssignment(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 	err := fillUpLicense(lic)
 	assert.NoError(t, err)
@@ -51,7 +89,7 @@ func TestSeatLicenseOverAssignment(t *testing.T) {
 
 func TestConcurrentSwapsCannotReplaceTheSameUser(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	//when
@@ -84,7 +122,7 @@ func TestConcurrentSwapsCannotReplaceTheSameUser(t *testing.T) {
 
 func TestConcurrentIndividualRequestsCannotExceedLimit(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	//when
@@ -117,7 +155,7 @@ func TestConcurrentIndividualRequestsCannotExceedLimit(t *testing.T) {
 
 func TestConcurrentRequestsCannotExceedLimit(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	//when
@@ -171,7 +209,7 @@ func assertLicenseCountIsCorrect(t *testing.T, lic *SeatLicenseService) {
 
 func TestCanSwapWhenLicenseFull(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	err := fillUpLicense(lic)
@@ -203,7 +241,7 @@ func TestCanSwapWhenLicenseFull(t *testing.T) {
 
 func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
 	//given
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	// when
@@ -240,7 +278,7 @@ func TestLicensingModifySeatsErrorsWhenNotAuthorized(t *testing.T) {
 		[]string{"okay"},
 		[]string{})
 
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 
 	err := lic.ModifySeats(req)
@@ -254,7 +292,7 @@ func TestLicensingAssignUnassignRoundTrip(t *testing.T) {
 		[]string{"okay"},
 		[]string{})
 
-	store := mockAuthzRepository()
+	store := spicedbSeatLicenseRepository()
 	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
 	license := domain.Resource{Type: "license", ID: "o1/smarts"}
 

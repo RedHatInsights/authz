@@ -37,13 +37,13 @@ relationships: |-
   // OPERATION 5: Add relationship from license to org (o1)
   license:o1/smarts#org@org:o1
 
-  // OPERATION 6: Add (enabled) users to o1
+  // OPERATION 6: Add users to o1 (seeded users normally coming from user service/UMB principal repository)
   org:o1#member@user:u1
   org:o1#member@user:u2
   org:o1#member@user:u3
   org:o1#member@user:u4
   org:o1#member@user:u5
 
-  // OPERATION 7: Add relationship for users that are disabled in o1 (will not be assignable)
+  // OPERATION 7: Add relationship for seeded users that are disabled in o1 (will not be assignable)
   org:o1#disabled@user:u3
   org:o1#disabled@user:u4
