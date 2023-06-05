@@ -84,7 +84,7 @@ func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.Subjec
 			subj,
 			orgID,
 			svc))
-		preconditions = append(preconditions, createUserNotDisabledPrecondition(subj, orgID))
+		preconditions = append(preconditions, createUserNotDisabledPrecondition(subj, orgID), createUserIsMemberOfOrgPrecondition(subj, orgID))
 
 		assignedCount++
 	}
@@ -196,6 +196,21 @@ func createSeatAssignedPrecondition(subj domain.SubjectID, orgID string, svc dom
 			ResourceType:       LicenseSeatObjectType,
 			OptionalResourceId: fmt.Sprintf("%s/%s", orgID, svc.ID),
 			OptionalRelation:   "assigned",
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       SubjectType,
+				OptionalSubjectId: string(subj),
+			},
+		},
+	}
+}
+
+func createUserIsMemberOfOrgPrecondition(subj domain.SubjectID, orgID string) *v1.Precondition {
+	return &v1.Precondition{
+		Operation: v1.Precondition_OPERATION_MUST_MATCH,
+		Filter: &v1.RelationshipFilter{
+			ResourceType:       OrgType,
+			OptionalResourceId: orgID,
+			OptionalRelation:   "member",
 			OptionalSubjectFilter: &v1.SubjectFilter{
 				SubjectType:       SubjectType,
 				OptionalSubjectId: string(subj),

@@ -99,7 +99,7 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
 			"assign": [
-			  "okay"
+			  "u7"
 			]
 		  }`))
 
@@ -166,7 +166,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
 			"assign": [
-			  "okay"
+			  "u7"
 			]
 		  }`))
 	assert.NoError(t, err)
@@ -232,7 +232,7 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 	defer teardownService()
 	body := `{
 			"assign": [
-			  "okay"
+			  "u7"
 			]
 		  }`
 

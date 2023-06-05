@@ -43,6 +43,40 @@ relationships: |-
   org:o1#member@user:u3
   org:o1#member@user:u4
   org:o1#member@user:u5
+  org:o1#member@user:u6
+  org:o1#member@user:u7
+  org:o1#member@user:u8
+  org:o1#member@user:u9
+  org:o1#member@user:u10
+  org:o1#member@user:u11
+  org:o1#member@user:u12
+  org:o1#member@user:u13
+  org:o1#member@user:u14
+  org:o1#member@user:u15
+  org:o1#member@user:u16
+  org:o1#member@user:u17
+  org:o1#member@user:u18
+  org:o1#member@user:u19
+  org:o1#member@user:u20
+  org:o2#member@user:u1
+  org:o2#member@user:u2
+  org:o2#member@user:u3
+  org:o2#member@user:u4
+  org:o2#member@user:u6
+  org:o2#member@user:u7
+  org:o2#member@user:u8
+  org:o2#member@user:u9
+  org:o2#member@user:u10
+  org:o2#member@user:u11
+  org:o2#member@user:u12
+  org:o2#member@user:u13
+  org:o2#member@user:u14
+  org:o2#member@user:u15
+  org:o2#member@user:u16
+  org:o2#member@user:u17
+  org:o2#member@user:u18
+  org:o2#member@user:u19
+  org:o2#member@user:u20
 
   // OPERATION 7: Add relationship for seeded users that are disabled in o1 (will not be assignable)
   org:o1#disabled@user:u3
