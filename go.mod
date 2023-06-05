@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/golang/glog v1.1.1
 	github.com/google/uuid v1.3.0 // test only
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
 	github.com/kinbiko/jsonassert v1.1.1
 	github.com/lestrrat-go/jwx/v2 v2.0.9
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // errdetails
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // errdetails
 	google.golang.org/grpc v1.55.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.30.0
@@ -51,6 +51,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
+	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )
@@ -78,5 +79,5 @@ require (
 	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/tools v0.7.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
 )
