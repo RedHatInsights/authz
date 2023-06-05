@@ -6,7 +6,7 @@ require (
 	github.com/authzed/authzed-go v0.8.0
 	github.com/bradhe/stopwatch v0.0.0-20190618212248-a58cccc508ea // test only
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // grpcutil
-	github.com/go-playground/validator/v10 v10.14.0
+	github.com/go-playground/validator/v10 v10.14.1
 	github.com/golang/glog v1.1.1
 	github.com/google/uuid v1.3.0 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0
