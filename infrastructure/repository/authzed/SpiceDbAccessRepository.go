@@ -21,20 +21,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// OrgType org
-const OrgType = "org"
-
-// SubjectType user
-const SubjectType = "user"
-
-// LicenseSeatObjectType license_seats
-const LicenseSeatObjectType = "license_seats"
-
-// LicenseObjectType - License object
-const LicenseObjectType = "license"
-
-// LicenseVersionStr - License Version realation
-const LicenseVersionStr = "version"
+const (
+	// OrgType org relation
+	OrgType = "org"
+	// SubjectType user relation
+	SubjectType = "user"
+	// LicenseSeatObjectType license_seats relation
+	LicenseSeatObjectType = "license_seats"
+	// LicenseObjectType - License relation
+	LicenseObjectType = "license"
+	// LicenseVersionStr - License Version relation
+	LicenseVersionStr = "version"
+)
 
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct {

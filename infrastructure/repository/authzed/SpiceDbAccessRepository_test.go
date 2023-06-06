@@ -147,13 +147,17 @@ func TestFailAssignBatchIfOneDisabled(t *testing.T) {
 	}
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 2, oldLic.InUse) //u1, u3
+	assert.Equal(t, 2, oldLic.InUse) // u1, u3
 
 	// when
 	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
 
 	// then
 	assert.Error(t, err)
+
+	expectedSameLicense, e2 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e2)
+	assert.Equal(t, 2, expectedSameLicense.InUse) // still u1, u3, so if error in batch nothing gets applied.
 }
 
 func TestUnassignBatch(t *testing.T) {
