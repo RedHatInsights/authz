@@ -49,7 +49,7 @@ func TestNewAssignedUserNotAssignableButNewUnassignedUserIs(t *testing.T) {
 
 	assigned, err := lic.GetAssignedSeats(getevt)
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, []domain.SubjectID{"u2"}, assigned)
+	assert.ElementsMatch(t, []domain.SubjectID{"u2", "u3"}, assigned)
 }
 
 func TestDisabledUserNotAssignable(t *testing.T) {
@@ -145,6 +145,28 @@ func TestConcurrentSwapsCannotReplaceTheSameUser(t *testing.T) {
 	}
 
 	assertLicenseCountIsCorrect(t, lic)
+}
+
+func TestDisabledAssignedUsersCanBeUnassigned(t *testing.T) {
+	//given
+	store := spicedbSeatLicenseRepository()
+	lic := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+	req := modifyLicRequestFromVars("okay", "o1", []string{}, []string{"u3"}) //u3 is assigned and disabled
+
+	//when
+	err := lic.ModifySeats(req)
+
+	//then
+	assert.NoError(t, err)
+	spicedbContainer.WaitForQuantizationInterval()
+
+	assigned, err := lic.GetAssignedSeats(domain.GetLicenseEvent{
+		Requestor: "okay",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	})
+	assert.NoError(t, err)
+	assert.NotContains(t, assigned, domain.SubjectID("u3"))
 }
 
 func TestConcurrentIndividualRequestsCannotExceedLimit(t *testing.T) {
@@ -283,11 +305,11 @@ func TestCantUnassignSeatThatWasNotAssigned(t *testing.T) {
 		ServiceID: "smarts",
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, 1, license.InUse)
+	assert.Equal(t, 2, license.InUse)
 }
 
 func fillUpLicense(lic *SeatLicenseService) error {
-	toAssign := make([]string, 9) //9 free slots in seed data
+	toAssign := make([]string, 8) //8 free slots in seed data
 	for i := range toAssign {
 		toAssign[i] = "u" + strconv.Itoa(i+12) // +12 bc. u3 and u4 are disabled
 	}

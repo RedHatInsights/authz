@@ -156,11 +156,11 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":9, "seatsTotal": 10}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"O1 User 1","id":"u1"}]}`)
+	assertJSONResponse(t, resp, 200, `{"users": ["<<UNORDERED>>", {"assigned":true,"displayName":"O1 User 1","id":"u1"}, {"displayName":"O1 User 3","id":"u3","assigned":true}]}`)
 
 	//Grant a license
 	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
@@ -176,7 +176,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":7, "seatsTotal": 10}`)
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
 	assert.NoError(t, err)

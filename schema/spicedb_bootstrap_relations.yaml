@@ -21,9 +21,10 @@ relationships: |-
   // 4. otherwise, add user relation to seats, update version of license, and remove existing version,
   // IFF there exists a version relation matching the current (OPERATION_MUST_MATCH precondition)
   license_seats:o1/smarts#assigned@user:u1
+  license_seats:o1/smarts#assigned@user:u3
 
   // Note new version is a new uuid and new count
-  license:o1/smarts#version@version:141B2939/1
+  license:o1/smarts#version@version:141B2939/2
 
   // OPERATION 3: Read counts (summary)
   // zed relationship read license:o1/smarts

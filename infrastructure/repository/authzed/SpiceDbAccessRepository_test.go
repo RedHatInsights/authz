@@ -68,7 +68,7 @@ func TestGetLicense(t *testing.T) {
 	assert.Equal(t, "o1", lic.OrgID)
 	assert.Equal(t, "smarts", lic.ServiceID)
 	assert.Equal(t, 10, lic.MaxSeats)
-	assert.Equal(t, 1, lic.InUse)
+	assert.Equal(t, 2, lic.InUse) //u1, u3
 }
 
 func TestGetAssignable(t *testing.T) {
@@ -99,7 +99,7 @@ func TestGetAssigned(t *testing.T) {
 	assigned, err := client.GetAssigned("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.ElementsMatch(t, []domain.SubjectID{"u1"}, assigned)
+	assert.ElementsMatch(t, []domain.SubjectID{"u1", "u3"}, assigned)
 }
 
 func TestAssignBatch(t *testing.T) {
@@ -119,7 +119,7 @@ func TestAssignBatch(t *testing.T) {
 
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 1, oldLic.InUse)
+	assert.Equal(t, 2, oldLic.InUse)
 
 	// when
 	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
@@ -147,7 +147,7 @@ func TestFailAssignBatchIfOneDisabled(t *testing.T) {
 	}
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 1, oldLic.InUse)
+	assert.Equal(t, 2, oldLic.InUse) //u1, u3
 
 	// when
 	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
@@ -173,7 +173,7 @@ func TestUnassignBatch(t *testing.T) {
 
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 1, oldLic.InUse)
+	assert.Equal(t, 2, oldLic.InUse) //u1, u3
 
 	// when
 	err = client.ModifySeats([]domain.SubjectID{}, subs, oldLic, "o1", domain.Service{ID: "smarts"})
@@ -209,7 +209,7 @@ func TestAssignUnassign(t *testing.T) {
 	lic, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.Equal(t, 2, lic.InUse)
+	assert.Equal(t, 3, lic.InUse) //u1, u2, u3
 
 	err = client.ModifySeats([]domain.SubjectID{}, []domain.SubjectID{"u2"}, lic, "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
@@ -217,7 +217,7 @@ func TestAssignUnassign(t *testing.T) {
 	lic, err = client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.Equal(t, 1, lic.InUse)
+	assert.Equal(t, 2, lic.InUse) //u1, u3
 }
 
 func TestUnassignNotAssigned(t *testing.T) {
