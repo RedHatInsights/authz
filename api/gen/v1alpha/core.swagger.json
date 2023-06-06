@@ -155,9 +155,18 @@
         "operationId": "LicenseService_GetSeats",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/v1alphaGetSeatsResponse"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1alphaGetSeatsUserRepresentation"
+                },
+                "error": {
+                  "$ref": "#/definitions/rpcStatus"
+                }
+              },
+              "title": "Stream result of v1alphaGetSeatsUserRepresentation"
             }
           },
           "default": {
@@ -277,19 +286,6 @@
           "type": "integer",
           "format": "int32",
           "description": "Current number of available seats which can be assigned."
-        }
-      }
-    },
-    "v1alphaGetSeatsResponse": {
-      "type": "object",
-      "properties": {
-        "users": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/v1alphaGetSeatsUserRepresentation"
-          },
-          "description": "Just user IDs, unless \"includeUsers\" = true."
         }
       }
     },

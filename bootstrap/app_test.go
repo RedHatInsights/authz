@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"authz/infrastructure/repository/authzed"
+	"bufio"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -160,7 +161,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"users": [{"assigned":true,"displayName":"O1 User 1","id":"u1"}]}`)
+	assertJSONLResponse(t, resp, 200, 1, `{"result":{"assigned":true,"displayName":"O1 User 1","id":"u1"}}`)
 
 	//Grant a license
 	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
@@ -180,11 +181,12 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"users": "<<PRESENCE>>"}`)
+	assertJSONLResponse(t, resp, 200, 2, `{"result":{"assigned":"<<PRESENCE>>","displayName":"<<PRESENCE>>","id":"<<PRESENCE>>"}}`)
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats?filter=assignable", "token"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"users":"<<PRESENCE>>"}`)
+	expectedCount := 19 //20 test users + u1 - 2 assigned
+	assertJSONLResponse(t, resp, 200, expectedCount, `{"result":{"assigned":"<<PRESENCE>>","displayName":"<<PRESENCE>>","id":"<<PRESENCE>>"}}`)
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
@@ -243,6 +245,22 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Header.Get("Vary"), "Origin")
 	assertJSONResponse(t, resp, 200, `{}`)
+}
+
+func assertJSONLResponse(t *testing.T, resp *http.Response, statusCode int, expectedCount int, lineTemplate string, args ...interface{}) {
+	if assert.NotNil(t, resp) {
+		assert.Equal(t, statusCode, resp.StatusCode)
+
+		ja := jsonassert.New(t)
+		s := bufio.NewScanner(resp.Body)
+		count := 0
+		for s.Scan() {
+			line := s.Text()
+			ja.Assertf(line, lineTemplate, args...)
+			count++
+		}
+		assert.Equal(t, expectedCount, count)
+	}
 }
 
 func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {

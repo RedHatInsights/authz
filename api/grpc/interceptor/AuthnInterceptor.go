@@ -157,6 +157,38 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 	})
 }
 
+// Stream impl of the Stream interceptor
+func (authnInterceptor *AuthnInterceptor) Stream() grpc.ServerOption {
+	return grpc.StreamInterceptor(func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		token := getBearerTokenFromContext(ss.Context())
+
+		if token == "" {
+			return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
+		}
+
+		result, err := authnInterceptor.validateTokenAndExtractSubject(token)
+
+		if err != nil {
+			return err
+		}
+
+		wrappedStream := authnServerStream{}
+		wrappedStream.ServerStream = ss
+		wrappedStream.ctx = context.WithValue(ss.Context(), RequestorContextKey, result.SubjectID)
+
+		return handler(srv, wrappedStream)
+	})
+}
+
+type authnServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (s authnServerStream) Context() context.Context {
+	return s.ctx
+}
+
 func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
 	jwtoken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithValidate(false)) //Parse without any validation to peek issuer
 

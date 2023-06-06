@@ -108,7 +108,7 @@ var CheckPermission_ServiceDesc = grpc.ServiceDesc{
 type LicenseServiceClient interface {
 	GetLicense(ctx context.Context, in *GetLicenseRequest, opts ...grpc.CallOption) (*GetLicenseResponse, error)
 	ModifySeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
-	GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error)
+	GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (LicenseService_GetSeatsClient, error)
 }
 
 type licenseServiceClient struct {
@@ -137,13 +137,36 @@ func (c *licenseServiceClient) ModifySeats(ctx context.Context, in *ModifySeatsR
 	return out, nil
 }
 
-func (c *licenseServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error) {
-	out := new(GetSeatsResponse)
-	err := c.cc.Invoke(ctx, "/api.v1alpha.LicenseService/GetSeats", in, out, opts...)
+func (c *licenseServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (LicenseService_GetSeatsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &LicenseService_ServiceDesc.Streams[0], "/api.v1alpha.LicenseService/GetSeats", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &licenseServiceGetSeatsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type LicenseService_GetSeatsClient interface {
+	Recv() (*GetSeatsUserRepresentation, error)
+	grpc.ClientStream
+}
+
+type licenseServiceGetSeatsClient struct {
+	grpc.ClientStream
+}
+
+func (x *licenseServiceGetSeatsClient) Recv() (*GetSeatsUserRepresentation, error) {
+	m := new(GetSeatsUserRepresentation)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // LicenseServiceServer is the server API for LicenseService service.
@@ -152,7 +175,7 @@ func (c *licenseServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest
 type LicenseServiceServer interface {
 	GetLicense(context.Context, *GetLicenseRequest) (*GetLicenseResponse, error)
 	ModifySeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
-	GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error)
+	GetSeats(*GetSeatsRequest, LicenseService_GetSeatsServer) error
 }
 
 // UnimplementedLicenseServiceServer should be embedded to have forward compatible implementations.
@@ -165,8 +188,8 @@ func (UnimplementedLicenseServiceServer) GetLicense(context.Context, *GetLicense
 func (UnimplementedLicenseServiceServer) ModifySeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ModifySeats not implemented")
 }
-func (UnimplementedLicenseServiceServer) GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSeats not implemented")
+func (UnimplementedLicenseServiceServer) GetSeats(*GetSeatsRequest, LicenseService_GetSeatsServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetSeats not implemented")
 }
 
 // UnsafeLicenseServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -216,22 +239,25 @@ func _LicenseService_ModifySeats_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LicenseService_GetSeats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSeatsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _LicenseService_GetSeats_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetSeatsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(LicenseServiceServer).GetSeats(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.v1alpha.LicenseService/GetSeats",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LicenseServiceServer).GetSeats(ctx, req.(*GetSeatsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(LicenseServiceServer).GetSeats(m, &licenseServiceGetSeatsServer{stream})
+}
+
+type LicenseService_GetSeatsServer interface {
+	Send(*GetSeatsUserRepresentation) error
+	grpc.ServerStream
+}
+
+type licenseServiceGetSeatsServer struct {
+	grpc.ServerStream
+}
+
+func (x *licenseServiceGetSeatsServer) Send(m *GetSeatsUserRepresentation) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // LicenseService_ServiceDesc is the grpc.ServiceDesc for LicenseService service.
@@ -249,11 +275,13 @@ var LicenseService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ModifySeats",
 			Handler:    _LicenseService_ModifySeats_Handler,
 		},
+	},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "GetSeats",
-			Handler:    _LicenseService_GetSeats_Handler,
+			StreamName:    "GetSeats",
+			Handler:       _LicenseService_GetSeats_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "v1alpha/core.proto",
 }
