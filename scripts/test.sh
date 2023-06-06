@@ -32,6 +32,11 @@ function fail() {
     exit 1
 }
 
+# TODO: helper func for step 0, trying to unassign u15, see TODO below
+#function info() {
+#    echo "$1"
+#}
+
 function assert() {
     condition=$1
     message=$2
@@ -54,6 +59,10 @@ function cleanup() {
 
 login
 trap cleanup EXIT #always run cleanup
+
+# TODO: try unassigning first if already assigned but not fail if it is not assigned
+# msg='Setup: try unassign u15'
+# curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["u15"]}' || info "U15 not assigned yet. continuing..."
 
 msg='Granting license to u15 (should succeed)'
 curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"assign": ["u15"]}' || fail "Failed request: $msg"
