@@ -47,7 +47,7 @@ func (s *StubAccessRepository) GetLicense(_ string, serviceID string) (*domain.L
 	return &lic, nil
 }
 
-// GetAssignable retrieves the IDs of the subjects who are assignable to seats in the current license
+// GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
 func (s *StubAccessRepository) GetAssignable(_ string, _ string) ([]domain.SubjectID, error) {
 	// TODO: We need to decide whether to continue to support this stub/fake. The impl is straightforward, but tests required, etc.
 	panic("Not implemented")

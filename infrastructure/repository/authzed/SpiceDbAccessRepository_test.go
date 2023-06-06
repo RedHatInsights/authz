@@ -189,11 +189,6 @@ func TestUnassignBatch(t *testing.T) {
 	assert.Equal(t, oldLic.InUse-len(subs), newLic.InUse)
 }
 
-// TODO: Test that an assigned but disabled user can be unassigned (sanity check) since we'll need to do this explicitly
-// In general, I'm not in favour of testing races and manipulating "disabled" with other things, since we never do the
-// disabling (that is user service) *but* it would be good to induce it for this case. Simply seeding spicedb with an
-// assigned but disabled user breaks some tests, so work to be done there too...
-
 func TestAssignUnassign(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()

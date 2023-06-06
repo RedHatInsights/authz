@@ -289,7 +289,7 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	return &license, nil
 }
 
-// GetAssignable returns assignable seats for a given organization ID and service ID
+// GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
 func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{
