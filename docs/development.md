@@ -16,5 +16,5 @@ Authz calls out to SpiceDB on grpc/50051 by default if the command line, below, 
 4. `make kind-spicedb-deploy` to deploy SpiceDB in the kind cluster.
 5. `kubectl port-forward $(kubectl get pods -oname -l app.kubernetes.io/name=spicedb --field-selector=status.phase==Running) 60000:50051` to port forward from localhost 60000 to the SpiceDB pod on kind running on 50051. (Port forward from 60000 to keep 50051 free for authz grpc port. This command does not exit, so continue on another terminal.)
 6. `make binary` to build the authz service locally.
-7. `./bin/authz --endpoint=localhost:60000 --token=$(cat .secrets/spice-db-local) --store=spicedb` (This command does not exit, so continue on another terminal.)
-8. `./scripts/test.sh localhost:8081` to verify the setup with a smoke test.
+7. `./bin/authz --config config.yaml` (This command does not exit, so continue on another terminal.)
+8. `./scripts/test_noauth.sh localhost:8081` to verify the setup with a smoke test.
