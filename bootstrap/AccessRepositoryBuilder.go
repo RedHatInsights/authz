@@ -2,12 +2,8 @@ package bootstrap
 
 import (
 	"authz/bootstrap/serviceconfig"
-	"authz/domain"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/authzed"
-	"authz/infrastructure/repository/mock"
-
-	"github.com/golang/glog"
 )
 
 // AccessRepositoryBuilder is the builder containing the config for building technical implementations of the server
@@ -30,31 +26,19 @@ func (e *AccessRepositoryBuilder) WithConfig(config *serviceconfig.ServiceConfig
 func (e *AccessRepositoryBuilder) Build() (contracts.AccessRepository, error) {
 	config := e.config.StoreConfig
 	switch config.Kind {
-	case "stub":
-		glog.Warning("Stub store implementation used. Do not use in production use cases!")
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
 	case "spicedb":
-		spicedb := &authzed.SpiceDbAccessRepository{}
-		token, err := config.ReadToken()
-		if err != nil {
-			return nil, err
-		}
-		err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
-		return spicedb, err
+		return createSpiceDbRepository(config)
 	default:
-		return &mock.StubAccessRepository{Data: getMockData(), LicensedSeats: map[string]map[domain.SubjectID]bool{}, Licenses: getMockLicenseData()}, nil
+		return createSpiceDbRepository(config)
 	}
 }
 
-func getMockData() map[domain.SubjectID]bool {
-	return map[domain.SubjectID]bool{
-		"token": true,
-		"alice": true,
-		"bob":   true,
-		"chuck": false,
+func createSpiceDbRepository(config serviceconfig.StoreConfig) (contracts.AccessRepository, error) {
+	spicedb := &authzed.SpiceDbAccessRepository{}
+	token, err := config.ReadToken()
+	if err != nil {
+		return nil, err
 	}
-}
-
-func getMockLicenseData() map[string]domain.License {
-	return map[string]domain.License{"smarts": *domain.NewLicense("aspian", "smarts", 20, 0)}
+	err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
+	return spicedb, err
 }

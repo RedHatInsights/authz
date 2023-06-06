@@ -44,7 +44,7 @@ cors: # (Refer to https://github.com/rs/cors for settings)
     #maxAge: 300
 store:
     endpoint: localhost:60000 # End point where the spiceDB store runs, GRPC endpoint
-    kind: stub # stub - local stub implementation within the code, spicedb - external store
+    # kind: spicedb # for now only "spicedb" is possible
     tokenFile: .secrets/spice-db-local # Needed for store=spicedb, path to the pre-shared token
     useTLS: false # TLS enabled/disabled between authz service and store (spiceDB) Defaults to true
 #tls:

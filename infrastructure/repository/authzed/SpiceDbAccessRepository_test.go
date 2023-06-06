@@ -28,9 +28,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCheckAccess(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 	client, err := container.CreateClient()
 	assert.NoError(t, err)
@@ -54,9 +51,6 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestGetLicense(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -72,9 +66,6 @@ func TestGetLicense(t *testing.T) {
 }
 
 func TestGetAssignable(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -88,9 +79,6 @@ func TestGetAssignable(t *testing.T) {
 }
 
 func TestGetAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -103,10 +91,6 @@ func TestGetAssigned(t *testing.T) {
 }
 
 func TestAssignBatch(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -132,10 +116,6 @@ func TestAssignBatch(t *testing.T) {
 }
 
 func TestFailAssignBatchIfOneDisabled(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -161,10 +141,6 @@ func TestFailAssignBatchIfOneDisabled(t *testing.T) {
 }
 
 func TestUnassignBatch(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -190,10 +166,6 @@ func TestUnassignBatch(t *testing.T) {
 }
 
 func TestAssignUnassign(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -220,10 +192,6 @@ func TestAssignUnassign(t *testing.T) {
 }
 
 func TestUnassignNotAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -242,10 +210,6 @@ func TestUnassignNotAssigned(t *testing.T) {
 }
 
 func TestAssignAlreadyAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -264,10 +228,6 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 }
 
 func TestFailAssignForDisabled(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
