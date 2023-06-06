@@ -8,7 +8,6 @@ import (
 
 // SeatLicenseRepositoryBuilder constructs SeatLicenseRepositories based on the provided configuration
 type SeatLicenseRepositoryBuilder struct {
-	stub   contracts.SeatLicenseRepository
 	config *serviceconfig.ServiceConfig
 }
 
@@ -23,27 +22,23 @@ func (b *SeatLicenseRepositoryBuilder) WithConfig(config *serviceconfig.ServiceC
 	return b
 }
 
-// WithStub provides a stub implementation. This enables a different object to be reused as a stub implementation of SeatLicenseRepository, ex: if the same object implements both seat licensing and access checks.
-func (b *SeatLicenseRepositoryBuilder) WithStub(stub contracts.SeatLicenseRepository) *SeatLicenseRepositoryBuilder {
-	b.stub = stub
-	return b
-}
-
 // Build constructs the repository
 func (b *SeatLicenseRepositoryBuilder) Build() (contracts.SeatLicenseRepository, error) {
 	config := b.config.StoreConfig
 	switch config.Kind {
 	case "spicedb":
-		spicedb := authzed.SpiceDbAccessRepository{}
-		token, err := config.ReadToken()
-		if err != nil {
-			return nil, err
-		}
-		err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
-		return &spicedb, err
-	case "stub":
-		return b.stub, nil
+		return createSeatLicenseRepository(config)
 	default:
-		return b.stub, nil
+		return createSeatLicenseRepository(config)
 	}
+}
+
+func createSeatLicenseRepository(config serviceconfig.StoreConfig) (contracts.SeatLicenseRepository, error) {
+	spicedb := authzed.SpiceDbAccessRepository{}
+	token, err := config.ReadToken()
+	if err != nil {
+		return nil, err
+	}
+	err = spicedb.NewConnection(config.Endpoint, token, true, config.UseTLS)
+	return &spicedb, err
 }

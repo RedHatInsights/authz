@@ -21,11 +21,64 @@ relationships: |-
   // 4. otherwise, add user relation to seats, update version of license, and remove existing version,
   // IFF there exists a version relation matching the current (OPERATION_MUST_MATCH precondition)
   license_seats:o1/smarts#assigned@user:u1
+  license_seats:o1/smarts#assigned@user:u3
 
   // Note new version is a new uuid and new count
-  license:o1/smarts#version@version:141B2939/1
+  license:o1/smarts#version@version:141B2939/2
 
   // OPERATION 3: Read counts (summary)
   // zed relationship read license:o1/smarts
   // OPERATION 4: Read users
   // zed relationship read license_seats:o1/smarts
+
+  // Assignable users require some operations because we need to know the set of all users eligible for assignment
+  // by virtue of the organisation associated with the licence in question and whether those associated users are 
+  // enabled or not.
+
+  // OPERATION 5: Add relationship from license to org (o1)
+  license:o1/smarts#org@org:o1
+
+  // OPERATION 6: Add users to o1 (seeded users normally coming from user service/UMB principal repository)
+  org:o1#member@user:u1
+  org:o1#member@user:u2
+  org:o1#member@user:u3
+  org:o1#member@user:u4
+  org:o1#member@user:u5
+  org:o1#member@user:u6
+  org:o1#member@user:u7
+  org:o1#member@user:u8
+  org:o1#member@user:u9
+  org:o1#member@user:u10
+  org:o1#member@user:u11
+  org:o1#member@user:u12
+  org:o1#member@user:u13
+  org:o1#member@user:u14
+  org:o1#member@user:u15
+  org:o1#member@user:u16
+  org:o1#member@user:u17
+  org:o1#member@user:u18
+  org:o1#member@user:u19
+  org:o1#member@user:u20
+  org:o2#member@user:u1
+  org:o2#member@user:u2
+  org:o2#member@user:u3
+  org:o2#member@user:u4
+  org:o2#member@user:u6
+  org:o2#member@user:u7
+  org:o2#member@user:u8
+  org:o2#member@user:u9
+  org:o2#member@user:u10
+  org:o2#member@user:u11
+  org:o2#member@user:u12
+  org:o2#member@user:u13
+  org:o2#member@user:u14
+  org:o2#member@user:u15
+  org:o2#member@user:u16
+  org:o2#member@user:u17
+  org:o2#member@user:u18
+  org:o2#member@user:u19
+  org:o2#member@user:u20
+
+  // OPERATION 7: Add relationship for seeded users that are disabled in o1 (will not be assignable)
+  org:o1#disabled@user:u3
+  org:o1#disabled@user:u4

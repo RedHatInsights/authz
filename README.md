@@ -9,18 +9,9 @@ run `go run cmd/main.go < -c / --config > <path/to/config.yaml>`
 
 * from the `cmd` directory: go run main.go -c ../config.yaml
 
-## Configuring the underlying Store
-Set 
-```
-store:
-  kind: "stub"
-```
-in config.yaml. Set it to `"spicedb"` and fill out the other fields to use spiceDB instead.
-
 # Testing
 
 For complete tests, run `go test ./...` (use -count=1 to avoid caching)
-For abbreviated tests, run `go test -short ./...`
 To run the test suite many times (ex: checking for flaky tests), run `./scripts/repeat-tests.sh`
 For smoketests against an environment, run `./scripts/test.sh <BASEURI> <IDP discovery endpoint>` where 
     - <BASEURI> is the scheme and authority of the environment where the application is running.

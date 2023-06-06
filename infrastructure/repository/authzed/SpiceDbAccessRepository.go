@@ -21,17 +21,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// SubjectType user
-const SubjectType = "user"
-
-// LicenseSeatObjectType license_seats
-const LicenseSeatObjectType = "license_seats"
-
-// LicenseObjectType - License object
-const LicenseObjectType = "license"
-
-// LicenseVersionStr - License Version realation
-const LicenseVersionStr = "version"
+const (
+	// OrgType org relation
+	OrgType = "org"
+	// SubjectType user relation
+	SubjectType = "user"
+	// LicenseSeatObjectType license_seats relation
+	LicenseSeatObjectType = "license_seats"
+	// LicenseObjectType - License relation
+	LicenseObjectType = "license"
+	// LicenseVersionStr - License Version relation
+	LicenseVersionStr = "version"
+)
 
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct {
@@ -81,6 +82,7 @@ func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.Subjec
 			subj,
 			orgID,
 			svc))
+		preconditions = append(preconditions, createUserNotDisabledPrecondition(subj, orgID), createUserIsMemberOfOrgPrecondition(subj, orgID))
 
 		assignedCount++
 	}
@@ -200,6 +202,36 @@ func createSeatAssignedPrecondition(subj domain.SubjectID, orgID string, svc dom
 	}
 }
 
+func createUserIsMemberOfOrgPrecondition(subj domain.SubjectID, orgID string) *v1.Precondition {
+	return &v1.Precondition{
+		Operation: v1.Precondition_OPERATION_MUST_MATCH,
+		Filter: &v1.RelationshipFilter{
+			ResourceType:       OrgType,
+			OptionalResourceId: orgID,
+			OptionalRelation:   "member",
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       SubjectType,
+				OptionalSubjectId: string(subj),
+			},
+		},
+	}
+}
+
+func createUserNotDisabledPrecondition(subj domain.SubjectID, orgID string) *v1.Precondition {
+	return &v1.Precondition{
+		Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
+		Filter: &v1.RelationshipFilter{
+			ResourceType:       OrgType,
+			OptionalResourceId: orgID,
+			OptionalRelation:   "disabled",
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       SubjectType,
+				OptionalSubjectId: string(subj),
+			},
+		},
+	}
+}
+
 // GetLicense - Get the current license infoarmation
 func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*domain.License, error) {
 	var license domain.License
@@ -255,6 +287,36 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	}
 
 	return &license, nil
+}
+
+// GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
+func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
+	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
+		Resource: &v1.ObjectReference{
+			ObjectType: LicenseObjectType,
+			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID),
+		},
+		Permission:        "assignable",
+		SubjectObjectType: SubjectType,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]domain.SubjectID, 0)
+	for {
+		next, err := result.Recv()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, domain.SubjectID(next.Subject.SubjectObjectId))
+	}
+	return ids, nil
 }
 
 // GetAssigned returns assigned seats for a given organization ID and service ID

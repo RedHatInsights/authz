@@ -28,9 +28,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestCheckAccess(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 	client, err := container.CreateClient()
 	assert.NoError(t, err)
@@ -54,9 +51,6 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestGetLicense(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -68,13 +62,23 @@ func TestGetLicense(t *testing.T) {
 	assert.Equal(t, "o1", lic.OrgID)
 	assert.Equal(t, "smarts", lic.ServiceID)
 	assert.Equal(t, 10, lic.MaxSeats)
-	assert.Equal(t, 1, lic.InUse)
+	assert.Equal(t, 2, lic.InUse) //u1, u3
+}
+
+func TestGetAssignable(t *testing.T) {
+	t.Parallel()
+
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	assignable, err := client.GetAssignable("o1", "smarts")
+	assert.NoError(t, err)
+	initialAssignableUsers := []domain.SubjectID{"u2", "u5", "u6", "u7", "u8", "u9", "u10", "u11", "u12", "u13", "u14", "u15", "u16", "u17", "u18", "u19", "u20"}
+
+	assert.ElementsMatch(t, initialAssignableUsers, assignable)
 }
 
 func TestGetAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -83,14 +87,10 @@ func TestGetAssigned(t *testing.T) {
 	assigned, err := client.GetAssigned("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.ElementsMatch(t, []domain.SubjectID{"u1"}, assigned)
+	assert.ElementsMatch(t, []domain.SubjectID{"u1", "u3"}, assigned)
 }
 
 func TestAssignBatch(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -98,11 +98,12 @@ func TestAssignBatch(t *testing.T) {
 
 	// given
 	subs := []domain.SubjectID{
-		"u100", "u101",
+		"u6", "u7",
 	}
+
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 1, oldLic.InUse)
+	assert.Equal(t, 2, oldLic.InUse)
 
 	// when
 	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
@@ -114,11 +115,32 @@ func TestAssignBatch(t *testing.T) {
 	assert.Equal(t, oldLic.InUse+len(subs), newLic.InUse)
 }
 
-func TestUnassignBatch(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
+func TestFailAssignBatchIfOneDisabled(t *testing.T) {
+	t.Parallel()
 
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	// given
+	subs := []domain.SubjectID{
+		"u4", "u101",
+	}
+	oldLic, e1 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e1)
+	assert.Equal(t, 2, oldLic.InUse) // u1, u3
+
+	// when
+	err = client.ModifySeats(subs, []domain.SubjectID{}, oldLic, "o1", domain.Service{ID: "smarts"})
+
+	// then
+	assert.Error(t, err)
+
+	expectedSameLicense, e2 := client.GetLicense("o1", "smarts")
+	assert.NoError(t, e2)
+	assert.Equal(t, 2, expectedSameLicense.InUse) // still u1, u3, so if error in batch nothing gets applied.
+}
+
+func TestUnassignBatch(t *testing.T) {
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -131,7 +153,7 @@ func TestUnassignBatch(t *testing.T) {
 
 	oldLic, e1 := client.GetLicense("o1", "smarts")
 	assert.NoError(t, e1)
-	assert.Equal(t, 1, oldLic.InUse)
+	assert.Equal(t, 2, oldLic.InUse) //u1, u3
 
 	// when
 	err = client.ModifySeats([]domain.SubjectID{}, subs, oldLic, "o1", domain.Service{ID: "smarts"})
@@ -144,10 +166,6 @@ func TestUnassignBatch(t *testing.T) {
 }
 
 func TestAssignUnassign(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -162,7 +180,7 @@ func TestAssignUnassign(t *testing.T) {
 	lic, err := client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.Equal(t, 2, lic.InUse)
+	assert.Equal(t, 3, lic.InUse) //u1, u2, u3
 
 	err = client.ModifySeats([]domain.SubjectID{}, []domain.SubjectID{"u2"}, lic, "o1", domain.Service{ID: "smarts"})
 	assert.NoError(t, err)
@@ -170,14 +188,10 @@ func TestAssignUnassign(t *testing.T) {
 	lic, err = client.GetLicense("o1", "smarts")
 	assert.NoError(t, err)
 
-	assert.Equal(t, 1, lic.InUse)
+	assert.Equal(t, 2, lic.InUse) //u1, u3
 }
 
 func TestUnassignNotAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -196,10 +210,6 @@ func TestUnassignNotAssigned(t *testing.T) {
 }
 
 func TestAssignAlreadyAssigned(t *testing.T) {
-	if testing.Short() {
-		t.SkipNow()
-	}
-
 	t.Parallel()
 
 	client, err := container.CreateClient()
@@ -215,4 +225,18 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+}
+
+func TestFailAssignForDisabled(t *testing.T) {
+	t.Parallel()
+
+	client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	licBefore, err := client.GetLicense("o1", "smarts")
+	assert.NoError(t, err)
+
+	err = client.ModifySeats([]domain.SubjectID{"u4"}, []domain.SubjectID{}, licBefore, "o1", domain.Service{ID: "smarts"})
+
+	assert.Error(t, err)
 }

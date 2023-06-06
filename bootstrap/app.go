@@ -132,7 +132,7 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		return nil, nil, err
 	}
 
-	sr, err := initSeatRepository(&srvCfg, ar)
+	sr, err := initSeatRepository(&srvCfg)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -176,11 +176,8 @@ func initHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 	return srv
 }
 
-func initSeatRepository(config *serviceconfig.ServiceConfig, potentialStub interface{}) (contracts.SeatLicenseRepository, error) {
+func initSeatRepository(config *serviceconfig.ServiceConfig) (contracts.SeatLicenseRepository, error) {
 	b := NewSeatLicenseRepositoryBuilder()
-	if stub, ok := potentialStub.(contracts.SeatLicenseRepository); ok {
-		b.WithStub(stub)
-	}
 
 	return b.WithConfig(config).Build()
 }

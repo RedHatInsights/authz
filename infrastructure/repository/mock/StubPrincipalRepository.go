@@ -1,3 +1,4 @@
+// Package mock contains mock implementations for the store.
 package mock
 
 import (

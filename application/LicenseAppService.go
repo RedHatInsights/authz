@@ -83,21 +83,16 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
-	assigned, err := seatService.GetAssignedSeats(evt)
-	if err != nil {
-		return nil, err
+	var resultIds []domain.SubjectID
+	var err error
+	if req.Assigned {
+		resultIds, err = seatService.GetAssignedSeats(evt)
+	} else {
+		resultIds, err = seatService.GetAssignableSeats(evt)
 	}
 
-	var resultIds []domain.SubjectID
-	if req.Assigned {
-		resultIds = assigned
-	} else {
-		allUsers, err := s.principalRepo.GetByOrgID(req.OrgID)
-		if err != nil {
-			return nil, err
-		}
-
-		resultIds = subtract(allUsers, assigned)
+	if err != nil {
+		return nil, err
 	}
 
 	if req.IncludeUsers {
@@ -133,23 +128,4 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
 
 	return seatService.ModifySeats(evt)
-}
-
-func subtract(first []domain.SubjectID, second []domain.SubjectID) []domain.SubjectID { //Move to a SubjectSet or something?
-	subtrahend := map[domain.SubjectID]interface{}{} //idiomatic set
-	for _, id := range second {
-		subtrahend[id] = struct{}{}
-	}
-
-	result := make([]domain.SubjectID, 0, len(first))
-
-	for _, id := range first {
-		if _, ok := subtrahend[id]; ok {
-			continue
-		}
-
-		result = append(result, id)
-	}
-
-	return result
 }
