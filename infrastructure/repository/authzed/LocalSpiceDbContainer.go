@@ -72,10 +72,11 @@ func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer
 	port := resource.GetPort("50051/tcp")
 
 	// Give the service time to boot.
+	var conn *grpc.ClientConn
 	cErr := pool.Retry(func() error {
 		log.Print("Attempting to connect to spicedb...")
 
-		conn, err := grpc.Dial(
+		conn, err = grpc.Dial(
 			fmt.Sprintf("localhost:%s", port),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpcutil.WithInsecureBearerToken("test"),
@@ -84,13 +85,13 @@ func (l *LocalSpiceDbContainerFactory) CreateContainer() (*LocalSpiceDbContainer
 			return fmt.Errorf("error connecting to spiceDB: %v", err.Error())
 		}
 
-		client := v1.NewSchemaServiceClient(conn)
-
-		//read scheme we add via mount
-		_, err = client.ReadSchema(context.Background(), &v1.ReadSchemaRequest{})
-
 		return err
 	})
+
+	client := v1.NewSchemaServiceClient(conn)
+
+	//read scheme we add via mount
+	_, err = client.ReadSchema(context.Background(), &v1.ReadSchemaRequest{})
 
 	if cErr != nil {
 		return nil, cErr

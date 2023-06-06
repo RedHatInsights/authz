@@ -15,6 +15,9 @@ schema: |-
 
   definition service {
       relation licensed: license
+
+      permission access = licensed->assigned
+      permission assignable = licensed->assignable
   }
 
   definition org {

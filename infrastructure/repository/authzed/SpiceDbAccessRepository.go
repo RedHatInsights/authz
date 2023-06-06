@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/types/known/structpb"
 	"io"
 	"strconv"
 	"strings"
@@ -32,6 +33,8 @@ const (
 	LicenseObjectType = "license"
 	// LicenseVersionStr - License Version relation
 	LicenseVersionStr = "version"
+	// ServiceObjectType - Service relation
+	ServiceObjectType = "service"
 )
 
 // SpiceDbAccessRepository -
@@ -291,13 +294,22 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 
 // GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
 func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
+	orgIdCaveat, err := structpb.NewStruct(map[string]interface{}{
+		"orgID": orgID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
 		Resource: &v1.ObjectReference{
-			ObjectType: LicenseObjectType,
-			ObjectId:   fmt.Sprintf("%s/%s", orgID, serviceID), // TODO: we are leveraging the fact that license has the orgID encoded rather than using the actual relation between license and org.
+			ObjectType: ServiceObjectType,
+			ObjectId:   serviceID,
 		},
 		Permission:        "assignable",
 		SubjectObjectType: SubjectType,
+		Context:           orgIdCaveat,
 	})
 
 	if err != nil {
