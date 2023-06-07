@@ -10,6 +10,4 @@ type PrincipalRepository interface {
 	GetByID(id domain.SubjectID) (domain.Principal, error)
 	// GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
 	GetByIDs(ids []domain.SubjectID) ([]domain.Principal, error)
-	// GetByOrgID retrieves all members of the given organization
-	GetByOrgID(orgID string) ([]domain.SubjectID, error)
 }

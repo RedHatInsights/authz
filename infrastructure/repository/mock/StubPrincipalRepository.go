@@ -41,14 +41,24 @@ func (s *StubPrincipalRepository) GetByIDs(ids []domain.SubjectID) ([]domain.Pri
 }
 
 // GetByOrgID retrieves all members of the given organization
-func (s *StubPrincipalRepository) GetByOrgID(orgID string) ([]domain.SubjectID, error) {
-	ids := make([]domain.SubjectID, 0)
-	for _, p := range s.Principals {
-		if p.OrgID == orgID {
-			ids = append(ids, p.ID)
+func (s *StubPrincipalRepository) GetByOrgID(orgID string) (chan domain.Subject, chan error) {
+	subjects := make(chan domain.Subject)
+	errors := make(chan error)
+
+	go func() {
+		for _, p := range s.Principals {
+			if p.OrgID == orgID {
+				subjects <- domain.Subject{
+					SubjectID: p.ID,
+					Enabled:   true,
+				}
+			}
 		}
-	}
-	return ids, nil
+		close(subjects)
+		close(errors)
+	}()
+
+	return subjects, errors
 }
 
 func (s *StubPrincipalRepository) createAndAddMissingPrincipal(id domain.SubjectID) (domain.Principal, error) {
