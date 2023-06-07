@@ -14,4 +14,6 @@ type SeatLicenseRepository interface {
 	GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error)
 	// GetAssigned retrieves the IDs of the subjects assigned seats in the current license
 	GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error)
+	// ApplyLicense stores the given license associated with its service and organization
+	ApplyLicense(license *domain.License) error
 }

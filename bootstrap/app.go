@@ -136,10 +136,13 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 	if err != nil {
 		return nil, nil, err
 	}
+	or := sr.(contracts.OrganizationRepository)
+
 	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
+	subr := pr.(contracts.SubjectRepository)
 
 	aas := application.NewAccessAppService(&ar, pr)
-	sas := application.NewLicenseAppService(&ar, &sr, pr)
+	sas := application.NewLicenseAppService(ar, sr, pr, subr, or)
 
 	srv := initGrpcServer(aas, sas, &srvCfg)
 
