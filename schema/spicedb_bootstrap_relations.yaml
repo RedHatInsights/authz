@@ -3,6 +3,7 @@ relationships: |-
   // to entitle, create license tuples for the max, the current version, and the seats.
   // the license resource ID is in the format {org ID}/{service ID}
   license:o1/smarts#max@max:10
+  service:smarts#licensed@license:o1/smarts
 
   // a version is in the format {random_id}/{current_assigned_user_count}.
   // this is so we can quickly read the number of users.
