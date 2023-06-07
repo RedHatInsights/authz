@@ -5,13 +5,17 @@ import (
 	"authz/domain/contracts"
 	"authz/domain/services"
 	"context"
+
+	"github.com/golang/glog"
 )
 
 // LicenseAppService the handler for seat related endpoints.
 type LicenseAppService struct {
-	accessRepo    *contracts.AccessRepository
-	seatRepo      *contracts.SeatLicenseRepository
+	accessRepo    contracts.AccessRepository
+	seatRepo      contracts.SeatLicenseRepository
 	principalRepo contracts.PrincipalRepository
+	subjectRepo   contracts.SubjectRepository
+	orgRepo       contracts.OrganizationRepository
 	ctx           context.Context
 }
 
@@ -40,12 +44,21 @@ type GetSeatAssignmentCountsRequest struct {
 	ServiceID string
 }
 
+// OrgEntitledEvent represents an event where an organization has been entitled with a new license
+type OrgEntitledEvent struct {
+	OrgID     string
+	ServiceID string
+	MaxSeats  int
+}
+
 // NewLicenseAppService ctor.
-func NewLicenseAppService(accessRepo *contracts.AccessRepository, seatRepo *contracts.SeatLicenseRepository, principalRepo contracts.PrincipalRepository) *LicenseAppService {
+func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contracts.SeatLicenseRepository, principalRepo contracts.PrincipalRepository, subjectRepo contracts.SubjectRepository, orgRepo contracts.OrganizationRepository) *LicenseAppService {
 	return &LicenseAppService{
 		accessRepo:    accessRepo,
 		seatRepo:      seatRepo,
 		principalRepo: principalRepo,
+		subjectRepo:   subjectRepo,
+		orgRepo:       orgRepo,
 		ctx:           context.Background(),
 	}
 }
@@ -59,7 +72,7 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 
 	evt.Requestor = domain.SubjectID(req.Requestor)
 
-	seatsService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
+	seatsService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
 
 	lic, err := seatsService.GetLicense(evt)
 	if err != nil {
@@ -81,7 +94,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 	evt.Requestor = domain.SubjectID(req.Requestor)
 
-	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
+	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
 
 	var resultIds []domain.SubjectID
 	var err error
@@ -125,7 +138,42 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 		evt.UnAssign[i] = domain.SubjectID(id)
 	}
 
-	seatService := services.NewSeatLicenseService(*s.seatRepo, *s.accessRepo)
+	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
 
 	return seatService.ModifySeats(evt)
+}
+
+// ProcessOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
+func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error {
+	err := s.seatRepo.ApplyLicense(&domain.License{
+		OrgID:     evt.OrgID,
+		ServiceID: evt.ServiceID,
+		MaxSeats:  evt.MaxSeats,
+		Version:   "",
+		InUse:     0,
+	})
+	if err != nil {
+		return err
+	}
+
+	subjects, errors := s.subjectRepo.GetByOrgID(evt.OrgID)
+
+loop:
+	for {
+		select {
+		case subject, ok := <-subjects:
+			if ok {
+				err = s.orgRepo.AddSubject(evt.OrgID, subject)
+				if err != nil {
+					glog.Errorf("Failed to import user %s to org %s", subject.SubjectID, evt.OrgID)
+				}
+			} else {
+				break loop
+			}
+		case err := <-errors:
+			return err
+		}
+	}
+
+	return nil
 }

@@ -349,6 +349,117 @@ func (s *SpiceDbAccessRepository) GetAssigned(orgID string, serviceID string) ([
 	return ids, nil
 }
 
+// ApplyLicense stores the given license associated with its service and organization
+func (s *SpiceDbAccessRepository) ApplyLicense(license *domain.License) error {
+	licenseID := fmt.Sprintf("%s/%s", license.OrgID, license.ServiceID)
+	licenseResource := &v1.ObjectReference{
+		ObjectType: LicenseObjectType,
+		ObjectId:   licenseID,
+	}
+
+	//No precondition necessary to prevent creating a new version for an existing license for a service/org due to CREATE vs TOUCH semantics on license->license_seats relationship
+	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		Updates: []*v1.RelationshipUpdate{
+			{
+				Operation: v1.RelationshipUpdate_OPERATION_CREATE,
+				Relationship: &v1.Relationship{
+					Resource: licenseResource,
+					Relation: "max",
+					Subject: &v1.SubjectReference{
+						Object: &v1.ObjectReference{
+							ObjectType: "max",
+							ObjectId:   strconv.Itoa(license.MaxSeats),
+						},
+					},
+				},
+			},
+			{
+				Operation: v1.RelationshipUpdate_OPERATION_CREATE,
+				Relationship: &v1.Relationship{
+					Resource: licenseResource,
+					Relation: "seats",
+					Subject: &v1.SubjectReference{
+						Object: &v1.ObjectReference{
+							ObjectType: LicenseSeatObjectType,
+							ObjectId:   licenseID,
+						},
+					},
+				},
+			},
+			{
+				Operation: v1.RelationshipUpdate_OPERATION_CREATE,
+				Relationship: &v1.Relationship{
+					Resource: licenseResource,
+					Relation: "version",
+					Subject: &v1.SubjectReference{
+						Object: &v1.ObjectReference{
+							ObjectType: LicenseVersionStr,
+							ObjectId:   fmt.Sprintf("%s/%d", license.Version, license.InUse),
+						},
+					},
+				},
+			},
+			{
+				Operation: v1.RelationshipUpdate_OPERATION_CREATE,
+				Relationship: &v1.Relationship{
+					Resource: licenseResource,
+					Relation: "org",
+					Subject: &v1.SubjectReference{
+						Object: &v1.ObjectReference{
+							ObjectType: OrgType,
+							ObjectId:   license.OrgID,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	return err
+}
+
+// AddSubject stores a subject associated with an organization
+func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subject) error {
+	relationshipUpdates := make([]*v1.RelationshipUpdate, 0, 2)
+
+	orgResource := &v1.ObjectReference{
+		ObjectType: "org",
+		ObjectId:   orgID,
+	}
+	userSubject := &v1.SubjectReference{
+		Object: &v1.ObjectReference{
+			ObjectType: "user",
+			ObjectId:   string(subject.SubjectID),
+		},
+	}
+
+	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+		Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+		Relationship: &v1.Relationship{
+			Resource: orgResource,
+			Relation: "member",
+			Subject:  userSubject,
+		},
+	})
+
+	if !subject.Enabled { //conditionally add tombstone
+		relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+			Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+			Relationship: &v1.Relationship{
+				Resource: orgResource,
+				Relation: "disabled",
+				Subject:  userSubject,
+			},
+		})
+	}
+
+	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		Updates: relationshipUpdates,
+	})
+
+	return err
+}
+
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
 func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) error {
 
