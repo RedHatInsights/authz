@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"github.com/authzed/authzed-go/v1"
 	"log"
 	"path"
 	"path/filepath"
@@ -30,9 +31,10 @@ type LocalSpiceDbContainerFactory struct {
 
 // LocalSpiceDbContainer struct that holds pointers to the container, dockertest pool and exposes the port
 type LocalSpiceDbContainer struct {
-	port      string
-	container *dockertest.Resource
-	pool      *dockertest.Pool
+	port          string
+	container     *dockertest.Resource
+	AuthzedClient *authzed.Client
+	pool          *dockertest.Pool
 }
 
 // NewLocalSpiceDbContainerFactory constructor for the factory
@@ -124,20 +126,20 @@ func (l *LocalSpiceDbContainer) WaitForQuantizationInterval() {
 }
 
 // CreateClient creates a new client that connects to the dockerized spicedb instance and the right store
-func (l *LocalSpiceDbContainer) CreateClient() (*SpiceDbAccessRepository, error) {
+func (l *LocalSpiceDbContainer) CreateClient() (*SpiceDbAccessRepository, *authzed.Client, error) {
 
 	randomKey, err := l.NewToken()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	e := &SpiceDbAccessRepository{}
 	err = e.NewConnection("localhost:"+l.port, randomKey, true, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return e, nil
+	return e, e.client, nil
 }
 
 // Close purges the container

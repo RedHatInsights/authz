@@ -36,13 +36,9 @@ const (
 
 // SpiceDbAccessRepository -
 type SpiceDbAccessRepository struct {
-	authzedClient
-}
-
-// authzedClient - Authz client struct
-type authzedClient struct {
-	client *authzed.Client
-	ctx    context.Context
+	client    *authzed.Client
+	ctx       context.Context
+	CurrToken string
 }
 
 // CheckAccess - verify permission with subject type "user"
