@@ -451,6 +451,18 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 
 	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
+		OptionalPreconditions: []*v1.Precondition{{
+			Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
+			Filter: &v1.RelationshipFilter{
+				ResourceType:       orgResource.ObjectType,
+				OptionalResourceId: orgResource.ObjectId,
+				OptionalRelation:   "member",
+				OptionalSubjectFilter: &v1.SubjectFilter{
+					SubjectType:       userSubject.Object.ObjectType,
+					OptionalSubjectId: userSubject.Object.ObjectId,
+				},
+			},
+		}},
 	})
 
 	return err
