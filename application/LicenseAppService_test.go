@@ -5,9 +5,10 @@ import (
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/mock"
 	"context"
+	"testing"
+
 	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
 	"github.com/authzed/authzed-go/v1"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -111,42 +112,90 @@ func createService(subjectRepositoryOverride contracts.SubjectRepository) (*Lice
 
 func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 	//Given
-	mockRepo := InterruptableSubjectRepository{
+	mockRepo := &InterruptableSubjectRepository{
 		PreInterruptSubjects:  nil,
 		PostInterruptSubjects: []domain.Subject{{SubjectID: "foo", Enabled: false}},
+		resumeSignal:          make(chan interface{}),
+		StoppedSignal:         make(chan interface{}),
 	}
 	licenseAppService, spiceDbClient := createService(mockRepo)
 
 	//When
 	doneSignal := make(chan interface{})
 	go func() {
-		licenseAppService.ProcessOrgEntitledEvent(OrgEntitledEvent{
-        		OrgID:     "myorg",
-        		ServiceID: "myservice",
-        		MaxSeats:  5,
-        	})
+		err := licenseAppService.ProcessOrgEntitledEvent(OrgEntitledEvent{
+			OrgID:     "myorg",
+			ServiceID: "myservice",
+			MaxSeats:  5,
+		})
+		assert.NoError(t, err)
 		doneSignal <- "done"
 		close(doneSignal)
 	}()
 
+	<-mockRepo.StoppedSignal //Wait for the import to reach the pause
 
-	//now we wait for resume, and add the same subject manually
-	spiceDbClient.PermissionsServiceClient.WriteRelationships(context.Background(), &v1.WriteRelationshipsRequest{
-		//Updates: []v1.RelationshipUpdate{},
+	//Add the user directly to SpiceDB as enabled
+	spiceDbClient.WriteRelationships(context.Background(), &v1.WriteRelationshipsRequest{
+		Updates: []*v1.RelationshipUpdate{{
+			Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+			Relationship: &v1.Relationship{
+				Resource: &v1.ObjectReference{
+					ObjectType: "org",
+					ObjectId:   "myorg",
+				},
+				Relation: "member",
+				Subject: &v1.SubjectReference{
+					Object: &v1.ObjectReference{
+						ObjectType: "user",
+						ObjectId:   "foo",
+					},
+				},
+			}},
+		}})
+
+	mockRepo.Resume() //Allow import to continue
+
+	<-doneSignal //Wait for import to finish
+	//Then
+	assert.True(t, getEnabled(spiceDbClient, "foo", "myorg")) //Assert user is still enabled
+
+}
+
+func getEnabled(client *authzed.Client, subjectId string, orgId string) bool {
+	resp, err := client.CheckPermission(context.Background(), &v1.CheckPermissionRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		Resource: &v1.ObjectReference{
+			ObjectType: "org",
+			ObjectId:   orgId,
+		},
+		Permission: "disabled",
+		Subject: &v1.SubjectReference{
+			Object: &v1.ObjectReference{
+				ObjectType: "user",
+				ObjectId:   subjectId,
+			},
+		},
+	})
+
+	if err != nil {
+		panic(err)
 	}
 
-	<- doneSignal
-	//Then
+	if resp.Permissionship == v1.CheckPermissionResponse_PERMISSIONSHIP_NO_PERMISSION {
+		return true //Not disabled
+	}
+	return false
 }
 
 type InterruptableSubjectRepository struct {
-	StopSignal          chan interface{}
+	StoppedSignal         chan interface{}
 	resumeSignal          chan interface{}
 	PreInterruptSubjects  []domain.Subject
 	PostInterruptSubjects []domain.Subject
 }
 
-func (r InterruptableSubjectRepository) GetByOrgID(_ string) (chan domain.Subject, chan error) {
+func (r *InterruptableSubjectRepository) GetByOrgID(_ string) (chan domain.Subject, chan error) {
 	subjects := make(chan domain.Subject)
 	errors := make(chan error)
 
@@ -156,7 +205,7 @@ func (r InterruptableSubjectRepository) GetByOrgID(_ string) (chan domain.Subjec
 				subjects <- s
 			}
 		}
-		r.StopSignal <- "stopped"
+		r.StoppedSignal <- "stopped"
 		<-r.resumeSignal
 		if r.PostInterruptSubjects != nil {
 			for _, s := range r.PostInterruptSubjects {
