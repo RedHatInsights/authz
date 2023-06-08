@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 
 func TestCheckAccess(t *testing.T) {
 	t.Parallel()
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	cases := []struct {
@@ -53,7 +53,7 @@ func TestCheckAccess(t *testing.T) {
 func TestGetLicense(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	lic, err := client.GetLicense("o1", "smarts")
@@ -68,7 +68,7 @@ func TestGetLicense(t *testing.T) {
 func TestGetAssignable(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	assignable, err := client.GetAssignable("o1", "smarts")
@@ -81,7 +81,7 @@ func TestGetAssignable(t *testing.T) {
 func TestGetAssigned(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	assigned, err := client.GetAssigned("o1", "smarts")
@@ -93,7 +93,7 @@ func TestGetAssigned(t *testing.T) {
 func TestAssignBatch(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	// given
@@ -118,7 +118,7 @@ func TestAssignBatch(t *testing.T) {
 func TestFailAssignBatchIfOneDisabled(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	// given
@@ -143,7 +143,7 @@ func TestFailAssignBatchIfOneDisabled(t *testing.T) {
 func TestUnassignBatch(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	// given
@@ -168,7 +168,7 @@ func TestUnassignBatch(t *testing.T) {
 func TestAssignUnassign(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	oldLic, err := client.GetLicense("o1", "smarts")
@@ -194,7 +194,7 @@ func TestAssignUnassign(t *testing.T) {
 func TestUnassignNotAssigned(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	licBefore, err := client.GetLicense("o1", "smarts")
@@ -212,7 +212,7 @@ func TestUnassignNotAssigned(t *testing.T) {
 func TestAssignAlreadyAssigned(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	licBefore, err := client.GetLicense("o1", "smarts")
@@ -230,7 +230,7 @@ func TestAssignAlreadyAssigned(t *testing.T) {
 func TestFailAssignForDisabled(t *testing.T) {
 	t.Parallel()
 
-	client, err := container.CreateClient()
+	client, _, err := container.CreateClient()
 	assert.NoError(t, err)
 
 	licBefore, err := client.GetLicense("o1", "smarts")
