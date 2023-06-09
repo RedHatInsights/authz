@@ -166,14 +166,28 @@ loop:
 				err = s.orgRepo.AddSubject(evt.OrgID, subject)
 				if err != nil {
 					glog.Errorf("Failed to import user %s to org %s", subject.SubjectID, evt.OrgID)
+
+					if errorShouldBeRetried(err) { // TODO: add test to test 'true' path
+						return err // TODO: add retry mechanism (but for now it's fine to bomb out and retry the whole processing of the event since all ops are idempotent)
+					}
 				}
 			} else {
 				break loop
 			}
-		case err := <-errors:
+		case err, ok := <-errors:
+			if !ok {
+				break loop
+			}
+
+			glog.Errorf(err.Error()) // TODO: think more about the contract. Is it possible to reason about individual errors in a channel and what they refer to and whether we should stop or continue?
+
 			return err
 		}
 	}
 
 	return nil
+}
+
+func errorShouldBeRetried(err error) bool {
+	return err != domain.ErrSubjectAlreadyExists
 }

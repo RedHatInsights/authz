@@ -16,3 +16,6 @@ var ErrLicenseLimitExceeded = errors.New("LicenseLimitExceeded")
 
 // ErrConflict is returned when a request cannot be processed due to an apparent conflicting request (ex: concurrency)
 var ErrConflict = errors.New("Conflict")
+
+// ErrSubjectAlreadyExists is returned whenever we try to add a subject in OrganizationRepository that already exists
+var ErrSubjectAlreadyExists = errors.New("ErrSubjectAlreadyExists")

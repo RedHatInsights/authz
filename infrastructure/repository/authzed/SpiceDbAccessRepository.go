@@ -453,6 +453,10 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 		Updates: relationshipUpdates,
 	})
 
+	if err != nil && strings.HasPrefix(err.Error(), "rpc error: code = Unknown desc = could not CREATE relationship") {
+		err = domain.ErrSubjectAlreadyExists
+	}
+
 	return err
 }
 

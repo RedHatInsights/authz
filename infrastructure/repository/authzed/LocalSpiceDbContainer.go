@@ -9,7 +9,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/authzed/authzed-go/v1"
 	"log"
 	"path"
 	"path/filepath"
@@ -20,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/authzed/authzed-go/v1"
 	"github.com/golang/glog"
 
 	"github.com/ory/dockertest"

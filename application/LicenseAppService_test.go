@@ -136,7 +136,7 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 	<-mockRepo.StoppedSignal //Wait for the import to reach the pause
 
 	//Add the user directly to SpiceDB as enabled
-	spiceDbClient.WriteRelationships(context.Background(), &v1.WriteRelationshipsRequest{
+	_, err := spiceDbClient.WriteRelationships(context.Background(), &v1.WriteRelationshipsRequest{
 		Updates: []*v1.RelationshipUpdate{{
 			Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
 			Relationship: &v1.Relationship{
@@ -153,6 +153,7 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 				},
 			}},
 		}})
+	assert.NoError(t, err)
 
 	mockRepo.Resume() //Allow import to continue
 
@@ -162,18 +163,18 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 
 }
 
-func getEnabled(client *authzed.Client, subjectId string, orgId string) bool {
+func getEnabled(client *authzed.Client, subjectID string, orgID string) bool {
 	resp, err := client.CheckPermission(context.Background(), &v1.CheckPermissionRequest{
 		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
 		Resource: &v1.ObjectReference{
 			ObjectType: "org",
-			ObjectId:   orgId,
+			ObjectId:   orgID,
 		},
 		Permission: "disabled",
 		Subject: &v1.SubjectReference{
 			Object: &v1.ObjectReference{
 				ObjectType: "user",
-				ObjectId:   subjectId,
+				ObjectId:   subjectID,
 			},
 		},
 	})

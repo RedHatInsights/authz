@@ -69,7 +69,7 @@ func objFromRequest(requestorID string, subjectID string, operation string, reso
 }
 
 func spicedbSeatLicenseRepository() contracts.AccessRepository {
-	client, err := spicedbContainer.CreateClient()
+	client, _, err := spicedbContainer.CreateClient()
 	if err != nil {
 		panic(err)
 	}
