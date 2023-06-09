@@ -451,9 +451,23 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 
 	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
+		OptionalPreconditions: []*v1.Precondition{{
+			Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
+			Filter: &v1.RelationshipFilter{
+				ResourceType:       orgResource.ObjectType,
+				OptionalResourceId: orgResource.ObjectId,
+				OptionalRelation:   "member",
+				OptionalSubjectFilter: &v1.SubjectFilter{
+					SubjectType:       userSubject.Object.ObjectType,
+					OptionalSubjectId: userSubject.Object.ObjectId,
+				},
+			},
+		}},
 	})
 
-	if err != nil && strings.HasPrefix(err.Error(), "rpc error: code = Unknown desc = could not CREATE relationship") {
+	err = spiceDbErrorToDomainError(err)
+
+	if err == domain.ErrConflict {
 		err = domain.ErrSubjectAlreadyExists
 	}
 
@@ -507,8 +521,9 @@ func createSubjectObjectTuple(subjectType string, subjectValue string, objectTyp
 
 func spiceDbErrorToDomainError(err error) error {
 	if info, ok := unwrapSpiceDbError(err); ok {
-		switch info.Reason {
-		case "ERROR_REASON_WRITE_OR_DELETE_PRECONDITION_FAILURE":
+		reasonValue := v1.ErrorReason_value[info.Reason]
+		switch reasonValue {
+		case int32(v1.ErrorReason_ERROR_REASON_WRITE_OR_DELETE_PRECONDITION_FAILURE):
 			return domain.ErrConflict
 		}
 	}
