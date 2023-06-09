@@ -430,7 +430,7 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 	}
 
 	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
-		Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+		Operation: v1.RelationshipUpdate_OPERATION_CREATE,
 		Relationship: &v1.Relationship{
 			Resource: orgResource,
 			Relation: "member",
@@ -440,7 +440,7 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 
 	if !subject.Enabled { //conditionally add tombstone
 		relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
-			Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+			Operation: v1.RelationshipUpdate_OPERATION_CREATE,
 			Relationship: &v1.Relationship{
 				Resource: orgResource,
 				Relation: "disabled",
@@ -451,18 +451,6 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 
 	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: relationshipUpdates,
-		OptionalPreconditions: []*v1.Precondition{{
-			Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
-			Filter: &v1.RelationshipFilter{
-				ResourceType:       orgResource.ObjectType,
-				OptionalResourceId: orgResource.ObjectId,
-				OptionalRelation:   "member",
-				OptionalSubjectFilter: &v1.SubjectFilter{
-					SubjectType:       userSubject.Object.ObjectType,
-					OptionalSubjectId: userSubject.Object.ObjectId,
-				},
-			},
-		}},
 	})
 
 	return err
