@@ -3,10 +3,13 @@ package userservice
 import (
 	"authz/domain"
 	"authz/domain/contracts"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -157,17 +160,60 @@ type requestAndResponse struct {
 	ResponseJSON string
 }
 
-func createSubjectRepository(_ *httptest.Server) contracts.SubjectRepository {
+func createSubjectRepository(srv *httptest.Server) contracts.SubjectRepository {
 	return nil
+}
+
+func TestUserServiceSubjectRepository_temp(t *testing.T) {
+	//Given
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		}}
+
+	reqJSON := createRequestJSON("123", 0, 2)
+	respJSON := createResponseJSON(expectedSubjects)
+	srv := createTestServer(t, []requestAndResponse{
+		{
+			RequestJSON:  reqJSON,
+			ResponseJSON: respJSON,
+		},
+	})
+	defer srv.Close()
+
+	client := srv.Client()
+	transport := client.Transport.(*http.Transport)
+	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
+	if err != nil {
+		panic(err)
+	}
+	transport.TLSClientConfig.Certificates = append(transport.TLSClientConfig.Certificates, cert)
+
+	//When
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/v2/findUsers", srv.URL), strings.NewReader(reqJSON))
+	req.RequestURI = "" //Artifact of HTTPTest?
+	resp, err := client.Do(req)
+	assert.NoError(t, err)
+
+	//Then
+	data, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	ja := jsonassert.New(t)
+	ja.Assertf(string(data), respJSON)
 }
 
 func createTestServer(t *testing.T, setups []requestAndResponse) *httptest.Server {
 	ja := jsonassert.New(t)
 	i := 0
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "v2/findUsers":
+		case "/v2/findUsers":
 			if !assert.Less(t, i, len(setups)) {
 				return
 			}
@@ -184,6 +230,16 @@ func createTestServer(t *testing.T, setups []requestAndResponse) *httptest.Serve
 			i++
 		}
 	}))
+
+	certFile, err := os.ReadFile("test-certs/client-ca.crt")
+	if err != nil {
+		panic(err)
+	}
+	srv.TLS = &tls.Config{
+		ClientCAs: x509.NewCertPool(),
+	}
+	srv.TLS.ClientCAs.AppendCertsFromPEM(certFile)
+	srv.StartTLS()
 
 	return srv
 }
