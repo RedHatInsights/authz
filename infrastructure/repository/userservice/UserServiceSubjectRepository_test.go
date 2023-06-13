@@ -5,6 +5,7 @@ import (
 	"authz/domain/contracts"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	OrgID = "123"
+)
+
 func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 	//Given
 	expectedSubjects := []domain.Subject{{
@@ -24,18 +29,13 @@ func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 		Enabled:   true,
 	}}
 
-	srv := createTestServer(t, []requestAndResponse{
-		{
-			RequestJSON:  createRequestJSON("123", 0, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects),
-		},
-	})
+	srv := createTestServer(t, expectedSubjects, map[int]bool{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
 
 	//When
-	subjects, errors := repo.GetByOrgID("123")
+	subjects, errors := repo.GetByOrgID(OrgID)
 
 	//Then
 	assertSuccessfulRequest(t, subjects, errors, expectedSubjects)
@@ -53,18 +53,13 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 			Enabled:   true,
 		}}
 
-	srv := createTestServer(t, []requestAndResponse{
-		{
-			RequestJSON:  createRequestJSON("123", 0, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects),
-		},
-	})
+	srv := createTestServer(t, expectedSubjects, map[int]bool{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
 
 	//When
-	subjects, errors := repo.GetByOrgID("123")
+	subjects, errors := repo.GetByOrgID(OrgID)
 
 	//Then
 	assertSuccessfulRequest(t, subjects, errors, expectedSubjects)
@@ -72,7 +67,7 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 
 func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testing.T) {
 	//Given
-	expectedSubjects1 := []domain.Subject{
+	expectedSubjects := []domain.Subject{
 		{
 			SubjectID: "1",
 			Enabled:   true,
@@ -81,38 +76,27 @@ func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testin
 			SubjectID: "2",
 			Enabled:   true,
 		},
-	}
-	expectedSubjects2 := []domain.Subject{
 		{
 			SubjectID: "3",
 			Enabled:   true,
 		},
 	}
 
-	srv := createTestServer(t, []requestAndResponse{
-		{
-			RequestJSON:  createRequestJSON("123", 0, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects1),
-		},
-		{
-			RequestJSON:  createRequestJSON("123", 2, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects2),
-		},
-	})
+	srv := createTestServer(t, expectedSubjects, map[int]bool{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
 
 	//When
-	subjects, errors := repo.GetByOrgID("123")
+	subjects, errors := repo.GetByOrgID(OrgID)
 
 	//Then
-	assertSuccessfulRequest(t, subjects, errors, append(expectedSubjects1, expectedSubjects2...))
+	assertSuccessfulRequest(t, subjects, errors, expectedSubjects)
 }
 
 func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 	//Given
-	expectedSubjects1 := []domain.Subject{
+	expectedSubjects := []domain.Subject{
 		{
 			SubjectID: "1",
 			Enabled:   true,
@@ -121,9 +105,6 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 			SubjectID: "2",
 			Enabled:   true,
 		},
-	}
-
-	expectedSubjects2 := []domain.Subject{
 		{
 			SubjectID: "3",
 			Enabled:   true,
@@ -134,25 +115,30 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 		},
 	}
 
-	srv := createTestServer(t, []requestAndResponse{
-		{
-			RequestJSON:  createRequestJSON("123", 0, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects1),
-		},
-		{
-			RequestJSON:  createRequestJSON("123", 2, 2),
-			ResponseJSON: createResponseJSON(expectedSubjects2),
-		},
-	})
+	srv := createTestServer(t, expectedSubjects, map[int]bool{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
 
 	//When
-	subjects, errors := repo.GetByOrgID("123")
+	subjects, errors := repo.GetByOrgID(OrgID)
 
 	//Then
-	assertSuccessfulRequest(t, subjects, errors, append(expectedSubjects1, expectedSubjects2...))
+	assertSuccessfulRequest(t, subjects, errors, expectedSubjects)
+}
+
+func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
+	expectedSubjects := []domain.Subject{}
+	srv := createTestServer(t, expectedSubjects, map[int]bool{0: true})
+	defer srv.Close()
+
+	repo := createSubjectRepository(srv)
+
+	_, errors := repo.GetByOrgID(OrgID)
+
+	err := <-errors
+
+	assert.Error(t, err)
 }
 
 type requestAndResponse struct {
@@ -176,14 +162,33 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 			Enabled:   true,
 		}}
 
-	reqJSON := createRequestJSON("123", 0, 2)
-	respJSON := createResponseJSON(expectedSubjects)
-	srv := createTestServer(t, []requestAndResponse{
-		{
-			RequestJSON:  reqJSON,
-			ResponseJSON: respJSON,
-		},
+	allsubjects := make([]domain.Subject, 0, len(expectedSubjects)+1)
+	allsubjects = append(allsubjects, domain.Subject{
+		SubjectID: "0",
+		Enabled:   false,
 	})
+	allsubjects = append(allsubjects, expectedSubjects...)
+
+	reqJSON := `{
+		"by": {
+		  "accountId": "123",
+		  "withPaging": {
+			"firstResultIndex" : 1,
+			"maxResults": 2,
+			"sortBy": "principal",
+			"ascending": true
+		  }
+		},
+		"include": {
+		  "allOf": [
+			"status"
+		  ]
+		}
+	  }`
+
+	respJSON := createResponseJSON(expectedSubjects)
+	srv := createTestServer(t, allsubjects, map[int]bool{})
+
 	defer srv.Close()
 
 	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
@@ -216,28 +221,37 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	ja.Assertf(string(data), respJSON)
 }
 
-func createTestServer(t *testing.T, setups []requestAndResponse) *httptest.Server {
+func createTestServer(t *testing.T, subjects []domain.Subject, errorOn map[int]bool) *httptest.Server {
 	ja := jsonassert.New(t)
-	i := 0
 
+	requestNo := 0
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v2/findUsers":
-			if !assert.Less(t, i, len(setups)) {
-				return
-			}
-
 			assert.Equal(t, http.MethodPost, r.Method)
 
 			requestBody, err := io.ReadAll(r.Body)
 			if assert.NoError(t, err) {
-				ja.Assertf(string(requestBody), setups[i].RequestJSON)
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(setups[i].ResponseJSON))
-			}
+				if errorOn[requestNo] {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 
-			i++
+				paging, err := extractPagingParameters(requestBody)
+				assert.NoError(t, err)
+
+				validateRequestJSON(ja, string(requestBody))
+
+				results := make([]domain.Subject, 0, paging.Take)
+				for resultIndex, subjIndex := 0, paging.Skip; resultIndex < paging.Take && subjIndex < len(subjects); resultIndex, subjIndex = resultIndex+1, subjIndex+1 {
+					results = append(results, subjects[subjIndex])
+				}
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(createResponseJSON(results)))
+			}
 		}
+
+		requestNo++
 	}))
 
 	certFile, err := os.ReadFile("test-certs/client-ca.crt")
@@ -274,11 +288,10 @@ loop:
 	return assert.EqualValues(t, expectedSubjects, actualSubjects)
 }
 
-func TestCreateRequestJSON(t *testing.T) {
-	json := createRequestJSON("123", 0, 5)
+func TestValidateRequestJSON(t *testing.T) {
 	ja := jsonassert.New(t)
 
-	ja.Assertf(json, `{
+	validateRequestJSON(ja, `{
 		"by": {
 		  "accountId": "123",
 		  "withPaging": {
@@ -296,13 +309,13 @@ func TestCreateRequestJSON(t *testing.T) {
 	  }`)
 }
 
-func createRequestJSON(orgID string, firstElementIndex int, pageSize int) string {
-	return fmt.Sprintf(`{
+func validateRequestJSON(ja *jsonassert.Asserter, json string) {
+	ja.Assertf(json, `{
 		"by": {
-		  "accountId": "%s",
+		  "accountId": "123",
 		  "withPaging": {
-			"firstResultIndex" : %d,
-			"maxResults": %d,
+			"firstResultIndex" : "<<PRESENCE>>",
+			"maxResults": "<<PRESENCE>>",
 			"sortBy": "principal",
 			"ascending": true
 		  }
@@ -312,7 +325,49 @@ func createRequestJSON(orgID string, firstElementIndex int, pageSize int) string
 			"status"
 		  ]
 		}
-	  }`, orgID, firstElementIndex, pageSize)
+	  }`)
+}
+
+func TestExtractPagingParameters(t *testing.T) {
+	paging, err := extractPagingParameters([]byte(`{
+		"by": {
+		  "accountId": "123",
+		  "withPaging": {
+			"firstResultIndex" : 1,
+			"maxResults": 2,
+			"sortBy": "principal",
+			"ascending": true
+		  }
+		},
+		"include": {
+		  "allOf": [
+			"status"
+		  ]
+		}
+	}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, paging.Skip)
+	assert.Equal(t, 2, paging.Take)
+}
+
+func extractPagingParameters(reqBody []byte) (p pagingParameters, err error) {
+	req := request{}
+	err = json.Unmarshal(reqBody, &req)
+
+	p = req.By.PagingParameters
+	return
+}
+
+type pagingParameters struct {
+	Skip int `json:"firstResultIndex"`
+	Take int `json:"maxResults"`
+}
+
+type request struct {
+	By struct {
+		PagingParameters pagingParameters `json:"withPaging"`
+	} `json:"by"`
 }
 
 func TestCreateResponseJSON(t *testing.T) {
