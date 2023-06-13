@@ -186,17 +186,26 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	})
 	defer srv.Close()
 
-	client := srv.Client()
-	transport := client.Transport.(*http.Transport)
 	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
 	if err != nil {
 		panic(err)
 	}
-	transport.TLSClientConfig.Certificates = append(transport.TLSClientConfig.Certificates, cert)
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:      x509.NewCertPool(),      //<--this part (and the RootCAs.AddCert below) is an artifact of the test setup and needs to happen here
+			Certificates: []tls.Certificate{cert}, //<--this part is the repository's responsibility
+		},
+	}
+	transport.TLSClientConfig.RootCAs.AddCert(srv.Certificate())
+
+	client := http.Client{
+		Transport: transport,
+	}
 
 	//When
-	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/v2/findUsers", srv.URL), strings.NewReader(reqJSON))
-	req.RequestURI = "" //Artifact of HTTPTest?
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v2/findUsers", srv.URL), strings.NewReader(reqJSON))
+	assert.NoError(t, err)
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
 
