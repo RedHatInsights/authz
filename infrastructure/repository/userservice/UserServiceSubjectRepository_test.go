@@ -29,7 +29,7 @@ func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 		Enabled:   true,
 	}}
 
-	srv := createTestServer(t, expectedSubjects, map[int]bool{})
+	srv := createTestServer(t, expectedSubjects, map[int]int{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -53,7 +53,7 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 			Enabled:   true,
 		}}
 
-	srv := createTestServer(t, expectedSubjects, map[int]bool{})
+	srv := createTestServer(t, expectedSubjects, map[int]int{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -82,7 +82,7 @@ func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testin
 		},
 	}
 
-	srv := createTestServer(t, expectedSubjects, map[int]bool{})
+	srv := createTestServer(t, expectedSubjects, map[int]int{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -115,7 +115,7 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 		},
 	}
 
-	srv := createTestServer(t, expectedSubjects, map[int]bool{})
+	srv := createTestServer(t, expectedSubjects, map[int]int{})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -129,7 +129,7 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 
 func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 	expectedSubjects := []domain.Subject{}
-	srv := createTestServer(t, expectedSubjects, map[int]bool{0: true})
+	srv := createTestServer(t, expectedSubjects, map[int]int{0: http.StatusBadRequest})
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -187,7 +187,7 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	  }`
 
 	respJSON := createResponseJSON(expectedSubjects)
-	srv := createTestServer(t, allsubjects, map[int]bool{})
+	srv := createTestServer(t, allsubjects, map[int]int{})
 
 	defer srv.Close()
 
@@ -221,7 +221,7 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	ja.Assertf(string(data), respJSON)
 }
 
-func createTestServer(t *testing.T, subjects []domain.Subject, errorOn map[int]bool) *httptest.Server {
+func createTestServer(t *testing.T, subjects []domain.Subject, explicitStatus map[int]int) *httptest.Server {
 	ja := jsonassert.New(t)
 
 	requestNo := 0
@@ -232,8 +232,8 @@ func createTestServer(t *testing.T, subjects []domain.Subject, errorOn map[int]b
 
 			requestBody, err := io.ReadAll(r.Body)
 			if assert.NoError(t, err) {
-				if errorOn[requestNo] {
-					w.WriteHeader(http.StatusInternalServerError)
+				if explicitStatus[requestNo] > 0 {
+					w.WriteHeader(explicitStatus[requestNo])
 					return
 				}
 
