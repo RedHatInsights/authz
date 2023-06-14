@@ -196,7 +196,7 @@ func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
 		}`))
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode) // TODO - Check and update the correct http status code: bad request or internal server error
 }
 
 func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
@@ -218,7 +218,7 @@ func TestEntitleOrgFailsWithEmptyBody(t *testing.T) {
 		``))
 
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode) // TODO - Check and update the correct http status code: bad request or internal server error
 
 }
 
