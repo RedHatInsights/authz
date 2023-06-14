@@ -11,9 +11,13 @@ import (
 	"strings"
 )
 
-const sortByPrincipal = "principal"
-const defaultPageSize = 20
-const sortOrder = true
+const (
+	sortBy           = "principal"
+	defaultPageSize  = 20
+	defaultSortOrder = true
+
+	assumeNextPageAvailableEvenIfError = true // when retrieving a page of users and there is an error, should we still assume another page exists
+)
 
 type UserServiceSubjectRepository struct {
 	Url        url.URL
@@ -31,7 +35,7 @@ func NewUserServiceSubjectRepository(url url.URL, client http.Client) UserServic
 		Paging: struct {
 			PageSize  int
 			SortOrder bool
-		}{PageSize: defaultPageSize, SortOrder: sortOrder},
+		}{PageSize: defaultPageSize, SortOrder: defaultSortOrder},
 	}
 }
 
@@ -68,27 +72,23 @@ func (u *UserServiceSubjectRepository) GetByOrgID(orgID string) (chan domain.Sub
 	}
 
 	go func() {
-		shouldFetchPage := true
-		currentPage := 0
-
-		for shouldFetchPage {
-			req := u.makeUserRepositoryRequest(orgID, currentPage*u.Paging.PageSize)
-
-			resp, nextPageAvailable, serviceCallErr := u.doPagedUserServiceCall(req, errChan)
-
-			var pageProcessingErr error
-			if resp != nil {
-				pageProcessingErr = processUsersResponsePage(resp, subChan, errChan)
-			}
-
-			currentPage += 1
-			shouldFetchPage = shouldFetchNextPage(nextPageAvailable, serviceCallErr, pageProcessingErr)
-		}
-
 		defer func() {
 			close(subChan)
 			close(errChan)
 		}()
+
+		// Users are requested from the UserService in "pages"
+		shouldFetchPage := true
+
+		for page := 0; shouldFetchPage; page++ {
+			nextPageIsAvailable, serviceCallErr, pageProcessingErr := u.fetchPageOfUsers(orgID, page, subChan, errChan)
+
+			shouldFetchPage = shouldFetchNextPage(nextPageIsAvailable, serviceCallErr, pageProcessingErr)
+
+			if nextPageIsAvailable && !shouldFetchPage {
+				errChan <- fmt.Errorf("GetByOrgID may not have retrieved all subjects due to errors")
+			}
+		}
 	}()
 
 	return subChan, errChan
@@ -104,49 +104,62 @@ func (u *UserServiceSubjectRepository) makeUserRepositoryRequest(orgID string, r
 	req := userRepositoryRequest{}
 	req.By.AccountID = orgID
 	req.By.WithPaging.FirstResultIndex = resultIndex
-	req.By.WithPaging.MaxResults = u.Paging.PageSize + 1 // add 1 to peek into next page to see if there is one
-	req.By.WithPaging.SortBy = sortByPrincipal
+	req.By.WithPaging.MaxResults = u.Paging.PageSize
+	req.By.WithPaging.SortBy = sortBy
 	req.By.WithPaging.Ascending = u.Paging.SortOrder
 	req.Include.AllOf = []string{"status"}
 
 	return req
 }
 
-func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, errChan chan error) (userRepositoryResponse, bool, error) {
-	// TODO: put this somewhere better or change it (we only know that another page doesn't exist on a success)
-	assumeNextPageAvailableIfError := true
+func (u *UserServiceSubjectRepository) fetchPageOfUsers(orgID string, currentPage int, subChan chan domain.Subject, errChan chan error) (bool, error, error) {
+	req := u.makeUserRepositoryRequest(orgID, currentPage*u.Paging.PageSize)
 
-	// Make request with marshalled JSON as the POST body
+	resp, nextPageAvailable, serviceCallErr := u.doPagedUserServiceCall(req, errChan)
+
+	var pageProcessingErr error
+	if resp != nil {
+		pageProcessingErr = processUsersResponsePage(resp, subChan, errChan)
+	}
+
+	return nextPageAvailable, serviceCallErr, pageProcessingErr
+}
+
+func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, errChan chan error) (userRepositoryResponse, bool, error) {
+	// Step 1: marshall the userRepositoryRequest
 	userRepositoryRequestJSON, err := json.Marshal(req)
 
 	if err != nil {
 		err = fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
 		errChan <- err
-		return nil, assumeNextPageAvailableIfError, err
+		return nil, assumeNextPageAvailableEvenIfError, err
 	}
 
+	// Step 2: POST the request using the configured repository http client and url
 	resp, err := u.HttpClient.Post(u.Url.String(), "application/json", bytes.NewBuffer(userRepositoryRequestJSON))
 
 	if err != nil {
 		err = fmt.Errorf("failed to POST to UserService: %v: %w", u.Url, err)
 		errChan <- err
-		return nil, assumeNextPageAvailableIfError, err
-	}
-
-	if resp != nil && resp.StatusCode != 200 {
-		err = fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
-		errChan <- err
-		return nil, assumeNextPageAvailableIfError, err
-	}
-
-	body, errRead := io.ReadAll(resp.Body)
-	if errRead != nil {
-		err = fmt.Errorf("failed to read response body: %w", err)
-		errChan <- err
-		return nil, assumeNextPageAvailableIfError, err
+		return nil, assumeNextPageAvailableEvenIfError, err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
+		errChan <- err
+		return nil, assumeNextPageAvailableEvenIfError, err
+	}
+
+	// Step 3: read the response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		err = fmt.Errorf("failed to read response body: %w", err)
+		errChan <- err
+		return nil, assumeNextPageAvailableEvenIfError, err
+	}
+
+	// Step 4: unmarshall the userRepositoryResponse, which is a slice of subjects
 	var userResponses userRepositoryResponse
 	err = json.Unmarshal(body, &userResponses)
 
@@ -155,11 +168,12 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 		errChan <- err
 	}
 
+	// Step 5: try to determine if there is another page that can be requested
 	var nextPageAvailable bool
 	if userResponses != nil {
-		nextPageAvailable = req.By.WithPaging.MaxResults == len(userResponses) // that was a full page + 1, so we know there's another page
+		nextPageAvailable = req.By.WithPaging.MaxResults == len(userResponses) // that was a full page, so we know there's another page
 	} else {
-		nextPageAvailable = assumeNextPageAvailableIfError
+		nextPageAvailable = assumeNextPageAvailableEvenIfError
 	}
 
 	return userResponses, nextPageAvailable, err
@@ -200,8 +214,10 @@ func shouldContinueProcessingUsersPage(err error) bool {
 	return err != nil
 }
 
-func shouldFetchNextPage(anotherPageAvailable bool, serviceCallErr error, pageProcessingErr error) bool {
+func shouldFetchNextPage(anotherPageAvailable bool, serviceCallErr error, pageProcessingErr error) (shouldFetchNext bool) {
 	// TODO: Determine whether to keep going assuming there is another page and the error is the "right" type of error
 
-	return anotherPageAvailable && serviceCallErr == nil && pageProcessingErr == nil
+	shouldFetchNext = anotherPageAvailable && serviceCallErr == nil && pageProcessingErr == nil
+
+	return shouldFetchNext
 }
