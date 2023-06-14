@@ -61,6 +61,53 @@ paths:
             $ref: '#/definitions/v1alphaCheckPermissionRequest'
       tags:
         - CheckPermission
+  /v1alpha/orgs/{orgId}/entitlements/{serviceId}:
+    post:
+      summary: Entitle an Org access through a seat based license for a service.
+      description: |
+        Grants a given Org a seat based license to a given service. A maximum number of entitled seats
+      operationId: LicenseService_EntitleOrg
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaEntitleOrgResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgId
+          description: the ID of an org to entitle
+          in: path
+          required: true
+          type: string
+        - name: serviceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              maxSeats:
+                type: string
+                format: int64
+                description: the amount of seats that are granted for this org.
+            title: EntitleOrgRequest
+      tags:
+        - LicenseService
   /v1alpha/orgs/{orgId}/licenses/{serviceId}:
     get:
       summary: Summarize a license.
@@ -239,6 +286,9 @@ definitions:
         type: boolean
       description:
         type: string
+  v1alphaEntitleOrgResponse:
+    type: object
+    title: EntitleOrgResponse is the response when entitling an org
   v1alphaGetLicenseResponse:
     type: object
     properties:

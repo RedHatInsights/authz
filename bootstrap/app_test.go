@@ -123,6 +123,105 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{}`)
 }
 
+func TestEntitleOrgSucceedsAndStartsImportWithNewOrgAndNewOrServiceLicense(t *testing.T) {
+	setupService()
+	defer teardownService()
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
+		`{
+			"maxSeats": 25
+		}`))
+
+	assert.NoError(t, err)
+
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+}
+
+func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
+	setupService()
+	defer teardownService()
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system",
+		`{
+			"maxSeats": 25
+		}`))
+
+	assert.NoError(t, err)
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system"))
+	assert.NoError(t, err)
+	_, err = http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/bazbar", "system",
+		`{
+			"maxSeats": 20
+		}`))
+
+	assert.NoError(t, err)
+	resp2, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
+}
+
+func TestEntitleOrgSucceedsButDoesSkipImportWithExistingOrgAndSameLicense(t *testing.T) {
+	setupService()
+	defer teardownService()
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
+		`{
+			"maxSeats": 25
+		}`))
+
+	assert.NoError(t, err)
+
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
+		`{
+			"maxSeats": 24
+		}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	resp4, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp4, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+}
+
+func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
+	setupService()
+	defer teardownService()
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
+		`{
+			"maxSeats": -1
+		}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
+	setupService()
+	defer teardownService()
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
+		`{
+			"maxSeats":
+		}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+}
+
+func TestEntitleOrgFailsWithEmptyBody(t *testing.T) {
+	setupService()
+	defer teardownService()
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
+		``))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+}
+
 func TestGrantedLicenseAllowsUse(t *testing.T) {
 	setupService()
 	defer teardownService()

@@ -63,3 +63,9 @@ openapiOptions:
           Returns information about the license, 
           including the number of entitled seats (maximum assignable)
           and the current number of available seats.
+    - method: api.v1alpha.LicenseService.EntitleOrg
+      option:
+        summary: Entitle an Org access through a seat based license for a service.
+        description: >
+          Grants a given Org a seat based license to a given service. A maximum number of entitled seats
+          

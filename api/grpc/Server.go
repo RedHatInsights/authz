@@ -122,6 +122,34 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	return resp, nil
 }
 
+// EntitleOrg entitles an Org for a license to an existing service.
+// TODO: This is a temporary domain endpoint / handler until we get this from another service. So e.g. no serviceId-exists check will be added. We assume that the service is already there instead for now. Also updates not included for now.
+func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgRequest) (*core.EntitleOrgResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if entitleOrgReq.MaxSeats < 1 {
+		return nil, errors.New("maxSeats value not valid")
+	}
+	glog.Info("Received request to entitle Org: %s for a license to service %s with %v seats from Requestor: %s", entitleOrgReq.OrgId, entitleOrgReq.ServiceId, entitleOrgReq.MaxSeats, requestor)
+	evt := application.OrgEntitledEvent{
+		OrgID:     entitleOrgReq.OrgId,
+		ServiceID: entitleOrgReq.ServiceId,
+		MaxSeats:  int(entitleOrgReq.MaxSeats),
+	}
+
+	err = s.LicenseAppService.ProcessOrgEntitledEvent(evt)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &core.EntitleOrgResponse{}
+
+	return resp, nil
+}
+
 // NewServer creates a new Server object to use.
 func NewServer(h application.AccessAppService, l application.LicenseAppService, c serviceconfig.ServiceConfig) *Server {
 	return &Server{AccessAppService: &h, ServiceConfig: &c, LicenseAppService: &l}

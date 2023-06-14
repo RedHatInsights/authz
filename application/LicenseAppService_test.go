@@ -15,7 +15,7 @@ import (
 
 func TestOrgEnablement(t *testing.T) {
 	//Given
-	service, _ := createService(nil)
+	service, _ := createService(nil, nil)
 	evt := OrgEntitledEvent{
 		OrgID:     "o2",
 		ServiceID: "smarts",
@@ -50,9 +50,33 @@ func TestOrgEnablement(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
+func TestImportDoesGetSkippedIfAtLeastOneLicenseAndAtLeastOneMemberAlreadyExistsInAnOrg(t *testing.T) {
+	//given
+	spy := &OrgRepositoryWithDetectableImportState{}
+	service, _ := createService(nil, spy)
+
+	//when
+	service.ProcessOrgEntitledEvent(OrgEntitledEvent{
+		OrgID:     "o1",
+		ServiceID: "svc",
+		MaxSeats:  10,
+	})
+	//then
+	assert.False(t, spy.SubjectsAdded)
+}
+
+type OrgRepositoryWithDetectableImportState struct {
+	SubjectsAdded bool
+}
+
+func (o *OrgRepositoryWithDetectableImportState) AddSubject(_ string, _ domain.Subject) error {
+	o.SubjectsAdded = true
+	return nil
+}
+
 func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	//Given
-	service, _ := createService(nil)
+	service, _ := createService(nil, nil)
 	evt := OrgEntitledEvent{
 		OrgID:     "o2",
 		ServiceID: "smarts",
@@ -93,7 +117,7 @@ func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
-func createService(subjectRepositoryOverride contracts.SubjectRepository) (*LicenseAppService, *authzed.Client) {
+func createService(subjectRepositoryOverride contracts.SubjectRepository, orgRepositoryOverride contracts.OrganizationRepository) (*LicenseAppService, *authzed.Client) {
 	spiceDbRepo, authzedClient, err := spicedbContainer.CreateClient()
 	if err != nil {
 		panic(err)
@@ -104,21 +128,32 @@ func createService(subjectRepositoryOverride contracts.SubjectRepository) (*Lice
 		Principals: mock.GetMockPrincipalData(),
 	}
 
+	var subjectRepo contracts.SubjectRepository
+	subjectRepo = principalRepo
+
 	if subjectRepositoryOverride != nil {
-		return NewLicenseAppService(spiceDbRepo, spiceDbRepo, principalRepo, subjectRepositoryOverride, spiceDbRepo), authzedClient
+		subjectRepo = subjectRepositoryOverride
 	}
-	return NewLicenseAppService(spiceDbRepo, spiceDbRepo, principalRepo, principalRepo, spiceDbRepo), authzedClient
+
+	var orgRepo contracts.OrganizationRepository
+	orgRepo = spiceDbRepo
+
+	if orgRepositoryOverride != nil {
+		orgRepo = orgRepositoryOverride
+	}
+
+	return NewLicenseAppService(spiceDbRepo, spiceDbRepo, principalRepo, subjectRepo, orgRepo), authzedClient
 }
 
 func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 	//Given
-	mockRepo := &InterruptableSubjectRepository{
+	mockSubjectRepo := &InterruptableSubjectRepository{
 		PreInterruptSubjects:  nil,
 		PostInterruptSubjects: []domain.Subject{{SubjectID: "foo", Enabled: false}},
 		resumeSignal:          make(chan interface{}),
 		StoppedSignal:         make(chan interface{}),
 	}
-	licenseAppService, spiceDbClient := createService(mockRepo)
+	licenseAppService, spiceDbClient := createService(mockSubjectRepo, nil)
 
 	//When
 	doneSignal := make(chan interface{})
@@ -133,7 +168,7 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 		close(doneSignal)
 	}()
 
-	<-mockRepo.StoppedSignal //Wait for the import to reach the pause
+	<-mockSubjectRepo.StoppedSignal //Wait for the import to reach the pause
 
 	//Add the user directly to SpiceDB as enabled
 	_, err := spiceDbClient.WriteRelationships(context.Background(), &v1.WriteRelationshipsRequest{
@@ -155,7 +190,7 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 		}})
 	assert.NoError(t, err)
 
-	mockRepo.Resume() //Allow import to continue
+	mockSubjectRepo.Resume() //Allow import to continue
 
 	<-doneSignal //Wait for import to finish
 	//Then
