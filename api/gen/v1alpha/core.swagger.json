@@ -51,6 +51,59 @@
         ]
       }
     },
+    "/v1alpha/orgs/{orgId}/entitlements/{serviceId}": {
+      "post": {
+        "operationId": "LicenseService_EntitleOrg",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaEntitleOrgResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "orgId",
+            "description": "the ID of an org to entitle",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "serviceId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "maxSeats": {
+                  "type": "string",
+                  "format": "int64",
+                  "description": "the amount of seats that are granted for this org."
+                }
+              },
+              "title": "EntitleOrgRequest"
+            }
+          }
+        ],
+        "tags": [
+          "LicenseService"
+        ]
+      }
+    },
     "/v1alpha/orgs/{orgId}/licenses/{serviceId}": {
       "get": {
         "operationId": "LicenseService_GetLicense",
@@ -264,6 +317,10 @@
           "type": "string"
         }
       }
+    },
+    "v1alphaEntitleOrgResponse": {
+      "type": "object",
+      "title": "EntitleOrgResponse is the response when entitling an org"
     },
     "v1alphaGetLicenseResponse": {
       "type": "object",
