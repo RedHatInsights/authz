@@ -353,7 +353,6 @@ func (s *SpiceDbAccessRepository) ApplyLicense(license *domain.License) error {
 		ObjectId:   licenseID,
 	}
 
-	//No precondition necessary to prevent creating a new version for an existing license for a service/org due to CREATE vs TOUCH semantics on license->license_seats relationship
 	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates: []*v1.RelationshipUpdate{
 			{
