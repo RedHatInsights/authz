@@ -155,7 +155,15 @@ func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error 
 	if err != nil {
 		return err
 	}
-
+	//lookupresourceson license & a lookusubjects on members of org and if both exist, return and log "import skipped"
+	licensed, err := s.seatRepo.IsLicensed(evt.OrgID)
+	if err != nil {
+		return err
+	}
+	if licensed {
+		//Log?
+		return nil
+	}
 	subjects, errors := s.subjectRepo.GetByOrgID(evt.OrgID)
 
 loop:

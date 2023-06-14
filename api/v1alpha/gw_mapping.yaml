@@ -9,6 +9,9 @@ http:
       body: "*"
     - selector: api.v1alpha.LicenseService.GetLicense
       get: /v1alpha/orgs/{orgId}/licenses/{serviceId}
+    - selector: api.v1alpha.LicenseService.EntitleOrg
+      post: /v1alpha/orgs/{orgId}/entitlements/{serviceId}
+      body: "*"
     - selector: api.v1alpha.LicenseService.ModifySeats
       post: /v1alpha/orgs/{orgId}/licenses/{serviceId}
       body: "*"

@@ -109,6 +109,7 @@ type LicenseServiceClient interface {
 	GetLicense(ctx context.Context, in *GetLicenseRequest, opts ...grpc.CallOption) (*GetLicenseResponse, error)
 	ModifySeats(ctx context.Context, in *ModifySeatsRequest, opts ...grpc.CallOption) (*ModifySeatsResponse, error)
 	GetSeats(ctx context.Context, in *GetSeatsRequest, opts ...grpc.CallOption) (*GetSeatsResponse, error)
+	EntitleOrg(ctx context.Context, in *EntitleOrgRequest, opts ...grpc.CallOption) (*EntitleOrgResponse, error)
 }
 
 type licenseServiceClient struct {
@@ -146,6 +147,15 @@ func (c *licenseServiceClient) GetSeats(ctx context.Context, in *GetSeatsRequest
 	return out, nil
 }
 
+func (c *licenseServiceClient) EntitleOrg(ctx context.Context, in *EntitleOrgRequest, opts ...grpc.CallOption) (*EntitleOrgResponse, error) {
+	out := new(EntitleOrgResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.LicenseService/EntitleOrg", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LicenseServiceServer is the server API for LicenseService service.
 // All implementations should embed UnimplementedLicenseServiceServer
 // for forward compatibility
@@ -153,6 +163,7 @@ type LicenseServiceServer interface {
 	GetLicense(context.Context, *GetLicenseRequest) (*GetLicenseResponse, error)
 	ModifySeats(context.Context, *ModifySeatsRequest) (*ModifySeatsResponse, error)
 	GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error)
+	EntitleOrg(context.Context, *EntitleOrgRequest) (*EntitleOrgResponse, error)
 }
 
 // UnimplementedLicenseServiceServer should be embedded to have forward compatible implementations.
@@ -167,6 +178,9 @@ func (UnimplementedLicenseServiceServer) ModifySeats(context.Context, *ModifySea
 }
 func (UnimplementedLicenseServiceServer) GetSeats(context.Context, *GetSeatsRequest) (*GetSeatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSeats not implemented")
+}
+func (UnimplementedLicenseServiceServer) EntitleOrg(context.Context, *EntitleOrgRequest) (*EntitleOrgResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EntitleOrg not implemented")
 }
 
 // UnsafeLicenseServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -234,6 +248,24 @@ func _LicenseService_GetSeats_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LicenseService_EntitleOrg_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EntitleOrgRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LicenseServiceServer).EntitleOrg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.LicenseService/EntitleOrg",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LicenseServiceServer).EntitleOrg(ctx, req.(*EntitleOrgRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LicenseService_ServiceDesc is the grpc.ServiceDesc for LicenseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -252,6 +284,10 @@ var LicenseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSeats",
 			Handler:    _LicenseService_GetSeats_Handler,
+		},
+		{
+			MethodName: "EntitleOrg",
+			Handler:    _LicenseService_EntitleOrg_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

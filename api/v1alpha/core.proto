@@ -28,6 +28,7 @@ service LicenseService {
   rpc GetLicense (GetLicenseRequest) returns (GetLicenseResponse) {}
   rpc ModifySeats (ModifySeatsRequest) returns (ModifySeatsResponse) {}
   rpc GetSeats (GetSeatsRequest) returns (GetSeatsResponse) {}
+  rpc EntitleOrg(EntitleOrgRequest) returns (EntitleOrgResponse) {}
 }
 
 
@@ -68,9 +69,19 @@ message GetSeatsResponse {
   repeated GetSeatsUserRepresentation users = 1; // Just user IDs, unless "includeUsers" = true.
 }
 
-//we may return more userinfo, this is a starting point.
+// we may return more userinfo, this is a starting point.
 message GetSeatsUserRepresentation {
   string displayName = 1;
   string id = 2;
   bool assigned = 3;
 }
+
+//EntitleOrgRequest
+message EntitleOrgRequest {
+  string orgId = 1; // the ID of an org to entitle
+  string serviceId = 2;
+  int64 maxSeats = 3; // the amount of seats that are granted for this org.
+}
+
+// EntitleOrgResponse is the response when entitling an org
+message EntitleOrgResponse {}

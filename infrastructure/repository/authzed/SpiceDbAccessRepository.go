@@ -409,6 +409,13 @@ func (s *SpiceDbAccessRepository) ApplyLicense(license *domain.License) error {
 				},
 			},
 		},
+		OptionalPreconditions: []*v1.Precondition{{
+			Operation: v1.Precondition_OPERATION_MUST_NOT_MATCH,
+			Filter: &v1.RelationshipFilter{
+				ResourceType:       licenseResource.ObjectType,
+				OptionalResourceId: licenseResource.ObjectId,
+			},
+		}},
 	})
 
 	return err
@@ -472,6 +479,37 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 	}
 
 	return err
+}
+
+// IsLicensed returns true if an org has at least one persisted, existing license and at least one imported user
+func (s *SpiceDbAccessRepository) IsLicensed(orgID string) (bool, error) {
+	resp, err := s.client.LookupResources(s.ctx, &v1.LookupResourcesRequest{
+		Consistency:        useFullConsistency(),
+		ResourceObjectType: LicenseObjectType,
+		Permission:         "org",
+		Subject: &v1.SubjectReference{
+			Object: &v1.ObjectReference{
+				ObjectType: "org",
+				ObjectId:   orgID,
+			},
+		},
+		OptionalLimit: 1,
+	})
+
+	if err != nil {
+		glog.Errorf("Error checking if an org has a license. Could not call spiceDB! %v", err)
+		return false, err
+	}
+
+	_, err = resp.Recv()
+
+	if errors.Is(err, io.EOF) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
@@ -540,4 +578,8 @@ func unwrapSpiceDbError(err error) (*errdetails.ErrorInfo, bool) {
 	}
 
 	return nil, false
+}
+
+func useFullConsistency() *v1.Consistency {
+	return &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}}
 }
