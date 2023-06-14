@@ -19,7 +19,7 @@ func TestOrgEnablement(t *testing.T) {
 	evt := OrgEntitledEvent{
 		OrgID:     "o2",
 		ServiceID: "smarts",
-		MaxSeats:  2,
+		MaxSeats:  20,
 	}
 
 	//When
