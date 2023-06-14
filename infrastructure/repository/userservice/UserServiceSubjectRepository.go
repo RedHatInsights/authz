@@ -1,3 +1,4 @@
+// Package userservice is for the userservice repository and related components
 package userservice
 
 import (
@@ -16,22 +17,24 @@ const (
 	defaultPageSize  = 20
 	defaultSortOrder = true
 
-	assumeNextPageAvailableEvenIfError = true // when retrieving a page of users and there is an error, should we still assume another page exists
+	assumeNextPageAvailableByDefaultIfError = true // when retrieving a page of users and there is an error, should we still assume another page exists
 )
 
+// UserServiceSubjectRepository defines a repository that queries a user service using json requests of the type defined in userRepositoryRequest
 type UserServiceSubjectRepository struct {
-	Url        url.URL
-	HttpClient http.Client
+	URL        url.URL
+	HTTPClient http.Client
 	Paging     struct {
 		PageSize  int
 		SortOrder bool
 	}
 }
 
+// NewUserServiceSubjectRepository creates a new UserServiceSubjectRepository
 func NewUserServiceSubjectRepository(url url.URL, client http.Client) UserServiceSubjectRepository {
 	return UserServiceSubjectRepository{
-		Url:        url,
-		HttpClient: client,
+		URL:        url,
+		HTTPClient: client,
 		Paging: struct {
 			PageSize  int
 			SortOrder bool
@@ -59,6 +62,7 @@ type userRepositoryResponse []struct {
 	Status string `json:"status"`
 }
 
+// GetByOrgID retrieves all members of the given organization
 func (u *UserServiceSubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan error) {
 	subChan := make(chan domain.Subject)
 	errChan := make(chan error)
@@ -132,23 +136,28 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	if err != nil {
 		err = fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
 		errChan <- err
-		return nil, assumeNextPageAvailableEvenIfError, err
+		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
 
 	// Step 2: POST the request using the configured repository http client and url
-	resp, err := u.HttpClient.Post(u.Url.String(), "application/json", bytes.NewBuffer(userRepositoryRequestJSON))
+	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(userRepositoryRequestJSON))
 
 	if err != nil {
-		err = fmt.Errorf("failed to POST to UserService: %v: %w", u.Url, err)
+		err = fmt.Errorf("failed to POST to UserService: %v: %w", u.URL, err)
 		errChan <- err
-		return nil, assumeNextPageAvailableEvenIfError, err
+		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			errChan <- fmt.Errorf("failed to close response body: %v: %w", u.URL, err)
+		}
+	}()
 
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
 		errChan <- err
-		return nil, assumeNextPageAvailableEvenIfError, err
+		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
 
 	// Step 3: read the response
@@ -156,7 +165,7 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	if err != nil {
 		err = fmt.Errorf("failed to read response body: %w", err)
 		errChan <- err
-		return nil, assumeNextPageAvailableEvenIfError, err
+		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
 
 	// Step 4: unmarshall the userRepositoryResponse, which is a slice of subjects
@@ -173,7 +182,7 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	if userResponses != nil {
 		nextPageAvailable = req.By.WithPaging.MaxResults == len(userResponses) // that was a full page, so we know there's another page
 	} else {
-		nextPageAvailable = assumeNextPageAvailableEvenIfError
+		nextPageAvailable = assumeNextPageAvailableByDefaultIfError
 	}
 
 	return userResponses, nextPageAvailable, err
