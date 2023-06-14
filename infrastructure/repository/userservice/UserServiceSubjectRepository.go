@@ -90,7 +90,7 @@ func (u *UserServiceSubjectRepository) GetByOrgID(orgID string) (chan domain.Sub
 			shouldFetchPage = shouldFetchNextPage(nextPageIsAvailable, serviceCallErr, pageProcessingErr)
 
 			if nextPageIsAvailable && !shouldFetchPage {
-				errChan <- fmt.Errorf("GetByOrgID may not have retrieved all subjects due to errors")
+				errChan <- fmt.Errorf("GetByOrgID has stopped trying to retrieve more users due to errors, but there may be more")
 			}
 		}
 	}()
@@ -140,12 +140,38 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	}
 
 	// Step 2: POST the request using the configured repository http client and url
-	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(userRepositoryRequestJSON))
+	body, err := u.doUserServiceCall(userRepositoryRequestJSON, errChan)
+	if err != nil {
+		return nil, assumeNextPageAvailableByDefaultIfError, err
+	}
+
+	// Step 3: unmarshall the userRepositoryResponse, which is a slice of subjects
+	var userResponses userRepositoryResponse
+	err = json.Unmarshal(body, &userResponses)
+
+	if err != nil {
+		err = fmt.Errorf("failed to unmarshall userRepositoryResponse from body: %v, %w", string(body), err)
+		errChan <- err
+	}
+
+	// Step 4: try to determine if there is another page that can be requested
+	var nextPageAvailable bool
+	if userResponses != nil {
+		nextPageAvailable = req.By.WithPaging.MaxResults == len(userResponses) // that was a full page, so we know there's another page
+	} else {
+		nextPageAvailable = assumeNextPageAvailableByDefaultIfError
+	}
+
+	return userResponses, nextPageAvailable, err
+}
+
+func (u *UserServiceSubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error) (respBody []byte, err error) {
+	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
 
 	if err != nil {
 		err = fmt.Errorf("failed to POST to UserService: %v: %w", u.URL, err)
 		errChan <- err
-		return nil, assumeNextPageAvailableByDefaultIfError, err
+		return nil, err
 	}
 	defer func() {
 		err := resp.Body.Close()
@@ -157,35 +183,17 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
 		errChan <- err
-		return nil, assumeNextPageAvailableByDefaultIfError, err
+		return nil, err
 	}
 
-	// Step 3: read the response
-	body, err := io.ReadAll(resp.Body)
+	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		err = fmt.Errorf("failed to read response body: %w", err)
 		errChan <- err
-		return nil, assumeNextPageAvailableByDefaultIfError, err
+		return nil, err
 	}
 
-	// Step 4: unmarshall the userRepositoryResponse, which is a slice of subjects
-	var userResponses userRepositoryResponse
-	err = json.Unmarshal(body, &userResponses)
-
-	if err != nil {
-		err = fmt.Errorf("failed to unmarshall userRepositoryResponse from body: %v, %w", string(body), err)
-		errChan <- err
-	}
-
-	// Step 5: try to determine if there is another page that can be requested
-	var nextPageAvailable bool
-	if userResponses != nil {
-		nextPageAvailable = req.By.WithPaging.MaxResults == len(userResponses) // that was a full page, so we know there's another page
-	} else {
-		nextPageAvailable = assumeNextPageAvailableByDefaultIfError
-	}
-
-	return userResponses, nextPageAvailable, err
+	return
 }
 
 func processUsersResponsePage(resp userRepositoryResponse, subChan chan domain.Subject, errChan chan error) error {
