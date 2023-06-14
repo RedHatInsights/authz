@@ -31,8 +31,8 @@ type UserServiceSubjectRepository struct {
 }
 
 // NewUserServiceSubjectRepository creates a new UserServiceSubjectRepository
-func NewUserServiceSubjectRepository(url url.URL, client http.Client) UserServiceSubjectRepository {
-	return UserServiceSubjectRepository{
+func NewUserServiceSubjectRepository(url url.URL, client http.Client) *UserServiceSubjectRepository {
+	return &UserServiceSubjectRepository{
 		URL:        url,
 		HTTPClient: client,
 		Paging: struct {
