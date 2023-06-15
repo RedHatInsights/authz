@@ -56,12 +56,13 @@ func TestImportDoesGetSkippedIfAtLeastOneLicenseAndAtLeastOneMemberAlreadyExists
 	service, _ := createService(nil, spy)
 
 	//when
-	service.ProcessOrgEntitledEvent(OrgEntitledEvent{
+	err := service.ProcessOrgEntitledEvent(OrgEntitledEvent{
 		OrgID:     "o1",
 		ServiceID: "svc",
 		MaxSeats:  10,
 	})
 	//then
+	assert.NoError(t, err)
 	assert.False(t, spy.SubjectsAdded)
 }
 

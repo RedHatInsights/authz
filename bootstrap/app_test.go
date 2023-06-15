@@ -147,7 +147,7 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 		}`))
 
 	assert.NoError(t, err)
-	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system"))
+	_, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system"))
 	assert.NoError(t, err)
 	_, err = http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/bazbar", "system",
 		`{
@@ -155,7 +155,7 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 		}`))
 
 	assert.NoError(t, err)
-	resp2, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system"))
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
 }
