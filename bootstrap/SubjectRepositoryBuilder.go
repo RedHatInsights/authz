@@ -4,10 +4,7 @@ import (
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/userservice"
-	"crypto/tls"
 	"crypto/x509"
-	"net/http"
-	"net/url"
 )
 
 type SubjectRepositoryBuilder struct {
@@ -30,29 +27,10 @@ func (s *SubjectRepositoryBuilder) Build() (contracts.SubjectRepository, error) 
 }
 
 func createUserServiceSubjectRepository(config serviceconfig.UserServiceConfig) (contracts.SubjectRepository, error) {
-	url, err := url.Parse(config.URL)
+	caCerts, err := x509.SystemCertPool()
 	if err != nil {
 		return nil, err
 	}
 
-	caCert, err := x509.SystemCertPool()
-	if err != nil {
-		return nil, err
-	}
-
-	cert, err := tls.LoadX509KeyPair(config.UserServiceClientCertFile, config.UserServiceClientKeyFile)
-	if err != nil {
-		return nil, err
-	}
-
-	client := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs:      caCert,
-				Certificates: []tls.Certificate{cert},
-			},
-		},
-	}
-
-	return userservice.NewUserServiceSubjectRepository(*url, client), nil
+	return userservice.NewUserServiceSubjectRepositoryFromConfig(config, caCerts)
 }

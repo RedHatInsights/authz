@@ -1,6 +1,7 @@
 package userservice
 
 import (
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"authz/domain/contracts"
 	"crypto/tls"
@@ -10,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -143,29 +143,22 @@ func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 }
 
 func createSubjectRepository(srv *httptest.Server) contracts.SubjectRepository {
-	serverURL, err := url.Parse(fmt.Sprintf("%s/v2/findUsers", srv.URL)) //This seems like the repository's responsibility?
+	config := serviceconfig.UserServiceConfig{
+		URL:                       fmt.Sprintf("%s/v2/findUsers", srv.URL),
+		UserServiceClientCertFile: "test-certs/client.crt",
+		UserServiceClientKeyFile:  "test-certs/client.key",
+	}
+
+	cacerts := x509.NewCertPool()
+	cacerts.AddCert(srv.Certificate())
+
+	repo, err := NewUserServiceSubjectRepositoryFromConfig(config, cacerts)
+
 	if err != nil {
 		panic(err)
 	}
 
-	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
-	if err != nil {
-		panic(err)
-	}
-
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs:      x509.NewCertPool(),      //<--this part (and the RootCAs.AddCert below) is an artifact of the test setup and needs to happen here
-			Certificates: []tls.Certificate{cert}, //<--this part is the repository's responsibility
-		},
-	}
-	transport.TLSClientConfig.RootCAs.AddCert(srv.Certificate())
-
-	client := http.Client{
-		Transport: transport,
-	}
-
-	return NewUserServiceSubjectRepository(*serverURL, client)
+	return repo
 }
 
 func TestUserServiceSubjectRepository_temp(t *testing.T) {
