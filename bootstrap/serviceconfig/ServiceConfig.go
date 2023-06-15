@@ -12,17 +12,18 @@ const (
 
 // ServiceConfig contains all server-related configuration.
 type ServiceConfig struct {
-	GrpcPort     int          `validate:"required,gte=0,lte=65535"`
-	GrpcPortStr  string       `mapstructure:"grpcport"`
-	HTTPPort     int          `validate:"required,gte=0,lte=65535"`
-	HTTPPortStr  string       `mapstructure:"httpport"`
-	HTTPSPort    int          `validate:"omitempty,gte=0,lte=65535"`
-	HTTPSPortStr string       `mapstructure:"httpsport"`
-	CorsConfig   CorsConfig   `mapstructure:"cors"`
-	TLSConfig    TLSConfig    `mapstructure:"tls"`
-	StoreConfig  StoreConfig  `mapstructure:"store"`
-	AuthConfigs  []AuthConfig `mapstructure:"auth"`
-	LogRequests  bool
+	GrpcPort          int               `validate:"required,gte=0,lte=65535"`
+	GrpcPortStr       string            `mapstructure:"grpcport"`
+	HTTPPort          int               `validate:"required,gte=0,lte=65535"`
+	HTTPPortStr       string            `mapstructure:"httpport"`
+	HTTPSPort         int               `validate:"omitempty,gte=0,lte=65535"`
+	HTTPSPortStr      string            `mapstructure:"httpsport"`
+	CorsConfig        CorsConfig        `mapstructure:"cors"`
+	TLSConfig         TLSConfig         `mapstructure:"tls"`
+	StoreConfig       StoreConfig       `mapstructure:"store"`
+	AuthConfigs       []AuthConfig      `mapstructure:"auth"`
+	UserServiceConfig UserServiceConfig `mapstructure:"userservice"`
+	LogRequests       bool
 }
 
 // TLSConfig includes the TLS configuration.
@@ -65,4 +66,11 @@ type AuthConfig struct {
 	Audience          string
 	RequiredScope     string
 	Enabled           bool
+}
+
+// UserServiceConfig holds the configuration for a user service
+type UserServiceConfig struct {
+	URL                       string
+	UserServiceClientCertFile string
+	UserServiceClientKeyFile  string
 }

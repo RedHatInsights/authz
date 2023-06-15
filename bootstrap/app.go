@@ -132,14 +132,19 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		return nil, nil, err
 	}
 
+	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
+	subr, err := initSubjectRepository(&srvCfg)
+	// TODO: remove fallback when all is tested
+	if err != nil {
+		glog.Errorf("failed to initialise UserService SubjectRepository (falling back to PrincipalRepository): %v", err)
+		subr = pr.(contracts.SubjectRepository)
+	}
+
 	sr, err := initSeatRepository(&srvCfg)
 	if err != nil {
 		return nil, nil, err
 	}
 	or := sr.(contracts.OrganizationRepository)
-
-	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
-	subr := pr.(contracts.SubjectRepository)
 
 	aas := application.NewAccessAppService(&ar, pr)
 	sas := application.NewLicenseAppService(ar, sr, pr, subr, or)
@@ -187,6 +192,11 @@ func initSeatRepository(config *serviceconfig.ServiceConfig) (contracts.SeatLice
 
 func initAccessRepository(config *serviceconfig.ServiceConfig) (contracts.AccessRepository, error) {
 	return NewAccessRepositoryBuilder().
+		WithConfig(config).Build()
+}
+
+func initSubjectRepository(config *serviceconfig.ServiceConfig) (contracts.SubjectRepository, error) {
+	return NewSubjectRepositoryBuilder().
 		WithConfig(config).Build()
 }
 
