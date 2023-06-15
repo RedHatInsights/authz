@@ -2,8 +2,12 @@
 package userservice
 
 import (
+	"authz/bootstrap/serviceconfig"
 	"authz/domain"
+	"authz/domain/contracts"
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -30,8 +34,33 @@ type UserServiceSubjectRepository struct {
 	}
 }
 
+// NewUserServiceSubjectRepositoryFromConfig creates a new UserServiceRepository instance from a config struct and certpool
+func NewUserServiceSubjectRepositoryFromConfig(config serviceconfig.UserServiceConfig, cacerts *x509.CertPool) (contracts.SubjectRepository, error) {
+	url, err := url.Parse(config.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	cert, err := tls.LoadX509KeyPair(config.UserServiceClientCertFile, config.UserServiceClientKeyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:      cacerts,
+				Certificates: []tls.Certificate{cert},
+			},
+		},
+	}
+
+	return NewUserServiceSubjectRepository(*url, client), nil
+}
+
 // NewUserServiceSubjectRepository creates a new UserServiceSubjectRepository
 func NewUserServiceSubjectRepository(url url.URL, client http.Client) *UserServiceSubjectRepository {
+
 	return &UserServiceSubjectRepository{
 		URL:        url,
 		HTTPClient: client,
