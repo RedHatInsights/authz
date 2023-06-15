@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -141,13 +142,30 @@ func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 	assert.Error(t, err)
 }
 
-type requestAndResponse struct {
-	RequestJSON  string
-	ResponseJSON string
-}
-
 func createSubjectRepository(srv *httptest.Server) contracts.SubjectRepository {
-	return nil
+	serverURL, err := url.Parse(fmt.Sprintf("%s/v2/findUsers", srv.URL)) //This seems like the repository's responsibility?
+	if err != nil {
+		panic(err)
+	}
+
+	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
+	if err != nil {
+		panic(err)
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:      x509.NewCertPool(),      //<--this part (and the RootCAs.AddCert below) is an artifact of the test setup and needs to happen here
+			Certificates: []tls.Certificate{cert}, //<--this part is the repository's responsibility
+		},
+	}
+	transport.TLSClientConfig.RootCAs.AddCert(srv.Certificate())
+
+	client := http.Client{
+		Transport: transport,
+	}
+
+	return NewUserServiceSubjectRepository(*serverURL, client)
 }
 
 func TestUserServiceSubjectRepository_temp(t *testing.T) {
@@ -247,7 +265,10 @@ func createTestServer(t *testing.T, subjects []domain.Subject, explicitStatus ma
 					results = append(results, subjects[subjIndex])
 				}
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(createResponseJSON(results)))
+				_, err = w.Write([]byte(createResponseJSON(results)))
+				if err != nil {
+					t.Logf("Error sending response: %s", err)
+				}
 			}
 		}
 
