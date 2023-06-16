@@ -123,7 +123,7 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{}`)
 }
 
-func TestEntitleOrgSucceedsAndStartsImportWithNewOrgAndNewOrServiceLicense(t *testing.T) {
+func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
 	setupService()
 	defer teardownService()
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
@@ -160,9 +160,10 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
 }
 
-func TestEntitleOrgSucceedsButDoesSkipImportWithExistingOrgAndSameLicense(t *testing.T) {
+func TestEntitleOrgTwiceFailsWithBadRequest(t *testing.T) {
 	setupService()
 	defer teardownService()
+
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
 		`{
 			"maxSeats": 25
@@ -181,7 +182,7 @@ func TestEntitleOrgSucceedsButDoesSkipImportWithExistingOrgAndSameLicense(t *tes
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-
+	//to make sure the license didn't get messed up we also assert that the seatcount is the expected one
 	resp4, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp4, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
@@ -628,7 +629,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	temporarySecretDirectory, err = os.MkdirTemp(".", ".secrets")
+	temporarySecretDirectory, err = os.MkdirTemp(os.TempDir(), ".secrets")
 	if err != nil {
 		glog.Error("Error setting up secret directory: ", err)
 		os.Exit(1)
