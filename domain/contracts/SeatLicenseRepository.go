@@ -16,6 +16,6 @@ type SeatLicenseRepository interface {
 	GetAssigned(orgID string, serviceID string) ([]domain.SubjectID, error)
 	// ApplyLicense stores the given license associated with its service and organization
 	ApplyLicense(license *domain.License) error
-	// IsLicensed returns true if a given Org has at least one license applied.
-	IsLicensed(orgID string) (bool, error)
+	// IsImported returns true if a given Org has at least one license applied or exists and has at least one member in the schema.
+	IsImported(orgID string) (bool, error)
 }
