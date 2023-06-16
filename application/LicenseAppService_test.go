@@ -50,7 +50,7 @@ func TestOrgEnablement(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
-func TestImportDoesGetSkippedIfAtLeastOneLicenseAndAtLeastOneMemberAlreadyExistsInAnOrg(t *testing.T) {
+func TestUserImportIsSkippedIfAtLeastOneLicenseAlreadyExistsForAnOrg(t *testing.T) {
 	//given
 	spy := &OrgRepositoryWithDetectableImportState{}
 	service, _ := createService(nil, spy)
