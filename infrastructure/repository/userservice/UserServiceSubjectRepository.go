@@ -24,8 +24,8 @@ const (
 	assumeNextPageAvailableByDefaultIfError = true // when retrieving a page of users and there is an error, should we still assume another page exists
 )
 
-// UserServiceSubjectRepository defines a repository that queries a user service using json requests of the type defined in userRepositoryRequest
-type UserServiceSubjectRepository struct {
+// SubjectRepository defines a repository that queries a user service using json requests of the type defined in userRepositoryRequest
+type SubjectRepository struct {
 	URL        url.URL
 	HTTPClient http.Client
 	Paging     struct {
@@ -59,9 +59,9 @@ func NewUserServiceSubjectRepositoryFromConfig(config serviceconfig.UserServiceC
 }
 
 // NewUserServiceSubjectRepository creates a new UserServiceSubjectRepository
-func NewUserServiceSubjectRepository(url url.URL, client http.Client) *UserServiceSubjectRepository {
+func NewUserServiceSubjectRepository(url url.URL, client http.Client) *SubjectRepository {
 
-	return &UserServiceSubjectRepository{
+	return &SubjectRepository{
 		URL:        url,
 		HTTPClient: client,
 		Paging: struct {
@@ -92,7 +92,7 @@ type userRepositoryResponse []struct {
 }
 
 // GetByOrgID retrieves all members of the given organization
-func (u *UserServiceSubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan error) {
+func (u *SubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan error) {
 	subChan := make(chan domain.Subject)
 	errChan := make(chan error)
 
@@ -127,13 +127,13 @@ func (u *UserServiceSubjectRepository) GetByOrgID(orgID string) (chan domain.Sub
 	return subChan, errChan
 }
 
-func (u *UserServiceSubjectRepository) validateConfigAndOrg(_ string) bool {
+func (u *SubjectRepository) validateConfigAndOrg(_ string) bool {
 	// TODO: add more validations
 
 	return u.Paging.PageSize > 0
 }
 
-func (u *UserServiceSubjectRepository) makeUserRepositoryRequest(orgID string, resultIndex int) userRepositoryRequest {
+func (u *SubjectRepository) makeUserRepositoryRequest(orgID string, resultIndex int) userRepositoryRequest {
 	req := userRepositoryRequest{}
 	req.By.AccountID = orgID
 	req.By.WithPaging.FirstResultIndex = resultIndex
@@ -145,7 +145,7 @@ func (u *UserServiceSubjectRepository) makeUserRepositoryRequest(orgID string, r
 	return req
 }
 
-func (u *UserServiceSubjectRepository) fetchPageOfUsers(orgID string, currentPage int, subChan chan domain.Subject, errChan chan error) (bool, error, error) {
+func (u *SubjectRepository) fetchPageOfUsers(orgID string, currentPage int, subChan chan domain.Subject, errChan chan error) (bool, error, error) {
 	req := u.makeUserRepositoryRequest(orgID, currentPage*u.Paging.PageSize)
 
 	resp, nextPageAvailable, serviceCallErr := u.doPagedUserServiceCall(req, errChan)
@@ -158,7 +158,7 @@ func (u *UserServiceSubjectRepository) fetchPageOfUsers(orgID string, currentPag
 	return nextPageAvailable, serviceCallErr, pageProcessingErr
 }
 
-func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, errChan chan error) (userRepositoryResponse, bool, error) {
+func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, errChan chan error) (userRepositoryResponse, bool, error) {
 	// Step 1: marshall the userRepositoryRequest
 	userRepositoryRequestJSON, err := json.Marshal(req)
 
@@ -194,7 +194,7 @@ func (u *UserServiceSubjectRepository) doPagedUserServiceCall(req userRepository
 	return userResponses, nextPageAvailable, err
 }
 
-func (u *UserServiceSubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error) (respBody []byte, err error) {
+func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error) (respBody []byte, err error) {
 	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
 
 	if err != nil {
