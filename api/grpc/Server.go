@@ -133,7 +133,7 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 	if entitleOrgReq.MaxSeats < 1 {
 		return nil, errors.New("maxSeats value not valid")
 	}
-	glog.Info("Received request to entitle Org: %s for a license to service %s with %v seats from Requestor: %s", entitleOrgReq.OrgId, entitleOrgReq.ServiceId, entitleOrgReq.MaxSeats, requestor)
+	glog.Infof("Received request to entitle Org: %s for a license to service %s with %v seats from Requestor: %s", entitleOrgReq.OrgId, entitleOrgReq.ServiceId, entitleOrgReq.MaxSeats, requestor)
 	evt := application.OrgEntitledEvent{
 		OrgID:     entitleOrgReq.OrgId,
 		ServiceID: entitleOrgReq.ServiceId,
