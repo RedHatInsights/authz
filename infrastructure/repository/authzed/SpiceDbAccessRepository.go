@@ -480,10 +480,10 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 	return err
 }
 
-// IsImported returns true if an org has at least one persisted, existing license or at least one member.
+// IsImported returns true if an org has at least one persisted, existing member inside spiceDB.
 func (s *SpiceDbAccessRepository) IsImported(orgID string) (bool, error) {
 
-	//if no license found, check if an org with members exists inside the schema
+	//check if an org with members exists inside the schema
 	result, err := hasOrgMembers(s.ctx, s.client, orgID)
 	return result, err
 }
