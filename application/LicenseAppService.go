@@ -5,6 +5,7 @@ import (
 	"authz/domain/contracts"
 	"authz/domain/services"
 	"context"
+	"fmt"
 
 	"github.com/golang/glog"
 )
@@ -144,27 +145,42 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 }
 
 // ProcessOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
-func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error {
-	// first, check if there's already a license/org to skip userImport after applying the new license, if necessary.
-	orgIsImported, err := s.seatRepo.IsImported(evt.OrgID)
+func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent, strictMode bool) error {
+	// first, check if there's already a license/org and/or existing org users.
+	licenseImported, usersImported, err := s.seatRepo.IsImported(evt.OrgID, evt.ServiceID)
 	if err != nil {
 		return err
 	}
 
-	err = s.seatRepo.ApplyLicense(&domain.License{
-		OrgID:     evt.OrgID,
-		ServiceID: evt.ServiceID,
-		MaxSeats:  evt.MaxSeats,
-		Version:   "",
-		InUse:     0,
-	})
+	if licenseImported {
+		licExistsErr := fmt.Errorf("License already exists for the given org in %v: ", evt)
 
-	if err != nil {
-		return err
+		if strictMode {
+			return licExistsErr
+		}
+		glog.Warning(licExistsErr)
+
+	} else {
+		// we only create/touch an existing license for a given org if it doesn't already exist
+		err = s.seatRepo.ApplyLicense(&domain.License{
+			OrgID:     evt.OrgID,
+			ServiceID: evt.ServiceID,
+			MaxSeats:  evt.MaxSeats,
+			Version:   "",
+			InUse:     0,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		glog.Infof("License for service %s with %v seats added.", evt.ServiceID, evt.MaxSeats)
 	}
-	//skip userImport when a new license is added but the org/members already exist.
-	if orgIsImported {
-		glog.Infof("License for service %s with %v seats added. Skipping user import. Org already exists.", evt.ServiceID, evt.MaxSeats)
+
+	// whether an existing license exists or not, we can try to figure out if users have already been imported, and if not add them
+	// this is safe to re-run
+	if usersImported {
+		glog.Infof("Skipping user import. Org already exists.", evt.ServiceID, evt.MaxSeats)
 		return nil
 	}
 

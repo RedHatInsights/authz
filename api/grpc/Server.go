@@ -140,7 +140,8 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 		MaxSeats:  int(entitleOrgReq.MaxSeats),
 	}
 
-	err = s.LicenseAppService.ProcessOrgEntitledEvent(evt)
+	// run in non-strict mode for now, so user import will run even if license already exists
+	err = s.LicenseAppService.ProcessOrgEntitledEvent(evt, false)
 	if err != nil {
 		return nil, err
 	}
