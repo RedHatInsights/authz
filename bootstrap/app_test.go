@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"authz/domain"
 	"authz/infrastructure/repository/authzed"
 	"authz/testenv"
 	"fmt"
@@ -20,12 +21,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	CertDirectory = "../testdata/test-certs/"
+)
+
 // container to get the port when re-initializing the service
 var container *authzed.LocalSpiceDbContainer
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
-	setupService()
+	setupService(nil)
 	defer teardownService()
 
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad",
@@ -35,7 +40,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 }
 
 func TestCheckAccess(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -46,7 +51,7 @@ func TestCheckAccess(t *testing.T) {
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -57,7 +62,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 }
 
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -68,7 +73,7 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 }
 
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
 		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
@@ -79,7 +84,7 @@ func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 }
 
 func TestAssignLicenseReturnsSuccess(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
@@ -94,7 +99,7 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
 		`{
@@ -109,8 +114,29 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
-	setupService()
+
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+
+	expectedOrg := "o3"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
 	defer teardownService()
+
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
 		`{
 			"maxSeats": 25
@@ -121,10 +147,14 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
 	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+
+	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp3, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 }
 
 func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
-	setupService()
+	setupService(nil) // TODO
 	defer teardownService()
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system",
 		`{
@@ -146,7 +176,7 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 }
 
 func TestEntitleOrgTwiceFailsWithBadRequest(t *testing.T) {
-	setupService()
+	setupService(nil) // TODO
 	defer teardownService()
 
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
@@ -174,7 +204,7 @@ func TestEntitleOrgTwiceFailsWithBadRequest(t *testing.T) {
 }
 
 func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
 		`{
@@ -186,7 +216,7 @@ func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
 }
 
 func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
 		`{
@@ -198,7 +228,7 @@ func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
 }
 
 func TestEntitleOrgFailsWithEmptyBody(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
 		``))
@@ -209,7 +239,7 @@ func TestEntitleOrgFailsWithEmptyBody(t *testing.T) {
 }
 
 func TestGrantedLicenseAllowsUse(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	//The user isn't licensed initially, use is denied
 	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
@@ -236,7 +266,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 }
 
 func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 
 	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
@@ -273,7 +303,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 }
 
 func TestOverAssigningLicensesFails(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
 		`{
@@ -297,7 +327,7 @@ func TestOverAssigningLicensesFails(t *testing.T) {
 }
 
 func TestCors_NotImplementedMethod(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	body := `{
 			"assign": [
@@ -313,7 +343,7 @@ func TestCors_NotImplementedMethod(t *testing.T) {
 }
 
 func TestCors_AllowAllOrigins(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
 	body := `{
 			"assign": [
@@ -371,7 +401,7 @@ func createRequest(method string, relativeURI string, authToken string, body str
 var temporaryConfigFile *os.File
 var temporarySecretDirectory string
 
-func setupService() {
+func setupService(fakeUserService *testenv.FakeUserServiceAPI) {
 	spicedbToken, err := container.NewToken()
 	if err != nil {
 		panic(err)
@@ -380,7 +410,7 @@ func setupService() {
 	if err != nil {
 		panic(err)
 	}
-	writeTestEnvToYaml(spicedbToken)
+	writeTestEnvToYaml(spicedbToken, fakeUserService)
 
 	go Run(temporaryConfigFile.Name())
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
@@ -394,7 +424,7 @@ func setupService() {
 	}
 }
 
-func writeTestEnvToYaml(token string) {
+func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 	var data, err = os.ReadFile("../config.yaml")
 	if err != nil {
 		fmt.Printf("Error reading config.yaml: %s\n", err)
@@ -430,6 +460,14 @@ func writeTestEnvToYaml(token string) {
 	if authKey["enabled"] == false {
 		log.Printf("Enabling authn middleware for tests.")
 		authKey["enabled"] = true
+	}
+
+	if userService != nil {
+		userServiceKey := yml["userservice"].(map[string]interface{})
+		userServiceKey["url"] = userService.URI
+		userServiceKey["userServiceClientCertFile"] = userService.CertFile
+		userServiceKey["userServiceClientKeyFile"] = userService.CertKey
+		userServiceKey["optionalRootCA"] = userService.RootCa
 	}
 
 	res, err := yaml.Marshal(yml)

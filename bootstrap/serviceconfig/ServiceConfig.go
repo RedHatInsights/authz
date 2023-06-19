@@ -73,4 +73,5 @@ type UserServiceConfig struct {
 	URL                       string
 	UserServiceClientCertFile string
 	UserServiceClientKeyFile  string
+	OptionalRootCA            string
 }
