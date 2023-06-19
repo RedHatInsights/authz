@@ -148,9 +148,11 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
-	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats", "system"))
+	//round trip: check users were imported and are assignable.
+	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats?filter=assignable", "system"))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp3, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+	// 3rd one is disabled, so remove from expected.
+	assertJSONResponse(t, resp3, 200, `{"users":[{"displayName":"User 1","id":"1","assigned":false},{"displayName":"User 2","id":"2","assigned":false}]}`)
 }
 
 func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
@@ -367,7 +369,6 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 		payload := new(strings.Builder)
 		_, err := io.Copy(payload, resp.Body)
 		assert.NoError(t, err)
-
 		ja := jsonassert.New(t)
 		ja.Assertf(payload.String(), template, args...)
 	}
