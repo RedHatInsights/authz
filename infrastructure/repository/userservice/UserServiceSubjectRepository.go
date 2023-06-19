@@ -10,12 +10,13 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -47,24 +48,24 @@ func NewUserServiceSubjectRepositoryFromConfig(config serviceconfig.UserServiceC
 	if err != nil {
 		return nil, err
 	}
-
+	var ok bool
 	if len(config.OptionalRootCA) > 0 {
 		glog.Errorf("Adding optional root CA: %s", config.OptionalRootCA)
 		rootCa, err := os.ReadFile(config.OptionalRootCA)
 		if err != nil {
 			return nil, err
 		}
-		//c, err := x509.ParseCertificate(rootCa)
-		//if err != nil {
-		//	glog.Errorf("Error parsing optional Root CA. Quitting. Error: %v", err)
-		//}
-		cacerts.AppendCertsFromPEM(rootCa)
+
+		ok = cacerts.AppendCertsFromPEM(rootCa)
+		if !ok {
+			glog.Errorf("Error adding optional ca cert! Could not append to System CertPool.")
+		}
 	}
 
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: len(config.OptionalRootCA) > 0,
+				InsecureSkipVerify: len(config.OptionalRootCA) > 0 && ok,
 				RootCAs:            cacerts,
 				Certificates:       []tls.Certificate{cert},
 			},
