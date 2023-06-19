@@ -4,14 +4,13 @@ import (
 	"authz/bootstrap/serviceconfig"
 	"authz/domain"
 	"authz/domain/contracts"
+	"authz/testenv"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -20,7 +19,8 @@ import (
 )
 
 const (
-	OrgID = "123"
+	OrgID         = "123"
+	CertDirectory = "../../../testData/test-certs/"
 )
 
 func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
@@ -30,7 +30,7 @@ func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 		Enabled:   true,
 	}}
 
-	srv := createTestServer(t, expectedSubjects, map[int]int{})
+	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -54,7 +54,7 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 			Enabled:   true,
 		}}
 
-	srv := createTestServer(t, expectedSubjects, map[int]int{})
+	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -83,7 +83,7 @@ func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testin
 		},
 	}
 
-	srv := createTestServer(t, expectedSubjects, map[int]int{})
+	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -116,7 +116,7 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 		},
 	}
 
-	srv := createTestServer(t, expectedSubjects, map[int]int{})
+	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -130,7 +130,7 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 
 func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 	expectedSubjects := []domain.Subject{}
-	srv := createTestServer(t, expectedSubjects, map[int]int{0: http.StatusBadRequest})
+	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{0: http.StatusBadRequest}, CertDirectory)
 	defer srv.Close()
 
 	repo := createSubjectRepository(srv)
@@ -145,8 +145,8 @@ func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 func createSubjectRepository(srv *httptest.Server) contracts.SubjectRepository {
 	config := serviceconfig.UserServiceConfig{
 		URL:                       fmt.Sprintf("%s/v2/findUsers", srv.URL),
-		UserServiceClientCertFile: "test-certs/client.crt",
-		UserServiceClientKeyFile:  "test-certs/client.key",
+		UserServiceClientCertFile: CertDirectory + "client.crt",
+		UserServiceClientKeyFile:  CertDirectory + "client.key",
 	}
 
 	cacerts := x509.NewCertPool()
@@ -197,12 +197,12 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 		}
 	  }`
 
-	respJSON := createResponseJSON(expectedSubjects)
-	srv := createTestServer(t, allsubjects, map[int]int{})
+	respJSON := testenv.CreateResponseJSON(expectedSubjects)
+	srv := testenv.CreateFakeUserServiceAPI(t, allsubjects, map[int]int{}, CertDirectory)
 
 	defer srv.Close()
 
-	cert, err := tls.LoadX509KeyPair("test-certs/client.crt", "test-certs/client.key")
+	cert, err := tls.LoadX509KeyPair(CertDirectory+"/client.crt", CertDirectory+"client.key")
 	if err != nil {
 		panic(err)
 	}
@@ -230,55 +230,6 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	assert.NoError(t, err)
 	ja := jsonassert.New(t)
 	ja.Assertf(string(data), respJSON)
-}
-
-func createTestServer(t *testing.T, subjects []domain.Subject, explicitStatus map[int]int) *httptest.Server {
-	ja := jsonassert.New(t)
-
-	requestNo := 0
-	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/v2/findUsers":
-			assert.Equal(t, http.MethodPost, r.Method)
-
-			requestBody, err := io.ReadAll(r.Body)
-			if assert.NoError(t, err) {
-				if explicitStatus[requestNo] > 0 {
-					w.WriteHeader(explicitStatus[requestNo])
-					return
-				}
-
-				paging, err := extractPagingParameters(requestBody)
-				assert.NoError(t, err)
-
-				validateRequestJSON(ja, string(requestBody))
-
-				results := make([]domain.Subject, 0, paging.Take)
-				for resultIndex, subjIndex := 0, paging.Skip; resultIndex < paging.Take && subjIndex < len(subjects); resultIndex, subjIndex = resultIndex+1, subjIndex+1 {
-					results = append(results, subjects[subjIndex])
-				}
-				w.WriteHeader(http.StatusOK)
-				_, err = w.Write([]byte(createResponseJSON(results)))
-				if err != nil {
-					t.Logf("Error sending response: %s", err)
-				}
-			}
-		}
-
-		requestNo++
-	}))
-
-	certFile, err := os.ReadFile("test-certs/client-ca.crt")
-	if err != nil {
-		panic(err)
-	}
-	srv.TLS = &tls.Config{
-		ClientCAs: x509.NewCertPool(),
-	}
-	srv.TLS.ClientCAs.AppendCertsFromPEM(certFile)
-	srv.StartTLS()
-
-	return srv
 }
 
 func assertSuccessfulRequest(t *testing.T, subjects chan domain.Subject, errors chan error, expectedSubjects []domain.Subject) bool {
@@ -343,7 +294,7 @@ func validateRequestJSON(ja *jsonassert.Asserter, json string) {
 }
 
 func TestExtractPagingParameters(t *testing.T) {
-	paging, err := extractPagingParameters([]byte(`{
+	paging, err := testenv.ExtractPagingParameters([]byte(`{
 		"by": {
 		  "accountId": "123",
 		  "withPaging": {
@@ -365,56 +316,9 @@ func TestExtractPagingParameters(t *testing.T) {
 	assert.Equal(t, 2, paging.Take)
 }
 
-func extractPagingParameters(reqBody []byte) (p pagingParameters, err error) {
-	req := request{}
-	err = json.Unmarshal(reqBody, &req)
-
-	p = req.By.PagingParameters
-	return
-}
-
-type pagingParameters struct {
-	Skip int `json:"firstResultIndex"`
-	Take int `json:"maxResults"`
-}
-
-type request struct {
-	By struct {
-		PagingParameters pagingParameters `json:"withPaging"`
-	} `json:"by"`
-}
-
 func TestCreateResponseJSON(t *testing.T) {
-	json := createResponseJSON([]domain.Subject{{SubjectID: "1", Enabled: false}, {SubjectID: "2", Enabled: true}})
+	json := testenv.CreateResponseJSON([]domain.Subject{{SubjectID: "1", Enabled: false}, {SubjectID: "2", Enabled: true}})
 	ja := jsonassert.New(t)
 
 	ja.Assertf(json, `[{"id":"1","status":"disabled"}, {"id":"2","status":"enabled"}]`)
-}
-
-func createResponseJSON(subjects []domain.Subject) string {
-	/*
-		Example response:
-		[{"id":"1","status":"disabled"}, {"id":"2","status":"enabled"}]
-	*/
-
-	var status string
-	var s strings.Builder
-	lastIndex := len(subjects) - 1
-
-	s.WriteString("[")
-	for i, subject := range subjects {
-		if subject.Enabled {
-			status = "enabled"
-		} else {
-			status = "disabled"
-		}
-
-		s.WriteString(fmt.Sprintf(`{"id":"%s", "status":"%s"}`, subject.SubjectID, status))
-		if i < lastIndex {
-			s.WriteString(", ")
-		}
-	}
-	s.WriteString("]")
-
-	return s.String()
 }
