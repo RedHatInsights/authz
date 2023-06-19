@@ -20,7 +20,7 @@ import (
 
 const (
 	OrgID         = "123"
-	CertDirectory = "../../../testData/test-certs/"
+	CertDirectory = "../../../testdata/test-certs/"
 )
 
 func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
