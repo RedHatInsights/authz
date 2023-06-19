@@ -30,10 +30,10 @@ func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 		Enabled:   true,
 	}}
 
-	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
-	defer srv.Close()
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	defer srv.Server.Close()
 
-	repo := createSubjectRepository(srv)
+	repo := createSubjectRepository(srv.Server)
 
 	//When
 	subjects, errors := repo.GetByOrgID(OrgID)
@@ -54,10 +54,10 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 			Enabled:   true,
 		}}
 
-	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
-	defer srv.Close()
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	defer srv.Server.Close()
 
-	repo := createSubjectRepository(srv)
+	repo := createSubjectRepository(srv.Server)
 
 	//When
 	subjects, errors := repo.GetByOrgID(OrgID)
@@ -83,10 +83,10 @@ func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testin
 		},
 	}
 
-	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
-	defer srv.Close()
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	defer srv.Server.Close()
 
-	repo := createSubjectRepository(srv)
+	repo := createSubjectRepository(srv.Server)
 
 	//When
 	subjects, errors := repo.GetByOrgID(OrgID)
@@ -116,10 +116,10 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 		},
 	}
 
-	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{}, CertDirectory)
-	defer srv.Close()
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	defer srv.Server.Close()
 
-	repo := createSubjectRepository(srv)
+	repo := createSubjectRepository(srv.Server)
 
 	//When
 	subjects, errors := repo.GetByOrgID(OrgID)
@@ -130,10 +130,10 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 
 func TestUserServiceSubjectRepository_error_on_first_request(t *testing.T) {
 	expectedSubjects := []domain.Subject{}
-	srv := testenv.CreateFakeUserServiceAPI(t, expectedSubjects, map[int]int{0: http.StatusBadRequest}, CertDirectory)
-	defer srv.Close()
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "", map[int]int{0: http.StatusBadRequest}, CertDirectory)
+	defer srv.Server.Close()
 
-	repo := createSubjectRepository(srv)
+	repo := createSubjectRepository(srv.Server)
 
 	_, errors := repo.GetByOrgID(OrgID)
 
@@ -198,9 +198,9 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	  }`
 
 	respJSON := testenv.CreateResponseJSON(expectedSubjects)
-	srv := testenv.CreateFakeUserServiceAPI(t, allsubjects, map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, allsubjects, "123", map[int]int{}, CertDirectory)
 
-	defer srv.Close()
+	defer srv.Server.Close()
 
 	cert, err := tls.LoadX509KeyPair(CertDirectory+"/client.crt", CertDirectory+"client.key")
 	if err != nil {
@@ -213,14 +213,14 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 			Certificates: []tls.Certificate{cert}, //<--this part is the repository's responsibility
 		},
 	}
-	transport.TLSClientConfig.RootCAs.AddCert(srv.Certificate())
+	transport.TLSClientConfig.RootCAs.AddCert(srv.Server.Certificate())
 
 	client := http.Client{
 		Transport: transport,
 	}
 
 	//When
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/v2/findUsers", srv.URL), strings.NewReader(reqJSON))
+	req, err := http.NewRequest(http.MethodPost, srv.URI, strings.NewReader(reqJSON))
 	assert.NoError(t, err)
 	resp, err := client.Do(req)
 	assert.NoError(t, err)

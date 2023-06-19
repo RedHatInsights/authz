@@ -47,6 +47,11 @@ store:
     # kind: spicedb # for now only "spicedb" is possible
     tokenFile: .secrets/spice-db-local # Needed for store=spicedb, path to the pre-shared token
     useTLS: false # TLS enabled/disabled between authz service and store (spiceDB) Defaults to true
+userservice:
+    url: ""
+    userServiceClientCertFile: ""
+    userServiceClientKeyFile: ""
+    optionalRootCA: ""
 #tls:
 #    certFile: /etc/tls/tls.crt # TLS Certificate path
 #    keyFile: /etc/tls/tls.key # TLS key path

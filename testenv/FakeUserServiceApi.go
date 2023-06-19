@@ -34,8 +34,21 @@ type UserServiceRequest struct {
 	} `json:"by"`
 }
 
-// CreateFakeUserServiceAPI creates a faked userservice API to call in tests. Add a list of expected subjects the API should return, a list of statusses it should return (default: 200) and the relative path to the certDir from your test.
-func CreateFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, explicitStatus map[int]int, certDir string) *httptest.Server {
+// FakeUserServiceAPI Struct to use in tests.
+type FakeUserServiceAPI struct {
+	Server *httptest.Server
+	// URI of the api
+	URI string
+	// RootCa Path for optional rootCa to add for the test
+	RootCa string
+	// CertFile Path for mTLS crt file
+	CertFile string
+	// CertKey path for mTLS key file
+	CertKey string
+}
+
+// HostFakeUserServiceAPI creates a faked userservice API to call in tests. Add a list of expected subjects the API should return, a list of statusses it should return (default: 200) and the relative path to the certDir from your test.
+func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string, explicitStatus map[int]int, certDir string) *FakeUserServiceAPI {
 	ja := jsonassert.New(t)
 
 	requestNo := 0
@@ -54,7 +67,7 @@ func CreateFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, explicitS
 				paging, err := ExtractPagingParameters(requestBody)
 				assert.NoError(t, err)
 
-				validateRequestJSON(ja, string(requestBody))
+				validateRequestJSON(ja, string(requestBody), org)
 
 				results := make([]domain.Subject, 0, paging.Take)
 				for resultIndex, subjIndex := 0, paging.Skip; resultIndex < paging.Take && subjIndex < len(subjects); resultIndex, subjIndex = resultIndex+1, subjIndex+1 {
@@ -70,17 +83,27 @@ func CreateFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, explicitS
 
 		requestNo++
 	}))
-	certFile, err := os.ReadFile(certDir + "/client-ca.crt")
+	rootCa, err := os.ReadFile(certDir + "/client-ca.crt")
 	if err != nil {
 		glog.Fatalf("Could not find ca cert! err: %v", err)
 	}
+
 	srv.TLS = &tls.Config{
 		ClientCAs: x509.NewCertPool(),
 	}
-	srv.TLS.ClientCAs.AppendCertsFromPEM(certFile)
+
+	srv.TLS.ClientCAs.AppendCertsFromPEM(rootCa)
+
 	srv.StartTLS()
 
-	return srv
+	result := &FakeUserServiceAPI{
+		Server:   srv,
+		URI:      fmt.Sprintf("%s/v2/findUsers", srv.URL),
+		CertFile: fmt.Sprintf("%sclient.crt", certDir),
+		CertKey:  fmt.Sprintf("%sclient.key", certDir),
+		RootCa:   fmt.Sprintf("%sclient-ca.crt", certDir),
+	}
+	return result
 }
 
 // ExtractPagingParameters unmarshals paging parameters from a request json.
@@ -92,10 +115,10 @@ func ExtractPagingParameters(reqBody []byte) (p UserServicePagingParameters, err
 	return
 }
 
-func validateRequestJSON(ja *jsonassert.Asserter, json string) {
+func validateRequestJSON(ja *jsonassert.Asserter, json string, org string) {
 	ja.Assertf(json, `{
 		"by": {
-		  "accountId": "123",
+		  "accountId": "`+org+`",
 		  "withPaging": {
 			"firstResultIndex" : "<<PRESENCE>>",
 			"maxResults": "<<PRESENCE>>",
