@@ -30,7 +30,7 @@ func TestUserServiceSubjectRepository_get_single_page(t *testing.T) {
 		Enabled:   true,
 	}}
 
-	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, OrgID, map[int]int{}, CertDirectory)
 	defer srv.Server.Close()
 
 	repo := createSubjectRepository(srv.Server)
@@ -54,7 +54,7 @@ func TestUserServiceSubjectRepository_get_single_page_exact_pagesize(t *testing.
 			Enabled:   true,
 		}}
 
-	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, OrgID, map[int]int{}, CertDirectory)
 	defer srv.Server.Close()
 
 	repo := createSubjectRepository(srv.Server)
@@ -83,7 +83,7 @@ func TestUserServiceSubjectRepository_get_two_pages_one_item_on_second(t *testin
 		},
 	}
 
-	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, OrgID, map[int]int{}, CertDirectory)
 	defer srv.Server.Close()
 
 	repo := createSubjectRepository(srv.Server)
@@ -116,7 +116,7 @@ func TestUserServiceSubjectRepository_get_two_full_pages(t *testing.T) {
 		},
 	}
 
-	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, "123", map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, OrgID, map[int]int{}, CertDirectory)
 	defer srv.Server.Close()
 
 	repo := createSubjectRepository(srv.Server)
@@ -182,7 +182,7 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 
 	reqJSON := `{
 		"by": {
-		  "accountId": "123",
+		  "accountId": "` + OrgID + `",
 		  "withPaging": {
 			"firstResultIndex" : 1,
 			"maxResults": 2,
@@ -198,7 +198,7 @@ func TestUserServiceSubjectRepository_temp(t *testing.T) {
 	  }`
 
 	respJSON := testenv.CreateResponseJSON(expectedSubjects)
-	srv := testenv.HostFakeUserServiceAPI(t, allsubjects, "123", map[int]int{}, CertDirectory)
+	srv := testenv.HostFakeUserServiceAPI(t, allsubjects, OrgID, map[int]int{}, CertDirectory)
 
 	defer srv.Server.Close()
 
@@ -258,7 +258,7 @@ func TestValidateRequestJSON(t *testing.T) {
 
 	validateRequestJSON(ja, `{
 		"by": {
-		  "accountId": "123",
+		  "accountId": "`+OrgID+`",
 		  "withPaging": {
 			"firstResultIndex" : 0,
 			"maxResults": 5,
@@ -277,7 +277,7 @@ func TestValidateRequestJSON(t *testing.T) {
 func validateRequestJSON(ja *jsonassert.Asserter, json string) {
 	ja.Assertf(json, `{
 		"by": {
-		  "accountId": "123",
+		  "accountId": "`+OrgID+`",
 		  "withPaging": {
 			"firstResultIndex" : "<<PRESENCE>>",
 			"maxResults": "<<PRESENCE>>",
@@ -296,7 +296,7 @@ func validateRequestJSON(ja *jsonassert.Asserter, json string) {
 func TestExtractPagingParameters(t *testing.T) {
 	paging, err := testenv.ExtractPagingParameters([]byte(`{
 		"by": {
-		  "accountId": "123",
+		  "accountId": "` + OrgID + `",
 		  "withPaging": {
 			"firstResultIndex" : 1,
 			"maxResults": 2,
