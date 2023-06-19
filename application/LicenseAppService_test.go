@@ -69,6 +69,25 @@ func TestUserImportNotSkippedIfAtLeastOneLicenseAlreadyExistsForAnOrg(t *testing
 	assert.True(t, spy.SubjectsAdded)
 }
 
+func TestUserImportIsSkippedIfAtLeastOneLicenseAlreadyExistsButUsersAlsoExistForAnOrg(t *testing.T) {
+	t.Skip()
+	// TODO: skipped test because spy will not see SubjectsAdded until after test completes due to race in ProcessOrgEntitledEvent
+
+	//given
+	spy := &OrgRepositoryWithDetectableImportState{}
+	service, _ := createService(nil, spy)
+
+	//when
+	err := service.ProcessOrgEntitledEvent(OrgEntitledEvent{
+		OrgID:     "o1",
+		ServiceID: "svc",
+		MaxSeats:  10,
+	}, true)
+	//then
+	assert.NoError(t, err)
+	assert.False(t, spy.SubjectsAdded)
+}
+
 type OrgRepositoryWithDetectableImportState struct {
 	SubjectsAdded bool
 }
