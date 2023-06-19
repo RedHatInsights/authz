@@ -2,9 +2,7 @@ package bootstrap
 
 import (
 	"authz/infrastructure/repository/authzed"
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
+	"authz/testenv"
 	"fmt"
 	"io"
 	"log"
@@ -16,27 +14,14 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/golang/glog"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jwt"
-
-	"github.com/mendsley/gojwk"
-
 	"github.com/bradhe/stopwatch"
+	"github.com/golang/glog"
 	"github.com/kinbiko/jsonassert"
 	"github.com/stretchr/testify/assert"
 )
 
 // container to get the port when re-initializing the service
 var container *authzed.LocalSpiceDbContainer
-
-const (
-	testKID           = "test-kid"
-	testIssuer        = "http://localhost:8180/idp"
-	testAudience      = "cloud-services"
-	testRequiredScope = "openid"
-)
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 	t.SkipNow() //Skip until meta-authz is in place
@@ -359,11 +344,11 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func get(relativeURI string, subject string) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, subjectIDToToken(subject), "")
+	return createRequest(http.MethodGet, relativeURI, testenv.SubjectIDToToken(subject), "")
 }
 
 func post(relativeURI string, subject string, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, subjectIDToToken(subject), body)
+	return createRequest(http.MethodPost, relativeURI, testenv.SubjectIDToToken(subject), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
@@ -460,32 +445,6 @@ func writeTestEnvToYaml(token string) {
 	}
 }
 
-func subjectIDToToken(subject string) string {
-	if subject == "" {
-		return ""
-	}
-
-	data, err := jwt.NewBuilder().
-		Issuer(testIssuer).
-		IssuedAt(time.Now()).
-		Audience([]string{testAudience}).
-		Subject(subject).
-		Claim("scope", testRequiredScope).
-		Build()
-
-	if err != nil {
-		panic(err)
-	}
-
-	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, tokenSigningKey))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return fmt.Sprintf("bearer %s", token)
-}
-
 func teardownService() {
 	Stop()
 	err := os.Remove(temporaryConfigFile.Name())
@@ -521,94 +480,10 @@ func waitForSuccess(reqFactory func() *http.Request) error {
 	}
 }
 
-var tokenSigningKey jwk.Key
-var tokenVerificationKey crypto.PublicKey
-
-func generateKeys() (signing jwk.Key, verification crypto.PublicKey) {
-	private, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		panic(err)
-	}
-
-	signing, err = jwk.FromRaw(private)
-	if err != nil {
-		panic(err)
-	}
-	err = signing.Set(jwk.KeyIDKey, testKID)
-	if err != nil {
-		panic(err)
-	}
-
-	verification = private.Public()
-
-	return
-}
-
-var oidcDiscoveryURL string
-
-func hostFakeIdp() {
-	mux := http.NewServeMux()
-
-	mux.Handle("/idp/.well-known/openid-configuration", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(fmt.Sprintf(`{
-			"issuer": "%s",
-			"authorization_endpoint": "http://localhost:8180/idp/authorize",
-			"token_endpoint": "http://localhost:8180/idp/token",
-			"userinfo_endpoint": "http://localhost:8180/idp/userinfo",
-			"jwks_uri": "http://localhost:8180/idp/certs",
-			"scopes_supported": [
-				"openid"
-			],
-			"response_types_supported": [
-				"code",
-				"id_token",
-				"token id_token"
-			],
-			"token_endpoint_auth_methods_supported": [
-				"client_secret_basic"
-			]
-		}`, testIssuer))) //Modified from an example OIDC discovery document: https://swagger.io/docs/specification/authentication/openid-connect-discovery/
-		if err != nil {
-			panic(err)
-		}
-	}))
-
-	mux.Handle("/idp/certs", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-
-		pubjwk, err := gojwk.PublicKey(tokenVerificationKey)
-		if err != nil {
-			panic(err)
-		}
-
-		pubjwk.Alg = "RS256"
-		pubjwk.Kid = testKID
-		serializedKey, err := gojwk.Marshal(pubjwk)
-		if err != nil {
-			panic(err)
-		}
-
-		response := fmt.Sprintf(`{"keys": [%s]}`, string(serializedKey))
-
-		_, err = w.Write([]byte(response))
-		if err != nil {
-			panic(err)
-		}
-	}))
-
-	oidcDiscoveryURL = "http://localhost:8180/idp/.well-known/openid-configuration"
-	err := http.ListenAndServe("localhost:8180", mux)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func TestMain(m *testing.M) {
-	tokenSigningKey, tokenVerificationKey = generateKeys()
-	go hostFakeIdp()
+	go testenv.HostFakeIdp()
 	err := waitForSuccess(func() *http.Request {
-		req, err := http.NewRequest(http.MethodGet, oidcDiscoveryURL, nil)
+		req, err := http.NewRequest(http.MethodGet, testenv.OidcDiscoveryURL, nil)
 		if err != nil {
 			panic(err)
 		}
