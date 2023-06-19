@@ -37,6 +37,7 @@ relationships: |-
 
   // OPERATION 5: Add relationship from license to org (o1)
   license:o1/smarts#org@org:o1
+  license:oNoUsers/smarts#org@org:oNoUsers
 
   // OPERATION 6: Add users to o1 (seeded users normally coming from user service/UMB principal repository)
   org:o1#member@user:u1

@@ -482,36 +482,10 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 
 // IsImported returns true if an org has at least one persisted, existing license or at least one member.
 func (s *SpiceDbAccessRepository) IsImported(orgID string) (bool, error) {
-	resp, err := s.client.LookupResources(s.ctx, &v1.LookupResourcesRequest{
-		Consistency:        useFullConsistency(),
-		ResourceObjectType: LicenseObjectType,
-		Permission:         "org",
-		Subject: &v1.SubjectReference{
-			Object: &v1.ObjectReference{
-				ObjectType: "org",
-				ObjectId:   orgID,
-			},
-		},
-		OptionalLimit: 1,
-	})
 
-	if err != nil {
-		glog.Errorf("Error checking if an org has a license. Could not call spiceDB! %v", err)
-		return false, err
-	}
-
-	_, err = resp.Recv()
-
-	if errors.Is(err, io.EOF) {
-		//if no license found, check if an org with members exists inside the schema
-		result, err := hasOrgMembers(s.ctx, s.client, orgID)
-		return result, err
-	}
-	if err != nil {
-		return false, err
-	}
-	//if a license is found, assume the org is already imported. return true
-	return true, nil
+	//if no license found, check if an org with members exists inside the schema
+	result, err := hasOrgMembers(s.ctx, s.client, orgID)
+	return result, err
 }
 
 // hasOrgMembers returns true if at least one member exists for an org in spiceDB
