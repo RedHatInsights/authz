@@ -114,7 +114,6 @@ func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 }
 
 func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
-
 	expectedSubjects := []domain.Subject{
 		{
 			SubjectID: "1",
@@ -156,7 +155,7 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewOrServiceLicense(t *testing.T) {
 }
 
 func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
-	setupService(nil) // TODO
+	setupService(nil)
 	defer teardownService()
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system",
 		`{
@@ -177,8 +176,49 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
 }
 
-func TestEntitleOrgTwiceFailsWithBadRequest(t *testing.T) {
-	setupService(nil) // TODO
+func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *testing.T) {
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+
+	expectedOrg := "oNoUsers"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/entitlements/foo", "system",
+		`{
+			"maxSeats": 25
+		}`))
+
+	assert.NoError(t, err)
+
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo", "system"))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+
+	//round trip: check users were imported and are assignable.
+	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo/seats?filter=assignable", "system"))
+	assert.NoError(t, err)
+	// 3rd one is disabled, so remove from expected.
+	assertJSONResponse(t, resp3, 200, `{"users":[{"displayName":"User 1","id":"1","assigned":false},{"displayName":"User 2","id":"2","assigned":false}]}`)
+}
+
+func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
+	setupService(nil)
 	defer teardownService()
 
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
