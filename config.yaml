@@ -52,6 +52,7 @@ userservice:
     userServiceClientCertFile: ""
     userServiceClientKeyFile: ""
     optionalRootCA: ""
+    disableCAVerification: false
 #tls:
 #    certFile: /etc/tls/tls.crt # TLS Certificate path
 #    keyFile: /etc/tls/tls.key # TLS key path

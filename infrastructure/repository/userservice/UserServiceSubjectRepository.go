@@ -48,24 +48,24 @@ func NewUserServiceSubjectRepositoryFromConfig(config serviceconfig.UserServiceC
 	if err != nil {
 		return nil, err
 	}
-	var ok bool
+
 	if len(config.OptionalRootCA) > 0 {
-		glog.Errorf("Adding optional root CA: %s", config.OptionalRootCA)
+		glog.Infof("Adding optional root CA: %s", config.OptionalRootCA)
 		rootCa, err := os.ReadFile(config.OptionalRootCA)
 		if err != nil {
 			return nil, err
 		}
 
-		ok = cacerts.AppendCertsFromPEM(rootCa)
+		ok := cacerts.AppendCertsFromPEM(rootCa)
 		if !ok {
-			glog.Errorf("Error adding optional ca cert! Could not append to System CertPool.")
+			glog.Errorf("Error adding optional ca cert. Could not append certificate to cert pool.")
 		}
 	}
 
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: len(config.OptionalRootCA) > 0 && ok,
+				InsecureSkipVerify: config.DisableCAVerification,
 				RootCAs:            cacerts,
 				Certificates:       []tls.Certificate{cert},
 			},
