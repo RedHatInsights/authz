@@ -31,7 +31,6 @@ service LicenseService {
   rpc EntitleOrg(EntitleOrgRequest) returns (EntitleOrgResponse) {}
 }
 
-
 message GetLicenseRequest {
   string orgId = 1; // The id of an license-able organization.
   string serviceId = 2; // A "serviceId" is an arbitrary identifier for a service with limited access that may be granted to an organization.
@@ -76,7 +75,7 @@ message GetSeatsUserRepresentation {
   bool assigned = 3;
 }
 
-//EntitleOrgRequest
+// EntitleOrgRequest
 message EntitleOrgRequest {
   string orgId = 1; // the ID of an org to entitle
   string serviceId = 2;
@@ -85,3 +84,18 @@ message EntitleOrgRequest {
 
 // EntitleOrgResponse is the response when entitling an org
 message EntitleOrgResponse {}
+
+service ImportService {
+  rpc ImportOrg(ImportOrgRequest) returns (ImportOrgResponse) {}
+}
+
+// ImportOrgRequest to trigger an import for an orgs users into spicedb
+message ImportOrgRequest {
+  string orgId = 1; // the ID of an org to entitle
+}
+
+// ImportOrgResponse
+message ImportOrgResponse {
+  uint64 importedUsersCount = 1;
+  uint64 notImportedUsersCount = 2;
+}

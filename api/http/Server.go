@@ -124,6 +124,10 @@ func createMultiplexer(cnf *serviceconfig.ServiceConfig) (http.Handler, error) {
 		return nil, err
 	}
 
+	if err := core.RegisterImportServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
+		return nil, err
+	}
+
 	chain := createChain(logMiddleware(*cnf), corsMiddleware(*cnf)).then(mux)
 
 	return chain, nil

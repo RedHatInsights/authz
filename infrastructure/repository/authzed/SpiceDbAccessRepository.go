@@ -547,7 +547,3 @@ func unwrapSpiceDbError(err error) (*errdetails.ErrorInfo, bool) {
 
 	return nil, false
 }
-
-func useFullConsistency() *v1.Consistency {
-	return &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}}
-}

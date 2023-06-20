@@ -154,6 +154,72 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
 }
 
+func TestImportOrgImportsUsersForNewOrg(t *testing.T) {
+	//given
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+	expectedOrg := "newOrg"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
+		""))
+	//then
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp, 200,
+		`{"importedUsersCount":"3", "notImportedUsersCount":"0"}`)
+}
+
+func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
+	//given
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "u2", //u2 already exists from spicedb relations, skip it.
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+	expectedOrg := "o2"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
+		""))
+	//then
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp, 200,
+		`{"importedUsersCount":"2", "notImportedUsersCount":"1"}`)
+}
+
+// TODO
+// func TestImportOrgImportsUsersWhenImportWhileEntitlingFails(t *testing.T) {}
+
 func TestEntitleOrgTriggersUserImportWithExistingImportedUsersAndNewServiceLicense(t *testing.T) {
 	expectedSubjects := []domain.Subject{
 		{

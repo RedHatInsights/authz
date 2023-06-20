@@ -13,6 +13,7 @@ servers:
 tags:
 - name: CheckPermission
 - name: LicenseService
+- name: ImportService
 - name: AuthZ
   description: Everything about your AuthZ
   externalDocs:
@@ -109,6 +110,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v1alphaEntitleOrgResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected
+            endpoint.
+          content:
+            application/json:
+              schema:
+                type: object
+        "403":
+          description: Returned when the user does not have permission to access the
+            resource.
+          content:
+            application/json:
+              schema:
+                type: object
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
+      x-codegen-request-body-name: body
+  /v1alpha/orgs/{orgId}/import:
+    post:
+      tags:
+      - ImportService
+      operationId: ImportService_ImportOrg
+      parameters:
+      - name: orgId
+        in: path
+        description: the ID of an org to entitle
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: ImportOrgRequest to trigger an import for an orgs users into
+                spicedb
+              type: object
+        required: true
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alphaImportOrgResponse'
         "401":
           description: Returned when no valid identity information provided to a protected
             endpoint.
@@ -412,6 +469,16 @@ components:
         assigned:
           type: boolean
       description: "we may return more userinfo, this is a starting point."
+    v1alphaImportOrgResponse:
+      title: ImportOrgResponse
+      type: object
+      properties:
+        importedUsersCount:
+          type: string
+          format: uint64
+        notImportedUsersCount:
+          type: string
+          format: uint64
     v1alphaModifySeatsResponse:
       type: object
     v1alphaSeatFilterType:

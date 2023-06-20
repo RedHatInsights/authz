@@ -17,3 +17,6 @@ http:
       body: "*"
     - selector: api.v1alpha.LicenseService.GetSeats
       get: /v1alpha/orgs/{orgId}/licenses/{serviceId}/seats
+    - selector: api.v1alpha.ImportService.ImportOrg
+      post: /v1alpha/orgs/{orgId}/import
+      body: "*"
