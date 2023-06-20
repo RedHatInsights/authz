@@ -217,6 +217,23 @@ func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
 		`{"importedUsersCount":"2", "notImportedUsersCount":"1"}`)
 }
 
+func TestImportOrgImportsNothingWhenNoUsersAreThere(t *testing.T) {
+	var expectedSubjects []domain.Subject
+	expectedOrg := "oNoUsers"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
+		""))
+	//then
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp, 200,
+		`{"importedUsersCount":"0", "notImportedUsersCount":"0"}`)
+}
+
 // TODO
 // func TestImportOrgImportsUsersWhenImportWhileEntitlingFails(t *testing.T) {}
 
