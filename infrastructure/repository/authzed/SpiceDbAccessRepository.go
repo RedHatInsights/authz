@@ -480,46 +480,6 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 	return err
 }
 
-// IsImported returns true if an org has at least one persisted, existing member inside spiceDB.
-func (s *SpiceDbAccessRepository) IsImported(orgID string) (bool, error) {
-
-	//check if an org with members exists inside the schema
-	result, err := hasOrgMembers(s.ctx, s.client, orgID)
-	return result, err
-}
-
-// hasOrgMembers returns true if at least one member exists for an org in spiceDB
-func hasOrgMembers(ctx context.Context, client *authzed.Client, orgID string) (bool, error) {
-	// zed lookup-subjects org:o2 member user
-	resp, err := client.LookupSubjects(ctx, &v1.LookupSubjectsRequest{
-		Consistency: useFullConsistency(),
-		Resource: &v1.ObjectReference{
-			ObjectType: OrgType,
-			ObjectId:   orgID,
-		},
-		Permission:        "member",
-		SubjectObjectType: "user",
-	})
-
-	if err != nil {
-		glog.Errorf("Error checking if an org has members. Could not call spiceDB! %v", err)
-		return false, err
-	}
-
-	_, e := resp.Recv()
-
-	// if stream ends immediately, no member found -> return false
-	if errors.Is(e, io.EOF) {
-		return false, nil
-	}
-
-	if e != nil {
-		return false, e
-	}
-	// else member found, return true
-	return true, nil
-}
-
 // NewConnection creates a new connection to an underlying SpiceDB store and saves it to the package variable conn
 func (s *SpiceDbAccessRepository) NewConnection(spiceDbEndpoint string, token string, isBlocking, useTLS bool) error {
 

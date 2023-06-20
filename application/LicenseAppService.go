@@ -145,13 +145,8 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 
 // ProcessOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
 func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error {
-	// first, check if there's already a license/org to skip userImport after applying the new license, if necessary.
-	orgIsImported, err := s.seatRepo.IsImported(evt.OrgID)
-	if err != nil {
-		return err
-	}
 
-	err = s.seatRepo.ApplyLicense(&domain.License{
+	err := s.seatRepo.ApplyLicense(&domain.License{
 		OrgID:     evt.OrgID,
 		ServiceID: evt.ServiceID,
 		MaxSeats:  evt.MaxSeats,
@@ -162,12 +157,8 @@ func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error 
 	if err != nil {
 		return err
 	}
-	//skip userImport when a new license is added but the org/members already exist.
-	if orgIsImported {
-		glog.Infof("License for service %s with %v seats added. Skipping user import. Org already exists.", evt.ServiceID, evt.MaxSeats)
-		return nil
-	}
 
+	// always run import.
 	subjects, errors := s.subjectRepo.GetByOrgID(evt.OrgID)
 
 loop:

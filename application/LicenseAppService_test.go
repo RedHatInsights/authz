@@ -50,31 +50,6 @@ func TestOrgEnablement(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
-func TestUserImportIsSkippedIfAtLeastOneMemberAlreadyExistsForAnOrg(t *testing.T) {
-	//given
-	spy := &OrgRepositoryWithDetectableImportState{}
-	service, _ := createService(nil, spy)
-
-	//when
-	err := service.ProcessOrgEntitledEvent(OrgEntitledEvent{
-		OrgID:     "o1",
-		ServiceID: "svc",
-		MaxSeats:  10,
-	})
-	//then
-	assert.NoError(t, err)
-	assert.False(t, spy.SubjectsAdded)
-}
-
-type OrgRepositoryWithDetectableImportState struct {
-	SubjectsAdded bool
-}
-
-func (o *OrgRepositoryWithDetectableImportState) AddSubject(_ string, _ domain.Subject) error {
-	o.SubjectsAdded = true
-	return nil
-}
-
 func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	//Given
 	service, _ := createService(nil, nil)

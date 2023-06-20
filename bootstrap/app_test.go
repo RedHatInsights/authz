@@ -154,7 +154,7 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
 }
 
-func TestEntitleOrgNotTriggeringUserImportWithExistingImportedUsersAndNewServiceLicense(t *testing.T) {
+func TestEntitleOrgTriggersUserImportWithExistingImportedUsersAndNewServiceLicense(t *testing.T) {
 	expectedSubjects := []domain.Subject{
 		{
 			SubjectID: "1",
@@ -192,7 +192,7 @@ func TestEntitleOrgNotTriggeringUserImportWithExistingImportedUsersAndNewService
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar/seats?filter=assignable", "system"))
 	assert.NoError(t, err)
 	// expected json does not contain new assignable users, as they do not get imported.
-	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"O1 User 5","id":"u5"},{"assigned":false,"displayName":"O1 User 15","id":"u15"},{"assigned":false,"displayName":"O1 User 18","id":"u18"},{"assigned":false,"displayName":"O1 User 19","id":"u19"},{"assigned":false,"displayName":"O1 User 10","id":"u10"},{"assigned":false,"displayName":"O1 User 8","id":"u8"},{"assigned":false,"displayName":"O1 User 11","id":"u11"},{"assigned":false,"displayName":"O1 User 14","id":"u14"},{"assigned":false,"displayName":"O1 User 1","id":"u1"},{"assigned":false,"displayName":"O1 User 2","id":"u2"},{"assigned":false,"displayName":"O1 User 16","id":"u16"},{"assigned":false,"displayName":"O1 User 4","id":"u4"},{"assigned":false,"displayName":"O1 User 7","id":"u7"},{"assigned":false,"displayName":"O1 User 20","id":"u20"},{"assigned":false,"displayName":"O1 User 3","id":"u3"},{"assigned":false,"displayName":"O1 User 13","id":"u13"},{"assigned":false,"displayName":"O1 User 17","id":"u17"},{"assigned":false,"displayName":"O1 User 6","id":"u6"},{"assigned":false,"displayName":"O1 User 9","id":"u9"},{"assigned":false,"displayName":"O1 User 12","id":"u12"}]}`)
+	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 2","id":"2"},{"assigned":false,"displayName":"User 1","id":"1"},{"assigned":false,"displayName":"O1 User 5","id":"u5"},{"assigned":false,"displayName":"O1 User 15","id":"u15"},{"assigned":false,"displayName":"O1 User 18","id":"u18"},{"assigned":false,"displayName":"O1 User 19","id":"u19"},{"assigned":false,"displayName":"O1 User 10","id":"u10"},{"assigned":false,"displayName":"O1 User 8","id":"u8"},{"assigned":false,"displayName":"O1 User 11","id":"u11"},{"assigned":false,"displayName":"O1 User 14","id":"u14"},{"assigned":false,"displayName":"O1 User 1","id":"u1"},{"assigned":false,"displayName":"O1 User 2","id":"u2"},{"assigned":false,"displayName":"O1 User 16","id":"u16"},{"assigned":false,"displayName":"O1 User 4","id":"u4"},{"assigned":false,"displayName":"O1 User 7","id":"u7"},{"assigned":false,"displayName":"O1 User 20","id":"u20"},{"assigned":false,"displayName":"O1 User 3","id":"u3"},{"assigned":false,"displayName":"O1 User 13","id":"u13"},{"assigned":false,"displayName":"O1 User 17","id":"u17"},{"assigned":false,"displayName":"O1 User 6","id":"u6"},{"assigned":false,"displayName":"O1 User 9","id":"u9"},{"assigned":false,"displayName":"O1 User 12","id":"u12"}]}`)
 }
 
 func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
