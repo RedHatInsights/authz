@@ -230,6 +230,11 @@ loop:
 		}
 	}
 
+	glog.Infof("Imported %d Users for org %s", importedUsersCount, orgID)
+	if failedUserImportCount > 0 {
+		glog.Infof("Skipped %d Users for org %s as they already exist", failedUserImportCount, orgID)
+	}
+
 	return &ImportUsersResult{
 		importedUsersCount:    importedUsersCount,
 		notImportedUsersCount: failedUserImportCount,
