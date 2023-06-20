@@ -166,7 +166,11 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 	if e2 != nil {
 		return nil, e2
 	}
-	return result, nil
+
+	return &core.ImportOrgResponse{
+		ImportedUsersCount:    result.ImportedUsersCount,
+		NotImportedUsersCount: result.NotImportedUsersCount,
+	}, nil
 }
 
 // NewServer creates a new Server object to use.
