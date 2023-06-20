@@ -91,11 +91,11 @@ service ImportService {
 
 // ImportOrgRequest to trigger an import for an orgs users into spicedb
 message ImportOrgRequest {
-  string orgId = 1; // the ID of an org to entitle
+  string orgId = 1; // the ID of an org to import
 }
 
 // ImportOrgResponse
 message ImportOrgResponse {
-  uint64 importedUsersCount = 1;
-  uint64 notImportedUsersCount = 2;
+  uint64 importedUsersCount = 1; // Count of how many users were imported
+  uint64 notImportedUsersCount = 2; // Count of how many users were not imported, e.g. because they already exist
 }

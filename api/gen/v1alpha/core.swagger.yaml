@@ -132,7 +132,7 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: orgId
-          description: the ID of an org to entitle
+          description: the ID of an org to import
           in: path
           required: true
           type: string
@@ -361,9 +361,11 @@ definitions:
       importedUsersCount:
         type: string
         format: uint64
+        title: Count of how many users were imported
       notImportedUsersCount:
         type: string
         format: uint64
+        title: Count of how many users were not imported, e.g. because they already exist
     title: ImportOrgResponse
   v1alphaModifySeatsResponse:
     type: object

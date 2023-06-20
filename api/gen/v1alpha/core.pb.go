@@ -705,7 +705,7 @@ type ImportOrgRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	OrgId string `protobuf:"bytes,1,opt,name=orgId,proto3" json:"orgId,omitempty"` // the ID of an org to entitle
+	OrgId string `protobuf:"bytes,1,opt,name=orgId,proto3" json:"orgId,omitempty"` // the ID of an org to import
 }
 
 func (x *ImportOrgRequest) Reset() {
@@ -753,8 +753,8 @@ type ImportOrgResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ImportedUsersCount    uint64 `protobuf:"varint,1,opt,name=importedUsersCount,proto3" json:"importedUsersCount,omitempty"`
-	NotImportedUsersCount uint64 `protobuf:"varint,2,opt,name=notImportedUsersCount,proto3" json:"notImportedUsersCount,omitempty"`
+	ImportedUsersCount    uint64 `protobuf:"varint,1,opt,name=importedUsersCount,proto3" json:"importedUsersCount,omitempty"`       // Count of how many users were imported
+	NotImportedUsersCount uint64 `protobuf:"varint,2,opt,name=notImportedUsersCount,proto3" json:"notImportedUsersCount,omitempty"` // Count of how many users were not imported, e.g. because they already exist
 }
 
 func (x *ImportOrgResponse) Reset() {
