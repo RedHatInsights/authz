@@ -1,7 +1,6 @@
 package application
 
 import (
-	core "authz/api/gen/v1alpha"
 	"authz/domain"
 	"authz/domain/contracts"
 	"authz/domain/services"
@@ -60,8 +59,8 @@ type ImportOrgEvent struct {
 
 // ImportUsersResult contains counters for imported and not imported users.
 type ImportUsersResult struct {
-	importedUsersCount    uint64
-	notImportedUsersCount uint64
+	ImportedUsersCount    uint64
+	NotImportedUsersCount uint64
 }
 
 // NewLicenseAppService ctor.
@@ -180,17 +179,14 @@ func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error 
 }
 
 // ImportUsersForOrg imports users for a given orgID and returns a result containing a count of imported and not imported users
-func (s *LicenseAppService) ImportUsersForOrg(evt ImportOrgEvent) (*core.ImportOrgResponse, error) {
+func (s *LicenseAppService) ImportUsersForOrg(evt ImportOrgEvent) (*ImportUsersResult, error) {
 	// always run import.
 	result, err := s.importUsers(evt.OrgID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &core.ImportOrgResponse{
-		ImportedUsersCount:    result.importedUsersCount,
-		NotImportedUsersCount: result.notImportedUsersCount,
-	}, nil
+	return result, nil
 }
 
 func (s *LicenseAppService) importUsers(orgID string) (*ImportUsersResult, error) {
@@ -236,8 +232,8 @@ loop:
 	}
 
 	return &ImportUsersResult{
-		importedUsersCount:    importedUsersCount,
-		notImportedUsersCount: failedUserImportCount,
+		ImportedUsersCount:    importedUsersCount,
+		NotImportedUsersCount: failedUserImportCount,
 	}, nil
 }
 
