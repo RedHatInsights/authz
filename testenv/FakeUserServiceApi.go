@@ -39,8 +39,8 @@ type FakeUserServiceAPI struct {
 	Server *httptest.Server
 	// URI of the api
 	URI string
-	// RootCa Path for optional rootCa to add for the test
-	RootCa string
+	// ServerRootCa Path for optional rootCa to add for the test
+	ServerRootCa string
 	// CertFile Path for mTLS crt file
 	CertFile string
 	// CertKey path for mTLS key file
@@ -83,25 +83,33 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 
 		requestNo++
 	}))
-	rootCa, err := os.ReadFile(certDir + "/client-ca.crt")
+	clientRootCa, err := os.ReadFile(certDir + "/client-ca.crt")
 	if err != nil {
-		glog.Fatalf("Could not find ca cert! err: %v", err)
+		glog.Fatalf("Could not load client ca cert! err: %v", err)
+	}
+
+	serverCert := fmt.Sprintf("%sserver.crt", certDir)
+	serverKey := fmt.Sprintf("%sserver.key", certDir)
+	serverPair, err := tls.LoadX509KeyPair(serverCert, serverKey)
+	if err != nil {
+		glog.Fatalf("Failed to load server TLS cert! err: %v", err)
 	}
 
 	srv.TLS = &tls.Config{
-		ClientCAs: x509.NewCertPool(),
+		ClientCAs:    x509.NewCertPool(),
+		Certificates: []tls.Certificate{serverPair},
 	}
 
-	srv.TLS.ClientCAs.AppendCertsFromPEM(rootCa)
+	srv.TLS.ClientCAs.AppendCertsFromPEM(clientRootCa)
 
 	srv.StartTLS()
 
 	result := &FakeUserServiceAPI{
-		Server:   srv,
-		URI:      fmt.Sprintf("%s/v2/findUsers", srv.URL),
-		CertFile: fmt.Sprintf("%sclient.crt", certDir),
-		CertKey:  fmt.Sprintf("%sclient.key", certDir),
-		RootCa:   fmt.Sprintf("%sclient-ca.crt", certDir),
+		Server:       srv,
+		URI:          fmt.Sprintf("%s/v2/findUsers", srv.URL),
+		CertFile:     fmt.Sprintf("%sclient.crt", certDir),
+		CertKey:      fmt.Sprintf("%sclient.key", certDir),
+		ServerRootCa: fmt.Sprintf("%sserver-ca.crt", certDir),
 	}
 	return result
 }
