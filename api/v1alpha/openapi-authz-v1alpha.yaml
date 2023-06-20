@@ -145,7 +145,7 @@ paths:
       parameters:
       - name: orgId
         in: path
-        description: the ID of an org to entitle
+        description: the ID of an org to import
         required: true
         style: simple
         explode: false
@@ -474,9 +474,12 @@ components:
       type: object
       properties:
         importedUsersCount:
+          title: Count of how many users were imported
           type: string
           format: uint64
         notImportedUsersCount:
+          title: "Count of how many users were not imported, e.g. because they already\
+            \ exist"
           type: string
           format: uint64
     v1alphaModifySeatsResponse:
