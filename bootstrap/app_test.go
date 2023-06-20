@@ -550,6 +550,7 @@ func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 		userServiceKey["userServiceClientCertFile"] = userService.CertFile
 		userServiceKey["userServiceClientKeyFile"] = userService.CertKey
 		userServiceKey["optionalRootCA"] = userService.RootCa
+		userServiceKey["disableCAVerification"] = true
 	}
 
 	res, err := yaml.Marshal(yml)

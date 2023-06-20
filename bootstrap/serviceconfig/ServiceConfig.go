@@ -1,7 +1,9 @@
 // Package serviceconfig contains the typed configuration for different parts of the application.
 package serviceconfig
 
-import "os"
+import (
+	"os"
+)
 
 const (
 	// SpicedbImage is the image used for containerized spiceDB in tests
@@ -68,10 +70,11 @@ type AuthConfig struct {
 	Enabled           bool
 }
 
-// UserServiceConfig holds the configuration for a user service
+// UserServiceConfig holds the configuration to connect to a user service API
 type UserServiceConfig struct {
 	URL                       string
 	UserServiceClientCertFile string
 	UserServiceClientKeyFile  string
 	OptionalRootCA            string
+	DisableCAVerification     bool
 }
