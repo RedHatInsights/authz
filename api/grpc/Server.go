@@ -150,6 +150,25 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 	return resp, nil
 }
 
+// ImportOrg imports users for a given orgID
+func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest) (*core.ImportOrgResponse, error) {
+	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	glog.Infof("Received request to import users for Org: %s from Requestor: %s", importReq.OrgId, requestor)
+	evt := application.ImportOrgEvent{
+		OrgID: importReq.OrgId,
+	}
+	result, e2 := s.LicenseAppService.ImportUsersForOrg(evt)
+
+	if e2 != nil {
+		return nil, e2
+	}
+	return result, nil
+}
+
 // NewServer creates a new Server object to use.
 func NewServer(h application.AccessAppService, l application.LicenseAppService, c serviceconfig.ServiceConfig) *Server {
 	return &Server{AccessAppService: &h, ServiceConfig: &c, LicenseAppService: &l}
@@ -199,6 +218,8 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
+	core.RegisterImportServiceServer(s.srv, s)
+
 	err = s.srv.Serve(ls)
 	if err != nil {
 		glog.Errorf("Error hosting gRPC service: %s", err)

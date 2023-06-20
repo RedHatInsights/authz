@@ -11,6 +11,8 @@
     "name" : "CheckPermission"
   }, {
     "name" : "LicenseService"
+  }, {
+    "name" : "ImportService"
   } ],
   "paths" : {
     "/v1alpha/check" : {
@@ -93,6 +95,57 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/v1alphaEntitleOrgResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/orgs/{orgId}/import" : {
+      "post" : {
+        "tags" : [ "ImportService" ],
+        "operationId" : "ImportService_ImportOrg",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "the ID of an org to entitle",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "title" : "ImportOrgRequest to trigger an import for an orgs users into spicedb",
+                "type" : "object"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaImportOrgResponse"
                 }
               }
             }
@@ -394,6 +447,20 @@
           }
         },
         "description" : "we may return more userinfo, this is a starting point."
+      },
+      "v1alphaImportOrgResponse" : {
+        "title" : "ImportOrgResponse",
+        "type" : "object",
+        "properties" : {
+          "importedUsersCount" : {
+            "type" : "string",
+            "format" : "uint64"
+          },
+          "notImportedUsersCount" : {
+            "type" : "string",
+            "format" : "uint64"
+          }
+        }
       },
       "v1alphaModifySeatsResponse" : {
         "type" : "object"

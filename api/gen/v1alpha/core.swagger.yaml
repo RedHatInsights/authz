@@ -11,6 +11,7 @@ info:
 tags:
   - name: CheckPermission
   - name: LicenseService
+  - name: ImportService
   - name: AuthZ
     description: Everything about your AuthZ
     externalDocs:
@@ -108,6 +109,41 @@ paths:
             title: EntitleOrgRequest
       tags:
         - LicenseService
+  /v1alpha/orgs/{orgId}/import:
+    post:
+      operationId: ImportService_ImportOrg
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaImportOrgResponse'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgId
+          description: the ID of an org to entitle
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: ImportOrgRequest to trigger an import for an orgs users into spicedb
+      tags:
+        - ImportService
   /v1alpha/orgs/{orgId}/licenses/{serviceId}:
     get:
       summary: Summarize a license.
@@ -319,6 +355,16 @@ definitions:
       assigned:
         type: boolean
     description: we may return more userinfo, this is a starting point.
+  v1alphaImportOrgResponse:
+    type: object
+    properties:
+      importedUsersCount:
+        type: string
+        format: uint64
+      notImportedUsersCount:
+        type: string
+        format: uint64
+    title: ImportOrgResponse
   v1alphaModifySeatsResponse:
     type: object
   v1alphaSeatFilterType:

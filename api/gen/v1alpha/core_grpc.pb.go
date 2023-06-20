@@ -293,3 +293,87 @@ var LicenseService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "v1alpha/core.proto",
 }
+
+// ImportServiceClient is the client API for ImportService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type ImportServiceClient interface {
+	ImportOrg(ctx context.Context, in *ImportOrgRequest, opts ...grpc.CallOption) (*ImportOrgResponse, error)
+}
+
+type importServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewImportServiceClient(cc grpc.ClientConnInterface) ImportServiceClient {
+	return &importServiceClient{cc}
+}
+
+func (c *importServiceClient) ImportOrg(ctx context.Context, in *ImportOrgRequest, opts ...grpc.CallOption) (*ImportOrgResponse, error) {
+	out := new(ImportOrgResponse)
+	err := c.cc.Invoke(ctx, "/api.v1alpha.ImportService/ImportOrg", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ImportServiceServer is the server API for ImportService service.
+// All implementations should embed UnimplementedImportServiceServer
+// for forward compatibility
+type ImportServiceServer interface {
+	ImportOrg(context.Context, *ImportOrgRequest) (*ImportOrgResponse, error)
+}
+
+// UnimplementedImportServiceServer should be embedded to have forward compatible implementations.
+type UnimplementedImportServiceServer struct {
+}
+
+func (UnimplementedImportServiceServer) ImportOrg(context.Context, *ImportOrgRequest) (*ImportOrgResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ImportOrg not implemented")
+}
+
+// UnsafeImportServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ImportServiceServer will
+// result in compilation errors.
+type UnsafeImportServiceServer interface {
+	mustEmbedUnimplementedImportServiceServer()
+}
+
+func RegisterImportServiceServer(s grpc.ServiceRegistrar, srv ImportServiceServer) {
+	s.RegisterService(&ImportService_ServiceDesc, srv)
+}
+
+func _ImportService_ImportOrg_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportOrgRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ImportServiceServer).ImportOrg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.v1alpha.ImportService/ImportOrg",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ImportServiceServer).ImportOrg(ctx, req.(*ImportOrgRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ImportService_ServiceDesc is the grpc.ServiceDesc for ImportService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ImportService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "api.v1alpha.ImportService",
+	HandlerType: (*ImportServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ImportOrg",
+			Handler:    _ImportService_ImportOrg_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "v1alpha/core.proto",
+}

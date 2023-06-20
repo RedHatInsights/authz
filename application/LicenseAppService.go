@@ -1,10 +1,12 @@
 package application
 
 import (
+	core "authz/api/gen/v1alpha"
 	"authz/domain"
 	"authz/domain/contracts"
 	"authz/domain/services"
 	"context"
+	"sync/atomic"
 
 	"github.com/golang/glog"
 )
@@ -49,6 +51,17 @@ type OrgEntitledEvent struct {
 	OrgID     string
 	ServiceID string
 	MaxSeats  int
+}
+
+// ImportOrgEvent triggers new user import for an org
+type ImportOrgEvent struct {
+	OrgID string
+}
+
+// ImportUsersResult contains counters for imported and not imported users.
+type ImportUsersResult struct {
+	importedUsersCount    uint64
+	notImportedUsersCount uint64
 }
 
 // NewLicenseAppService ctor.
@@ -159,20 +172,49 @@ func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error 
 	}
 
 	// always run import.
-	subjects, errors := s.subjectRepo.GetByOrgID(evt.OrgID)
+	_, e := s.importUsers(evt.OrgID)
+	if e != nil {
+		return err
+	}
+	return nil
+}
+
+// ImportUsersForOrg imports users for a given orgID and returns a result containing a count of imported and not imported users
+func (s *LicenseAppService) ImportUsersForOrg(evt ImportOrgEvent) (*core.ImportOrgResponse, error) {
+	// always run import.
+	result, err := s.importUsers(evt.OrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &core.ImportOrgResponse{
+		ImportedUsersCount:    result.importedUsersCount,
+		NotImportedUsersCount: result.notImportedUsersCount,
+	}, nil
+}
+
+func (s *LicenseAppService) importUsers(orgID string) (*ImportUsersResult, error) {
+	// always run import.
+	subjects, errors := s.subjectRepo.GetByOrgID(orgID)
+
+	var importedUsersCount uint64
+	var failedUserImportCount uint64
 
 loop:
 	for {
 		select {
 		case subject, ok := <-subjects:
 			if ok {
-				err = s.orgRepo.AddSubject(evt.OrgID, subject)
+				err := s.orgRepo.AddSubject(orgID, subject)
 				if err != nil {
-					glog.Errorf("Failed to import user %s to org %s", subject.SubjectID, evt.OrgID)
+					atomic.AddUint64(&failedUserImportCount, 1)
+					glog.Errorf("Failed to import user %s to org %s", subject.SubjectID, orgID)
 
 					if errorShouldBeRetried(err) { // TODO: add test to test 'true' path
-						return err // TODO: add retry mechanism (but for now it's fine to bomb out and retry the whole processing of the event since all ops are idempotent)
+						return nil, err // TODO: add retry mechanism (but for now it's fine to bomb out and retry the whole processing of the event since all ops are idempotent)
 					}
+				} else {
+					atomic.AddUint64(&importedUsersCount, 1)
 				}
 			} else {
 				break loop
@@ -184,11 +226,14 @@ loop:
 
 			glog.Errorf(err.Error()) // TODO: think more about the contract. Is it possible to reason about individual errors in a channel and what they refer to and whether we should stop or continue?
 
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return &ImportUsersResult{
+		importedUsersCount:    importedUsersCount,
+		notImportedUsersCount: failedUserImportCount,
+	}, nil
 }
 
 func errorShouldBeRetried(err error) bool {
