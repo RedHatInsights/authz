@@ -219,7 +219,7 @@ func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
 
 func TestImportOrgImportsNothingWhenNoUsersAreThere(t *testing.T) {
 	var expectedSubjects []domain.Subject
-	expectedOrg := "oNoUsers"
+	expectedOrg := "o3"
 	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
 	defer usSrv.Server.Close()
 
@@ -234,8 +234,22 @@ func TestImportOrgImportsNothingWhenNoUsersAreThere(t *testing.T) {
 		`{"importedUsersCount":"0", "notImportedUsersCount":"0"}`)
 }
 
-// TODO
-// func TestImportOrgImportsUsersWhenImportWhileEntitlingFails(t *testing.T) {}
+func TestImportOrgReturnsErrorWhenUserServiceReturnsError(t *testing.T) {
+	var expectedSubjects []domain.Subject
+	expectedOrg := "o2"
+	notExistingOrg := "fooOrg"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{0: http.StatusBadRequest}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+notExistingOrg+"/import", "system",
+		""))
+	//then
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
 
 func TestEntitleOrgTriggersUserImportWithExistingImportedUsersAndNewServiceLicense(t *testing.T) {
 	expectedSubjects := []domain.Subject{
