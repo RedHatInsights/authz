@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/authzed/authzed-go/v1"
@@ -41,17 +44,25 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 
 	pool.MaxWait = 3 * time.Minute
 
-	/*var (
+	var (
 		_, b, _, _ = runtime.Caller(0)
 		basepath   = filepath.Dir(b)
-	)*/
+	)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "quay.io/artemiscloud/activemq-artemis-broker",
-		Tag:        "latest",
+		//Repository: "quay.io/artemiscloud/activemq-artemis-broker",
+		Repository: "vromero/activemq-artemis",
+		Tag:        "latest-alpine",
 		Env: []string{
-			"AMQ_USER=admin",
-			"AMQ_PASSWORD=admin",
+			"ARTEMIS_USERNAME=admin",
+			"ARTEMIS_PASSWORD=admin",
+		},
+		Mounts: []string{
+			path.Join(basepath, "../testdata/activemq/bootstrap.xml") + ":/var/lib/artemis/etc/bootstrap.xml",
+			path.Join(basepath, "../testdata/activemq/broker.xml") + ":/var/lib/artemis/etc/broker.xml",
+			path.Join(basepath, "../testdata/activemq/login.config") + ":/var/lib/artemis/etc/login.config",
+			path.Join(basepath, "../testdata/activemq/roles.properties") + ":/var/lib/artemis/etc/artemis-roles.properties",
+			path.Join(basepath, "../testdata/activemq/users.properties") + ":/var/lib/artemis/etc/artemis-users.properties",
 		},
 		ExposedPorts: []string{"61616/tcp", "5672/tcp", "8161/tcp"},
 	})
@@ -67,10 +78,10 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	cErr := pool.Retry(func() error {
 		log.Print("Attempting to connect to activeMQ...")
 
-		result, err := http.Get(fmt.Sprintf("http://localhost:%s/console", mgmtPort))
+		result, err := http.Get(fmt.Sprintf("http://localhost:%s", mgmtPort))
 		_ = result
 		if err != nil {
-			return fmt.Errorf("error connecting to spiceDB: %v", err.Error())
+			return fmt.Errorf("error connecting to acrtiveMQ: %v", err.Error())
 		}
 
 		return err
@@ -97,6 +108,6 @@ func (l *LocalActiveMqContainer) AmqpPort() string {
 func (l *LocalActiveMqContainer) Close() {
 	err := l.pool.Purge(l.container)
 	if err != nil {
-		glog.Error("Could not purge SpiceDB Container from test. Please delete manually.")
+		glog.Error("Could not purge activeMQ Container from test. Please delete manually.")
 	}
 }
