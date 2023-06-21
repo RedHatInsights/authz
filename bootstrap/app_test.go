@@ -147,6 +147,8 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
+	container.WaitForQuantizationInterval()
+
 	//round trip: check users were imported and are assignable.
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats?filter=assignable", "system"))
 	assert.NoError(t, err)
@@ -285,6 +287,7 @@ func TestEntitleOrgTriggersUserImportWithExistingImportedUsersAndNewServiceLicen
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
+	container.WaitForQuantizationInterval()
 	//round trip: check users were not imported.
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar/seats?filter=assignable", "system"))
 	assert.NoError(t, err)
@@ -348,6 +351,7 @@ func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *te
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
+	container.WaitForQuantizationInterval()
 	//round trip: check users were imported and are assignable.
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo/seats?filter=assignable", "system"))
 	assert.NoError(t, err)
