@@ -50,12 +50,11 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		//Repository: "quay.io/artemiscloud/activemq-artemis-broker",
-		Repository: "vromero/activemq-artemis",
-		Tag:        "latest-alpine",
+		Repository: "quay.io/artemiscloud/activemq-artemis-broker",
+		Tag:        "latest",
 		Env: []string{
-			"ARTEMIS_USERNAME=admin",
-			"ARTEMIS_PASSWORD=admin",
+			"AMQ_USER=admin",
+			"AMQ_PASSWORD=admin",
 		},
 		Mounts: []string{
 			path.Join(basepath, "../testdata/activemq/bootstrap.xml") + ":/var/lib/artemis/etc/bootstrap.xml",
@@ -78,7 +77,7 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	cErr := pool.Retry(func() error {
 		log.Print("Attempting to connect to activeMQ...")
 
-		result, err := http.Get(fmt.Sprintf("http://localhost:%s", mgmtPort))
+		result, err := http.Get(fmt.Sprintf("http://localhost:%s/console", mgmtPort))
 		_ = result
 		if err != nil {
 			return fmt.Errorf("error connecting to acrtiveMQ: %v", err.Error())
