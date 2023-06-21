@@ -47,8 +47,12 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	)*/
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository:   "vromero/activemq-artemis",
-		Tag:          "latest-alpine",
+		Repository: "quay.io/artemiscloud/activemq-artemis-broker",
+		Tag:        "latest",
+		Env: []string{
+			"AMQ_USER=admin",
+			"AMQ_PASSWORD=admin",
+		},
 		ExposedPorts: []string{"61616/tcp", "5672/tcp", "8161/tcp"},
 	})
 
@@ -63,7 +67,7 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	cErr := pool.Retry(func() error {
 		log.Print("Attempting to connect to activeMQ...")
 
-		result, err := http.Get(fmt.Sprintf("http://localhost:%s", mgmtPort))
+		result, err := http.Get(fmt.Sprintf("http://localhost:%s/console", mgmtPort))
 		_ = result
 		if err != nil {
 			return fmt.Errorf("error connecting to spiceDB: %v", err.Error())
