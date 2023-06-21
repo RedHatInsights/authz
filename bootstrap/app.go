@@ -132,12 +132,16 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		return nil, nil, err
 	}
 
-	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
+	stubPr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
+	pr := stubPr
+
 	subr, err := initSubjectRepository(&srvCfg)
 	// TODO: remove fallback when all is tested
 	if err != nil {
-		glog.Errorf("failed to initialise UserService SubjectRepository (falling back to PrincipalRepository): %v", err)
-		subr = pr.(contracts.SubjectRepository)
+		glog.Errorf("failed to initialise UserService SubjectRepository (falling back to stub PrincipalRepository for PrincipalRepository and SubjectRepository): %v", err)
+		subr = stubPr.(contracts.SubjectRepository)
+	} else {
+		pr = subr.(contracts.PrincipalRepository)
 	}
 
 	sr, err := initSeatRepository(&srvCfg)

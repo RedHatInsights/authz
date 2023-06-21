@@ -182,9 +182,15 @@ func (u *SubjectRepository) GetByIDs(ids []domain.SubjectID) (principals []domai
 	for _, userData := range resp {
 		var principal domain.Principal
 		principal.ID = domain.SubjectID(userData.ID)
+
 		principal.DisplayName = userData.PersonalInformation.FirstName + " " + userData.PersonalInformation.LastNames
 		principal.OrgID = "1234" // TODO - Get it from the req i.e the method input parameters or we need to add "accountRelations" to the request and response struct
 		principals = append(principals, principal)
+
+		// This is the expected data from the screens in the UI
+		// Usernamne = userData.Authentications[0].Principal
+		// First name = userData.PersonalInformation.FirstName
+		// Last Name = userData.PersonalInformation.LastNames
 	}
 	return
 }
@@ -208,6 +214,7 @@ func (u *SubjectRepository) makeUserRepositoryRequest(orgID string, resultIndex 
 }
 
 func (u *SubjectRepository) makeUserServiceUserDataRequest(subjectIDs []domain.SubjectID) userServiceUserDataRequest {
+
 	var reqIds []string
 	for _, id := range subjectIDs {
 		reqIds = append(reqIds, string(id))
@@ -215,6 +222,7 @@ func (u *SubjectRepository) makeUserServiceUserDataRequest(subjectIDs []domain.S
 
 	req := userServiceUserDataRequest{}
 	req.By.UserIds = reqIds
+	req.Include.AllOf = []string{"status", "personal_information", "authentications"}
 
 	return req
 }
@@ -271,17 +279,26 @@ func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, er
 func (u *SubjectRepository) doUserServiceUserDataCall(req userServiceUserDataRequest) (userServiceUserDataResponse, error) {
 	userServiceUserDataRequestJSON, err := json.Marshal(req)
 
+	//fmt.Printf("%s", userServiceUserDataRequestJSON)
+
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
 	}
 
+	fmt.Println(string(userServiceUserDataRequestJSON))
+
 	body, err := u.doUserServiceCall2(userServiceUserDataRequestJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Response Body from user data response:", string(body))
 
 	var userServiceUserDataResponses userServiceUserDataResponse
 	err = json.Unmarshal(body, &userServiceUserDataResponses)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshall userRepositoryResponse from body: %v, %w", string(body), err)
+		return nil, fmt.Errorf("failed to unmarshall userServiceUserDataResponse from body: %v, %w", string(body), err)
 	}
 
 	return userServiceUserDataResponses, nil
