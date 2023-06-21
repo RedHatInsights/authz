@@ -108,6 +108,30 @@ type userRepositoryResponse []struct {
 	Status string `json:"status"`
 }
 
+type userServiceUserDataRequest struct {
+	By struct {
+		UserIds []string `json:"userIds"`
+	} `json:"by"`
+	Include struct {
+		AllOf []string `json:"allOf"`
+	} `json:"include"`
+}
+
+type userServiceUserDataResponse []struct {
+	ID              string `json:"id"`
+	Authentications []struct {
+		Principal    string `json:"principal"`
+		ProviderName string `json:"providerName"`
+	} `json:"authentications"`
+	PersonalInformation struct {
+		FirstName   string `json:"firstName"`
+		MiddleNames string `json:"middleNames"`
+		LastNames   string `json:"lastNames"`
+		Prefix      string `json:"prefix"`
+	} `json:"personalInformation"`
+	Status string `json:"status"`
+}
+
 // GetByOrgID retrieves all members of the given organization
 func (u *SubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan error) {
 	subChan := make(chan domain.Subject)
@@ -144,6 +168,27 @@ func (u *SubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan 
 	return subChan, errChan
 }
 
+// GetByID retrieves a principal for the given ID. If no ID is provided (ex: empty string), it returns an anonymous principal. If any error occurs, it's returned.
+func (u *SubjectRepository) GetByID(id domain.SubjectID) (domain.Principal, error) {
+	panic("")
+}
+
+// GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
+func (u *SubjectRepository) GetByIDs(ids []domain.SubjectID) (principals []domain.Principal, err error) {
+	req := u.makeUserServiceUserDataRequest(ids)
+
+	resp, err := u.doUserServiceUserDataCall(req)
+
+	for _, userData := range resp {
+		var principal domain.Principal
+		principal.ID = domain.SubjectID(userData.ID)
+		principal.DisplayName = userData.PersonalInformation.FirstName + " " + userData.PersonalInformation.LastNames
+		principal.OrgID = "1234" // TODO - Get it from the req i.e the method input parameters or we need to add "accountRelations" to the request and response struct
+		principals = append(principals, principal)
+	}
+	return
+}
+
 func (u *SubjectRepository) validateConfigAndOrg(_ string) bool {
 	// TODO: add more validations
 
@@ -158,6 +203,18 @@ func (u *SubjectRepository) makeUserRepositoryRequest(orgID string, resultIndex 
 	req.By.WithPaging.SortBy = sortBy
 	req.By.WithPaging.Ascending = u.Paging.SortOrder
 	req.Include.AllOf = []string{"status"}
+
+	return req
+}
+
+func (u *SubjectRepository) makeUserServiceUserDataRequest(subjectIDs []domain.SubjectID) userServiceUserDataRequest {
+	var reqIds []string
+	for _, id := range subjectIDs {
+		reqIds = append(reqIds, string(id))
+	}
+
+	req := userServiceUserDataRequest{}
+	req.By.UserIds = reqIds
 
 	return req
 }
@@ -211,6 +268,25 @@ func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, er
 	return userResponses, nextPageAvailable, err
 }
 
+func (u *SubjectRepository) doUserServiceUserDataCall(req userServiceUserDataRequest) (userServiceUserDataResponse, error) {
+	userServiceUserDataRequestJSON, err := json.Marshal(req)
+
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
+	}
+
+	body, err := u.doUserServiceCall2(userServiceUserDataRequestJSON)
+
+	var userServiceUserDataResponses userServiceUserDataResponse
+	err = json.Unmarshal(body, &userServiceUserDataResponses)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshall userRepositoryResponse from body: %v, %w", string(body), err)
+	}
+
+	return userServiceUserDataResponses, nil
+}
+
 func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error) (respBody []byte, err error) {
 	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
 
@@ -237,6 +313,28 @@ func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error
 		err = fmt.Errorf("failed to read response body: %w", err)
 		errChan <- err
 		return nil, err
+	}
+
+	return
+}
+
+func (u *SubjectRepository) doUserServiceCall2(reqBody []byte) (respBody []byte, err error) {
+	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to POST to UserService: %v: %w", u.URL, err)
+	}
+	defer func() {
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
+	}
+
+	respBody, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	return
