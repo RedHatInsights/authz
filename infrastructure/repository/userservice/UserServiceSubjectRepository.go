@@ -183,6 +183,7 @@ func (u *SubjectRepository) GetByIDs(ids []domain.SubjectID) (principals []domai
 		var principal domain.Principal
 		principal.ID = domain.SubjectID(userData.ID)
 
+		// TODO - For now display name is constructed as firstname  Lastname - Check with the proper API spec and revisit it
 		principal.DisplayName = userData.PersonalInformation.FirstName + " " + userData.PersonalInformation.LastNames
 		principal.OrgID = "1234" // TODO - Get it from the req i.e the method input parameters or we need to add "accountRelations" to the request and response struct
 		principals = append(principals, principal)
