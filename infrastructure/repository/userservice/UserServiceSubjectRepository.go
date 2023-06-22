@@ -172,7 +172,7 @@ func (u *SubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan 
 func (u *SubjectRepository) GetByID(id domain.SubjectID) (principal domain.Principal, err error) {
 	principals, err := u.GetByIDs([]domain.SubjectID{id})
 
-	if err != nil && len(principals) > 0 {
+	if err == nil && len(principals) > 0 {
 		principal = principals[0]
 	}
 
