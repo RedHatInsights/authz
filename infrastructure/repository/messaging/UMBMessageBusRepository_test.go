@@ -4,11 +4,13 @@ import (
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"authz/testenv"
+	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,6 +25,8 @@ func TestUMBMessageRepository_receives_new_user_events(t *testing.T) {
 	}
 
 	repo := createUMBRepository()
+	defer repo.Disconnect()
+
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
@@ -43,6 +47,8 @@ func TestUMBMessageRepository_receives_user_deactivation_events(t *testing.T) {
 	}
 
 	repo := createUMBRepository()
+	defer repo.Disconnect()
+
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
@@ -63,6 +69,8 @@ func TestUMBMessageRepository_receives_user_reactivation_events(t *testing.T) {
 	}
 
 	repo := createUMBRepository()
+	defer repo.Disconnect()
+
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
@@ -72,6 +80,26 @@ func TestUMBMessageRepository_receives_user_reactivation_events(t *testing.T) {
 
 	assert.Equal(t, sent, received)
 	assertNoErrors(t, evts.Errors)
+}
+
+func TestUMBMessageRepository_disconnects_successfully(t *testing.T) {
+	//Given
+	repo := createUMBRepository()
+	evts, err := repo.Connect()
+	assert.NoError(t, err)
+
+	//When
+	repo.Disconnect()
+
+	//Assert connection is not usable (no handy 'IsOpen' analogue available)
+	_, err = repo.conn.NewSession(context.TODO(), nil)
+	var expected *amqp.ConnError
+	assert.ErrorAs(t, err, &expected) //Weird double-pointer- ErrorAs needs a pointer to an implementation of error, and amqp errors implement with a pointer receiver
+	//Assert channels are closed
+	_, open := <-evts.SubjectChanges
+	assert.False(t, open)
+	_, open = <-evts.Errors
+	assert.False(t, open)
 }
 
 func createUMBRepository() *UMBMessageBusRepository {
