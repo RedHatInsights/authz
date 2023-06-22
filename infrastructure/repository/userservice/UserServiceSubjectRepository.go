@@ -169,8 +169,14 @@ func (u *SubjectRepository) GetByOrgID(orgID string) (chan domain.Subject, chan 
 }
 
 // GetByID retrieves a principal for the given ID. If no ID is provided (ex: empty string), it returns an anonymous principal. If any error occurs, it's returned.
-func (u *SubjectRepository) GetByID(id domain.SubjectID) (domain.Principal, error) {
-	panic("")
+func (u *SubjectRepository) GetByID(id domain.SubjectID) (principal domain.Principal, err error) {
+	principals, err := u.GetByIDs([]domain.SubjectID{id})
+
+	if err != nil && len(principals) > 0 {
+		principal = principals[0]
+	}
+
+	return
 }
 
 // GetByIDs is a bulk version of GetByID to allow the underlying implementation to optimize access to sets of principals and should otherwise have the same behavior.
@@ -179,19 +185,15 @@ func (u *SubjectRepository) GetByIDs(ids []domain.SubjectID) (principals []domai
 
 	resp, err := u.doUserServiceUserDataCall(req)
 
+	if err != nil {
+		return
+	}
 	for _, userData := range resp {
 		var principal domain.Principal
 		principal.ID = domain.SubjectID(userData.ID)
-
 		// TODO - For now display name is constructed as firstname  Lastname - Check with the proper API spec and revisit it
 		principal.DisplayName = userData.PersonalInformation.FirstName + " " + userData.PersonalInformation.LastNames
-		principal.OrgID = "1234" // TODO - Get it from the req i.e the method input parameters or we need to add "accountRelations" to the request and response struct
 		principals = append(principals, principal)
-
-		// This is the expected data from the screens in the UI
-		// Usernamne = userData.Authentications[0].Principal
-		// First name = userData.PersonalInformation.FirstName
-		// Last Name = userData.PersonalInformation.LastNames
 	}
 	return
 }
@@ -252,7 +254,7 @@ func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, er
 	}
 
 	// Step 2: POST the request using the configured repository http client and url
-	body, err := u.doUserServiceCall(userRepositoryRequestJSON, errChan)
+	body, err := u.doUserServiceCall(userRepositoryRequestJSON, errChan, true)
 	if err != nil {
 		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
@@ -279,82 +281,56 @@ func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, er
 
 func (u *SubjectRepository) doUserServiceUserDataCall(req userServiceUserDataRequest) (userServiceUserDataResponse, error) {
 	userServiceUserDataRequestJSON, err := json.Marshal(req)
-
-	//fmt.Printf("%s", userServiceUserDataRequestJSON)
+	var userServiceUserDataResponses userServiceUserDataResponse
 
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
+		return nil, fmt.Errorf("error marshalling userServiceUserDataRequest: %v: %w", req, err)
 	}
-
-	fmt.Println(string(userServiceUserDataRequestJSON))
-
-	body, err := u.doUserServiceCall2(userServiceUserDataRequestJSON)
+	body, err := u.doUserServiceCall(userServiceUserDataRequestJSON, nil, false)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("Response Body from user data response:", string(body))
-
-	var userServiceUserDataResponses userServiceUserDataResponse
 	err = json.Unmarshal(body, &userServiceUserDataResponses)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshall userServiceUserDataResponse from body: %v, %w", string(body), err)
 	}
-
 	return userServiceUserDataResponses, nil
 }
 
-func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error) (respBody []byte, err error) {
+func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error, useErrChan bool) (respBody []byte, err error) {
 	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
 
 	if err != nil {
 		err = fmt.Errorf("failed to POST to UserService: %v: %w", u.URL, err)
-		errChan <- err
+		if useErrChan {
+			errChan <- err
+		}
 		return nil, err
 	}
 	defer func() {
 		err := resp.Body.Close()
-		if err != nil {
+		if err != nil && useErrChan {
 			errChan <- fmt.Errorf("failed to close response body: %v: %w", u.URL, err)
 		}
 	}()
 
 	if resp.StatusCode != 200 {
 		err = fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
-		errChan <- err
+		if useErrChan {
+			errChan <- err
+		}
 		return nil, err
+
 	}
 
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		err = fmt.Errorf("failed to read response body: %w", err)
-		errChan <- err
+		if useErrChan {
+			errChan <- err
+		}
 		return nil, err
 	}
-
-	return
-}
-
-func (u *SubjectRepository) doUserServiceCall2(reqBody []byte) (respBody []byte, err error) {
-	resp, err := u.HTTPClient.Post(u.URL.String(), "application/json", bytes.NewBuffer(reqBody))
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to POST to UserService: %v: %w", u.URL, err)
-	}
-	defer func() {
-		resp.Body.Close()
-	}()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("unexpected http response status code on request to user repository: %v", resp.Status)
-	}
-
-	respBody, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
 	return
 }
 

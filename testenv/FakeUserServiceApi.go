@@ -97,8 +97,7 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 						results = append(results, subjects[subjIndex])
 					}
 					w.WriteHeader(http.StatusOK)
-					thing := []byte(CreateResponseJSON(results))
-					_, err = w.Write(thing)
+					_, err = w.Write([]byte(CreateResponseJSON(results)))
 					if err != nil {
 						t.Logf("Error sending response: %s", err)
 					}
@@ -128,7 +127,7 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 										LastNames string `json:"lastNames"`
 									}{
 										FirstName: "User",
-										LastNames: fmt.Sprintf(uid),
+										LastNames: uid,
 									},
 								}
 								resp = append(resp, principal)
