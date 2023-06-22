@@ -132,6 +132,8 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		return nil, nil, err
 	}
 
+	// TODO: The init and builder functions need to be tidied up for SubjectRepository and Principal repository
+	// TODO: The casting acrobatics between the two also needs fixing with an intersection type? or dependency injection
 	stubPr := initStubPrincipalRepository(srvCfg.StoreConfig.Kind)
 	pr := stubPr
 

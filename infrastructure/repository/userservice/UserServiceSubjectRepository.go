@@ -27,7 +27,7 @@ const (
 	assumeNextPageAvailableByDefaultIfError = true // when retrieving a page of users and there is an error, should we still assume another page exists
 )
 
-// SubjectRepository defines a repository that queries a user service using json requests of the type defined in userRepositoryRequest
+// SubjectRepository defines a repository that queries a user service using json requests of the type defined in userServiceSubjectByOrgRequest
 type SubjectRepository struct {
 	URL        url.URL
 	HTTPClient http.Client
@@ -88,7 +88,7 @@ func NewUserServiceSubjectRepository(url url.URL, client http.Client) *SubjectRe
 	}
 }
 
-type userRepositoryRequest struct {
+type userServiceSubjectByOrgRequest struct {
 	By struct {
 		AccountID  string `json:"accountId"`
 		WithPaging struct {
@@ -103,7 +103,7 @@ type userRepositoryRequest struct {
 	} `json:"include"`
 }
 
-type userRepositoryResponse []struct {
+type userServiceSubjectByOrgResponse []struct {
 	ID     string `json:"id"`
 	Status string `json:"status"`
 }
@@ -204,8 +204,8 @@ func (u *SubjectRepository) validateConfigAndOrg(_ string) bool {
 	return u.Paging.PageSize > 0
 }
 
-func (u *SubjectRepository) makeUserRepositoryRequest(orgID string, resultIndex int) userRepositoryRequest {
-	req := userRepositoryRequest{}
+func (u *SubjectRepository) makeUserServiceSubjectByOrgRequest(orgID string, resultIndex int) userServiceSubjectByOrgRequest {
+	req := userServiceSubjectByOrgRequest{}
 	req.By.AccountID = orgID
 	req.By.WithPaging.FirstResultIndex = resultIndex
 	req.By.WithPaging.MaxResults = u.Paging.PageSize
@@ -231,7 +231,7 @@ func (u *SubjectRepository) makeUserServiceUserDataRequest(subjectIDs []domain.S
 }
 
 func (u *SubjectRepository) fetchPageOfUsers(orgID string, currentPage int, subChan chan domain.Subject, errChan chan error) (bool, error, error) {
-	req := u.makeUserRepositoryRequest(orgID, currentPage*u.Paging.PageSize)
+	req := u.makeUserServiceSubjectByOrgRequest(orgID, currentPage*u.Paging.PageSize)
 
 	resp, nextPageAvailable, serviceCallErr := u.doPagedUserServiceCall(req, errChan)
 
@@ -243,12 +243,12 @@ func (u *SubjectRepository) fetchPageOfUsers(orgID string, currentPage int, subC
 	return nextPageAvailable, serviceCallErr, pageProcessingErr
 }
 
-func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, errChan chan error) (userRepositoryResponse, bool, error) {
-	// Step 1: marshall the userRepositoryRequest
+func (u *SubjectRepository) doPagedUserServiceCall(req userServiceSubjectByOrgRequest, errChan chan error) (userServiceSubjectByOrgResponse, bool, error) {
+	// Step 1: marshall the userServiceSubjectByOrgRequest
 	userRepositoryRequestJSON, err := json.Marshal(req)
 
 	if err != nil {
-		err = fmt.Errorf("error marshalling userRepositoryRequest: %v: %w", req, err)
+		err = fmt.Errorf("error marshalling userServiceSubjectByOrgRequest: %v: %w", req, err)
 		errChan <- err
 		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
@@ -259,12 +259,12 @@ func (u *SubjectRepository) doPagedUserServiceCall(req userRepositoryRequest, er
 		return nil, assumeNextPageAvailableByDefaultIfError, err
 	}
 
-	// Step 3: unmarshall the userRepositoryResponse, which is a slice of subjects
-	var userResponses userRepositoryResponse
+	// Step 3: unmarshall the userServiceSubjectByOrgResponse, which is a slice of subjects
+	var userResponses userServiceSubjectByOrgResponse
 	err = json.Unmarshal(body, &userResponses)
 
 	if err != nil {
-		err = fmt.Errorf("failed to unmarshall userRepositoryResponse from body: %v, %w", string(body), err)
+		err = fmt.Errorf("failed to unmarshall userServiceSubjectByOrgResponse from body: %v, %w", string(body), err)
 		errChan <- err
 	}
 
@@ -334,7 +334,7 @@ func (u *SubjectRepository) doUserServiceCall(reqBody []byte, errChan chan error
 	return
 }
 
-func processUsersResponsePage(resp userRepositoryResponse, subChan chan domain.Subject, errChan chan error) error {
+func processUsersResponsePage(resp userServiceSubjectByOrgResponse, subChan chan domain.Subject, errChan chan error) error {
 	for _, user := range resp {
 		if user.ID == "" || user.Status == "" {
 			err := fmt.Errorf("user ID or user status was empty for importing user %v", user)
