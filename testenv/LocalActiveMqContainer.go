@@ -5,9 +5,12 @@ package testenv
 import (
 	"authz/domain/contracts"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -63,11 +66,13 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 		Env: []string{
 			"AMQ_USER=admin",
 			"AMQ_PASSWORD=admin",
+			"ACTIVEMQ_SSL_OPTS = -Djavax.net.ssl.keyStore=/var/lib/artemis/etc/broker.jks -Djavax.net.ssl.keyStorePassword=password",
 		},
 		Mounts: []string{
 			path.Join(basepath, "../testdata/activemq/bootstrap.xml") + ":/var/lib/artemis/etc/bootstrap.xml",
 			path.Join(basepath, "../testdata/activemq/broker.xml") + ":/var/lib/artemis/etc/broker.xml",
 			path.Join(basepath, "../testdata/activemq/login.config") + ":/var/lib/artemis/etc/login.config",
+			path.Join(basepath, "../testdata/activemq/broker.jks") + ":/var/lib/artemis/etc/broker.jks",
 			path.Join(basepath, "../testdata/activemq/roles.properties") + ":/var/lib/artemis/etc/artemis-roles.properties",
 			path.Join(basepath, "../testdata/activemq/users.properties") + ":/var/lib/artemis/etc/artemis-users.properties",
 		},
@@ -80,6 +85,7 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 
 	mgmtPort := resource.GetPort("8161/tcp")
 	amqpPort := resource.GetPort("5672/tcp")
+	amqpsPort := resource.GetPort("61616/tcp")
 
 	// Give the service time to boot.
 	cErr := pool.Retry(func() error {
@@ -88,7 +94,7 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 		result, err := http.Get(fmt.Sprintf("http://localhost:%s/console", mgmtPort))
 		_ = result
 		if err != nil {
-			return fmt.Errorf("error connecting to acrtiveMQ: %v", err.Error())
+			return fmt.Errorf("error connecting to activeMQ: %v", err.Error())
 		}
 
 		return err
@@ -98,7 +104,7 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 		return nil, cErr
 	}
 
-	conn, session, err := connect("amqp://localhost:" + amqpPort)
+	conn, session, err := connect("amqps://localhost:"+amqpsPort, path.Join(basepath, "../testdata/test-certs"))
 	if err != nil {
 		glog.Errorf("Failed to connect to broker: %v", err)
 		if conn != nil {
@@ -133,12 +139,22 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	}, nil
 }
 
-func connect(url string) (conn *amqp.Conn, session *amqp.Session, err error) {
+func connect(url string, certDir string) (conn *amqp.Conn, session *amqp.Session, err error) {
 	ctx := context.TODO()
+
+	cacertpool := x509.NewCertPool()
+	serverca, err := os.ReadFile(path.Join(certDir, "server-ca.crt"))
+	if err != nil {
+		return
+	}
+	cacertpool.AppendCertsFromPEM(serverca)
 
 	// create connection
 	conn, err = amqp.Dial(ctx, url, &amqp.ConnOptions{
 		SASLType: amqp.SASLTypePlain("writer", "password2"),
+		TLSConfig: &tls.Config{
+			RootCAs: cacertpool,
+		},
 	})
 
 	if err != nil {
