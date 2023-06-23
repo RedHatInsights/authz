@@ -96,7 +96,10 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 	conn, sender, err := createSender("amqp://localhost:" + amqpPort)
 	if err != nil {
 		if conn != nil {
-			conn.Close()
+			err = conn.Close()
+			if err != nil {
+				glog.Errorf("Failed to close connection: %v", err)
+			}
 		}
 	}
 

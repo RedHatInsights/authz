@@ -25,6 +25,7 @@ type UMBMessageBusRepository struct {
 	recvCtx    context.Context
 	recvCancel context.CancelFunc
 	errs       chan error
+	workerDone chan interface{}
 	numWorkers int32
 }
 
@@ -48,6 +49,7 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 
 	r.recvCtx, r.recvCancel = context.WithCancel(context.Background())
 	r.errs = make(chan error)
+	r.workerDone = make(chan interface{})
 	u, err := r.receiveSubjectChanges(session)
 	if err != nil {
 		return
@@ -73,10 +75,13 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 	go func() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-			receiver.Close(ctx) //TODO: close correctly? Do we need another channel?
+			err := receiver.Close(ctx) //TODO: close correctly? Do we need another channel?
+			if err != nil {
+				glog.Errorf("Failed to close reciever: %v", err)
+			}
 			cancel()
 			close(updates)
-			atomic.AddInt32(&r.numWorkers, -1) //Atomic decrement, could be modified by other goroutines in the future
+			r.workerDone <- struct{}{}
 		}()
 		for {
 			// receive next message
@@ -127,7 +132,9 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 func (r *UMBMessageBusRepository) Disconnect() {
 	r.recvCancel()
 	for r.numWorkers > 0 {
-	} //Spinwait- consider signaling each exited worker with a channel
+		<-r.workerDone
+		r.numWorkers--
+	}
 
 	err := r.conn.Close()
 	if err != nil {

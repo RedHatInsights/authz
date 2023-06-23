@@ -3,11 +3,13 @@ package testenv
 import (
 	"context"
 	"fmt"
-	"github.com/Azure/go-amqp"
 	"log"
-	"os"
 	"testing"
 	"time"
+
+	"github.com/Azure/go-amqp"
+	"github.com/golang/glog"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestContainerInitialization(t *testing.T) {
@@ -18,7 +20,7 @@ func TestContainerInitialization(t *testing.T) {
 	if err != nil {
 		fmt.Printf("Error initializing Docker container: %s", err)
 		container.Close()
-		os.Exit(1)
+		assert.FailNow(t, "Failed to initialize container")
 	}
 	elapsed := time.Since(start).Seconds()
 	fmt.Printf("CONNECTION INITIALIZED AFTER %f Seconds\n", elapsed)
@@ -39,7 +41,12 @@ func CreateProducer(broker *LocalActiveMqContainer) {
 	if err != nil {
 		log.Fatal("Dialing AMQP server:", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			glog.Errorf("Failed to close connection: %v", err)
+		}
+	}()
 
 	// open a session
 	session, err := conn.NewSession(ctx, nil)
@@ -63,7 +70,10 @@ func CreateProducer(broker *LocalActiveMqContainer) {
 			log.Fatal("Sending message:", err)
 		}
 		fmt.Print("WORKS!!!")
-		sender.Close(ctx)
+		err = sender.Close(ctx)
+		if err != nil {
+			log.Fatal("Closing sender:", err)
+		}
 		cancel()
 	}
 }

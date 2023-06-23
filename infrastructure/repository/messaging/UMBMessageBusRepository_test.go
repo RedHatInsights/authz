@@ -30,8 +30,9 @@ func TestUMBMessageRepository_receives_new_user_events(t *testing.T) {
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
-	localBrokerContainer.SendSubjectAdded(sent)
+	err = localBrokerContainer.SendSubjectAdded(sent)
 	//Then
+	assert.NoError(t, err)
 	received := <-evts.SubjectChanges
 
 	assert.Equal(t, sent, received)
@@ -52,8 +53,9 @@ func TestUMBMessageRepository_receives_user_deactivation_events(t *testing.T) {
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
-	localBrokerContainer.SendSubjectUpdated(sent)
+	err = localBrokerContainer.SendSubjectUpdated(sent)
 	//Then
+	assert.NoError(t, err)
 	received := <-evts.SubjectChanges
 
 	assert.Equal(t, sent, received)
@@ -74,8 +76,9 @@ func TestUMBMessageRepository_receives_user_reactivation_events(t *testing.T) {
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
-	localBrokerContainer.SendSubjectUpdated(sent)
+	err = localBrokerContainer.SendSubjectUpdated(sent)
 	//Then
+	assert.NoError(t, err)
 	received := <-evts.SubjectChanges
 
 	assert.Equal(t, sent, received)
