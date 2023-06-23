@@ -7,16 +7,12 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"log"
-	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/Azure/go-amqp"
 	"github.com/golang/glog"
 )
-
-var cnt = 0
 
 // UMBMessageBusRepository can send and receive events on the Universal Message Bus
 type UMBMessageBusRepository struct {
@@ -44,7 +40,7 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 	session, err := r.conn.NewSession(ctx, nil)
 
 	if err != nil {
-		log.Fatal("Creating AMQP session:", err)
+		return
 	}
 
 	r.recvCtx, r.recvCancel = context.WithCancel(context.Background())
@@ -64,7 +60,6 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan contracts.SubjectAddOrUpdateEvent, error) {
 	updates := make(chan contracts.SubjectAddOrUpdateEvent)
 	ctx := context.Background()
-	start := time.Now()
 	// create a receiver
 	receiver, err := s.NewReceiver(ctx, r.config.TopicName, nil)
 	if err != nil {
@@ -112,10 +107,6 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 				glog.Errorf("Failure accepting message: %v", err)
 				r.errs <- err
 			}
-
-			cnt++
-			elapsed := time.Since(start).Seconds()
-			glog.Errorf("Message # %s received after %f Seconds\n", strconv.Itoa(cnt), elapsed)
 
 			updates <- contracts.SubjectAddOrUpdateEvent{
 				SubjectID: evt.SubjectID(),

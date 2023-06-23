@@ -30,6 +30,7 @@ type LocalActiveMqContainer struct {
 	container *dockertest.Resource
 	sender    *amqp.Sender
 	conn      *amqp.Conn
+	session   *amqp.Session
 	pool      *dockertest.Pool
 }
 
@@ -93,47 +94,70 @@ func (l *LocalActiveMqContainerFactory) CreateContainer() (*LocalActiveMqContain
 		return nil, cErr
 	}
 
-	conn, sender, err := createSender("amqp://localhost:" + amqpPort)
+	conn, session, err := connect("amqp://localhost:" + amqpPort)
 	if err != nil {
+		glog.Errorf("Failed to connect to broker: %v", err)
 		if conn != nil {
 			err = conn.Close()
 			if err != nil {
 				glog.Errorf("Failed to close connection: %v", err)
 			}
 		}
+		return nil, err
+	}
+
+	sender, err := createSender(session)
+	if err != nil {
+		glog.Errorf("Failed to connect to broker: %v", err)
+		if conn != nil {
+			err = conn.Close()
+			if err != nil {
+				glog.Errorf("Failed to close connection: %v", err)
+			}
+		}
+		return nil, err
 	}
 
 	return &LocalActiveMqContainer{
 		mgmtPort:  mgmtPort,
 		amqpPort:  amqpPort,
 		sender:    sender,
+		session:   session,
 		conn:      conn,
 		container: resource,
 		pool:      pool,
 	}, nil
 }
 
-func createSender(url string) (conn *amqp.Conn, sender *amqp.Sender, err error) {
+func connect(url string) (conn *amqp.Conn, session *amqp.Session, err error) {
 	ctx := context.TODO()
 
 	// create connection
 	conn, err = amqp.Dial(ctx, url, &amqp.ConnOptions{
 		SASLType: amqp.SASLTypePlain("writer", "password2"),
 	})
+
 	if err != nil {
 		return
 	}
 
 	// open a session
-	session, err := conn.NewSession(ctx, nil)
-	if err != nil {
-		return
-	}
-
-	// create a sender
-	sender, err = session.NewSender(ctx, "testTopic", nil)
+	session, err = conn.NewSession(ctx, nil)
 
 	return
+}
+
+func createSender(session *amqp.Session) (sender *amqp.Sender, err error) {
+
+	// create a sender
+	sender, err = session.NewSender(context.TODO(), "testTopic", nil)
+
+	return
+}
+
+// CreateReciever creates an AMQP receiver to the local container in the current session. This should be used to assert events are sent (ex: to test outbound events from authz)
+func (l *LocalActiveMqContainer) CreateReciever(topic string) (*amqp.Receiver, error) {
+	return l.session.NewReceiver(context.TODO(), topic, nil)
 }
 
 // SendSubjectAdded sends a SubjectAddOrUpdateEvent representing a new subject to the local container
