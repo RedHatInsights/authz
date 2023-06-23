@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+  <core xmlns="urn:activemq:core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:activemq:core ">
+    <acceptors>
+      <acceptor name="amqp">tcp://0.0.0.0:5672?protocols=AMQP</acceptor>
+    </acceptors>
+    <addresses>
+      <address name="testTopic">
+        <multicast>
+          <queue name="testTopic"/>
+        </multicast>
+      </address>
+    </addresses>
+    <security-settings>
+      <security-setting match="#">
+        <permission type="createNonDurableQueue" roles="guest"/>
+        <permission type="deleteNonDurableQueue" roles="guest"/>
+      </security-setting>
+      <security-setting match="testTopic">
+        <permission type="send" roles="writer"/>
+        <permission type="consume" roles="reader"/>
+        <permission type="createDurableQueue" roles="guest"/>
+        <permission type="deleteDurableQueue" roles="guest"/>
+      </security-setting>
+    </security-settings>
+  </core>
+</configuration>
