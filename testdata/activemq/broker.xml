@@ -5,9 +5,9 @@
       <acceptor name="amqp">tcp://0.0.0.0:5672?protocols=AMQP</acceptor>
     </acceptors>
     <addresses>
-      <address name="testTopic">
+      <address name="VirtualTopic.canonical.user">
         <multicast>
-          <queue name="testTopic"/>
+          <queue name="VirtualTopic.canonical.user"/>
         </multicast>
       </address>
     </addresses>
@@ -16,7 +16,7 @@
         <permission type="createNonDurableQueue" roles="guest"/>
         <permission type="deleteNonDurableQueue" roles="guest"/>
       </security-setting>
-      <security-setting match="testTopic">
+      <security-setting match="VirtualTopic.canonical.user">
         <permission type="send" roles="writer"/>
         <permission type="consume" roles="reader"/>
         <permission type="createDurableQueue" roles="guest"/>

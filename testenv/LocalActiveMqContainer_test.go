@@ -109,7 +109,7 @@ func TestPublishSubjectAddedEvent(t *testing.T) {
 	   </Payload>
 	</CanonicalMessage>`
 
-	receiver, err := localContainer.CreateReciever("testTopic")
+	receiver, err := localContainer.CreateReciever(umbUserEventsTopic)
 	assert.NoError(t, err)
 	//When
 	err = localContainer.SendSubjectAdded(contracts.SubjectAddOrUpdateEvent{
@@ -222,7 +222,7 @@ func TestPublishSubjectModifiedEvent(t *testing.T) {
 	   </Payload>
 	</CanonicalMessage>`
 
-	receiver, err := localContainer.CreateReciever("testTopic")
+	receiver, err := localContainer.CreateReciever(umbUserEventsTopic)
 	assert.NoError(t, err)
 	//When
 	err = localContainer.SendSubjectUpdated(contracts.SubjectAddOrUpdateEvent{
@@ -283,7 +283,7 @@ func CreateProducer(broker *LocalActiveMqContainer) {
 	// send a message
 	{
 		// create a sender
-		sender, err := session.NewSender(ctx, "testTopic", nil)
+		sender, err := session.NewSender(ctx, umbUserEventsTopic, nil)
 		if err != nil {
 			log.Fatal("Creating sender link:", err)
 		}

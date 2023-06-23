@@ -14,6 +14,11 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	// UMBUserEventsTopic is the name of the topic that publishes user events from the UMB
+	UMBUserEventsTopic string = "VirtualTopic.canonical.user"
+)
+
 // UMBMessageBusRepository can send and receive events on the Universal Message Bus
 type UMBMessageBusRepository struct {
 	config     serviceconfig.UMBConfig

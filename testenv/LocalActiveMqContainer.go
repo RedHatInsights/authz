@@ -19,6 +19,10 @@ import (
 	"github.com/ory/dockertest"
 )
 
+const (
+	umbUserEventsTopic string = "VirtualTopic.canonical.user" //Duplicated here for now because while it really belongs to the messaging package, it's used here too and can't be referenced both places without creating a cycle
+)
+
 // LocalActiveMqContainerFactory is only used for test setup and not included in builds with the release tag
 type LocalActiveMqContainerFactory struct {
 }
@@ -150,7 +154,7 @@ func connect(url string) (conn *amqp.Conn, session *amqp.Session, err error) {
 func createSender(session *amqp.Session) (sender *amqp.Sender, err error) {
 
 	// create a sender
-	sender, err = session.NewSender(context.TODO(), "testTopic", nil)
+	sender, err = session.NewSender(context.TODO(), umbUserEventsTopic, nil)
 
 	return
 }

@@ -110,7 +110,7 @@ func createUMBRepository() *UMBMessageBusRepository {
 		URL:               "amqp://localhost:" + localBrokerContainer.AmqpPort(),
 		UMBClientCertFile: "",
 		UMBClientCertKey:  "",
-		TopicName:         "testTopic",
+		TopicName:         UMBUserEventsTopic,
 	}) //TODO: fill in values
 }
 
