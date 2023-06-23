@@ -34,6 +34,23 @@ type UserServiceRequest struct {
 	} `json:"by"`
 }
 
+type userServiceUserDataRequest struct {
+	By struct {
+		UserIds []string `json:"userIds"`
+	} `json:"by"`
+	Include struct {
+		AllOf []string `json:"allOf"`
+	} `json:"include"`
+}
+
+type userServiceUserDataResponse []struct {
+	ID                  string `json:"id"`
+	PersonalInformation struct {
+		FirstName string `json:"firstName"`
+		LastNames string `json:"lastNames"`
+	} `json:"personalInformation"`
+}
+
 // FakeUserServiceAPI Struct to use in tests.
 type FakeUserServiceAPI struct {
 	Server *httptest.Server
@@ -64,20 +81,75 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 					return
 				}
 
-				paging, err := ExtractPagingParameters(requestBody)
-				assert.NoError(t, err)
+				// Two Requests use the same URL path: one is for user data enrichment and get subjects/users for a given org
+				// Inorder to determine which request is that, the below check is the least simple way of determining what request is that
+				// accountID is present in get users for a given orgID, and not present in the request body of user data enrichment
+				isGetByOrg := strings.Contains(strings.ToLower(string(requestBody)), "accountid")
 
-				validateRequestJSON(ja, string(requestBody), org)
+				if isGetByOrg {
+					paging, err := ExtractPagingParameters(requestBody)
+					assert.NoError(t, err)
 
-				results := make([]domain.Subject, 0, paging.Take)
-				for resultIndex, subjIndex := 0, paging.Skip; resultIndex < paging.Take && subjIndex < len(subjects); resultIndex, subjIndex = resultIndex+1, subjIndex+1 {
-					results = append(results, subjects[subjIndex])
+					validateRequestJSON(ja, string(requestBody), org)
+
+					results := make([]domain.Subject, 0, paging.Take)
+					for resultIndex, subjIndex := 0, paging.Skip; resultIndex < paging.Take && subjIndex < len(subjects); resultIndex, subjIndex = resultIndex+1, subjIndex+1 {
+						results = append(results, subjects[subjIndex])
+					}
+					w.WriteHeader(http.StatusOK)
+					_, err = w.Write([]byte(CreateResponseJSON(results)))
+					if err != nil {
+						t.Logf("Error sending response: %s", err)
+					}
+				} else {
+					req := userServiceUserDataRequest{}
+					err := json.Unmarshal(requestBody, &req)
+
+					if err != nil {
+						t.Logf("Error unmarshalling request: %v", err)
+					}
+
+					resp := make(userServiceUserDataResponse, 0)
+					for _, uid := range req.By.UserIds {
+						// find subjectID
+						for _, subject := range subjects {
+							if string(subject.SubjectID) == uid {
+								principal := struct {
+									ID                  string `json:"id"`
+									PersonalInformation struct {
+										FirstName string `json:"firstName"`
+										LastNames string `json:"lastNames"`
+									} `json:"personalInformation"`
+								}{
+									ID: uid,
+									PersonalInformation: struct {
+										FirstName string `json:"firstName"`
+										LastNames string `json:"lastNames"`
+									}{
+										FirstName: "User",
+										LastNames: uid,
+									},
+								}
+								resp = append(resp, principal)
+
+								break
+							}
+						}
+
+					}
+					w.WriteHeader(http.StatusOK)
+
+					bytes, err := json.Marshal(resp)
+					if err != nil {
+						t.Logf("Error marshalling response: %s", err)
+					}
+
+					_, err = w.Write(bytes)
+					if err != nil {
+						t.Logf("Error sending response: %s", err)
+					}
 				}
-				w.WriteHeader(http.StatusOK)
-				_, err = w.Write([]byte(CreateResponseJSON(results)))
-				if err != nil {
-					t.Logf("Error sending response: %s", err)
-				}
+
 			}
 		}
 

@@ -132,12 +132,18 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		return nil, nil, err
 	}
 
-	pr := initPrincipalRepository(srvCfg.StoreConfig.Kind)
-	subr, err := initSubjectRepository(&srvCfg)
+	// TODO: The init and builder functions need to be tidied up for SubjectRepository and Principal repository
+	// TODO: The casting acrobatics between the two also needs fixing with an intersection type? or dependency injection
+	stubPr := initStubPrincipalRepository(srvCfg.StoreConfig.Kind)
+	pr := stubPr
+
+	subr, err := initCombinedUserServiceSubjectPrincipalRepository(&srvCfg)
 	// TODO: remove fallback when all is tested
 	if err != nil {
-		glog.Errorf("failed to initialise UserService SubjectRepository (falling back to PrincipalRepository): %v", err)
-		subr = pr.(contracts.SubjectRepository)
+		glog.Errorf("failed to initialise UserService SubjectRepository (falling back to stub PrincipalRepository for PrincipalRepository and SubjectRepository): %v", err)
+		subr = stubPr.(contracts.SubjectRepository)
+	} else {
+		pr = subr.(contracts.PrincipalRepository)
 	}
 
 	sr, err := initSeatRepository(&srvCfg)
@@ -195,11 +201,11 @@ func initAccessRepository(config *serviceconfig.ServiceConfig) (contracts.Access
 		WithConfig(config).Build()
 }
 
-func initSubjectRepository(config *serviceconfig.ServiceConfig) (contracts.SubjectRepository, error) {
+func initCombinedUserServiceSubjectPrincipalRepository(config *serviceconfig.ServiceConfig) (contracts.SubjectRepository, error) {
 	return NewSubjectRepositoryBuilder().
 		WithConfig(config).Build()
 }
 
-func initPrincipalRepository(store string) contracts.PrincipalRepository {
+func initStubPrincipalRepository(store string) contracts.PrincipalRepository {
 	return NewPrincipalRepositoryBuilder().WithStore(store).Build()
 }
