@@ -5,6 +5,8 @@ import (
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/xml"
 	"fmt"
 	"sync/atomic"
@@ -32,11 +34,27 @@ type UMBMessageBusRepository struct {
 
 // Connect connects to the bus and starts listening for events exposed in the contracts.UserEvents return or an error
 func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err error) {
-	ctx := context.Background() // TODO: evaluate if we need a cancellable context
+	ctx := context.Background()
+
+	caCert, err := x509.SystemCertPool()
+	if err != nil {
+		return
+	}
+
+	cert, err := tls.LoadX509KeyPair(r.config.UMBClientCertFile, r.config.UMBClientCertKey)
+	if err != nil {
+		return
+	}
+
+	tlsConf := &tls.Config{
+		RootCAs:      caCert,
+		Certificates: []tls.Certificate{cert},
+	}
 
 	r.conn, err = amqp.Dial(ctx, r.config.URL, &amqp.ConnOptions{
-		SASLType: amqp.SASLTypePlain("reader", "password1"), //TODO: change to certs
+		TLSConfig: tlsConf,
 	})
+
 	if err != nil {
 		return
 	}
@@ -95,18 +113,26 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 			}
 
 			var evt SubjectEventMessage
-			err = xml.Unmarshal(msg.GetData(), &evt)
+			body, ok := msg.Value.(string)
+			if !ok {
+				glog.Errorf("Failure casting string payload to string")
+			}
+
+			err = xml.Unmarshal([]byte(body), &evt)
 			if err != nil {
 				r.errs <- err
 				//Reject message- unparseable
 				continue
 			}
 
+			glog.Infof("Message received. Unmarshalled Payload: %v", evt)
+
 			if evt.OrgID() == "" {
 				r.errs <- fmt.Errorf("Unable to extract orgID from subject event. SubjectID: %s, IsUpdate: %t", evt.SubjectID(), evt.IsActive())
 				//Reject message- no orgid
 				continue
 			}
+
 			// accept message - should happen after successful processing, otherwise release message
 			if err = receiver.AcceptMessage(context.TODO(), msg); err != nil { //TODO: switch right context
 				glog.Errorf("Failure accepting message: %v", err)
