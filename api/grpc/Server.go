@@ -130,6 +130,11 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 		return nil, err
 	}
 
+	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
+		glog.V(1).Infof("Received request to entitle Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", entitleOrgReq.OrgId, requestor)
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+	}
+
 	if entitleOrgReq.MaxSeats < 1 {
 		return nil, errors.New("maxSeats value not valid")
 	}
@@ -157,6 +162,11 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 		return nil, err
 	}
 
+	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
+		glog.V(1).Infof("Received request to import Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", importReq.OrgId, requestor)
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+	}
+
 	glog.Infof("Received request to import users for Org: %s from Requestor: %s", importReq.OrgId, requestor)
 	evt := application.ImportOrgEvent{
 		OrgID: importReq.OrgId,
@@ -171,6 +181,16 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 		ImportedUsersCount:    result.ImportedUsersCount,
 		NotImportedUsersCount: result.NotImportedUsersCount,
 	}, nil
+}
+
+func sliceContains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 // NewServer creates a new Server object to use.

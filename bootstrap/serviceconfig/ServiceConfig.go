@@ -24,6 +24,7 @@ type ServiceConfig struct {
 	TLSConfig         TLSConfig         `mapstructure:"tls"`
 	StoreConfig       StoreConfig       `mapstructure:"store"`
 	AuthConfigs       []AuthConfig      `mapstructure:"auth"`
+	AuthzConfig       AuthzConfig       `mapstructure:"authz"`
 	UserServiceConfig UserServiceConfig `mapstructure:"userservice"`
 	LogRequests       bool
 }
@@ -68,6 +69,11 @@ type AuthConfig struct {
 	Audience          string
 	RequiredScope     string
 	Enabled           bool
+}
+
+// AuthzConfig holds the configuration for the list of authorized subjects that can Entitle/import org
+type AuthzConfig struct {
+	LicenseImportWhitelist []string
 }
 
 // UserServiceConfig holds the configuration to connect to a user service API
