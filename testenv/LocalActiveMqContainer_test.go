@@ -17,6 +17,7 @@ import (
 var localContainer *LocalActiveMqContainer
 
 func TestPublishSubjectAddedEvent(t *testing.T) {
+	t.SkipNow() //Skipped pending a local test mechanism
 	//Given
 	expectedXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 	<CanonicalMessage xmlns="http://esb.redhat.com/Canonical/6">
@@ -130,6 +131,7 @@ func TestPublishSubjectAddedEvent(t *testing.T) {
 }
 
 func TestPublishSubjectModifiedEvent(t *testing.T) {
+	t.SkipNow() //Skipped pending a local test mechanism
 	//Given
 	expectedXML := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 	<CanonicalMessage xmlns="http://esb.redhat.com/Canonical/6">
@@ -241,7 +243,7 @@ func TestPublishSubjectModifiedEvent(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestMain(m *testing.M) {
+func SkipTestMain(m *testing.M) { //Skipped pending a local test mechanism
 	var err error
 	factory := NewLocalActiveMqContainerFactory()
 	localContainer, err = factory.CreateContainer()

@@ -7,6 +7,7 @@ import (
 	"authz/application"
 	"authz/bootstrap/serviceconfig"
 	"authz/domain/contracts"
+	"authz/infrastructure/repository/messaging"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -64,6 +65,8 @@ func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 	return cfg.Load()
 }
 
+var umbRepo contracts.MessageBusRepository
+
 // Run configures and runs the actual bootstrap.
 func Run(configPath string) {
 	srvCfg, err := getConfig(configPath)
@@ -90,6 +93,33 @@ func Run(configPath string) {
 
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
+
+	umbCfg := srvCfg.UMBConfig
+	if umbCfg.Enabled {
+		umb := messaging.NewUMBMessageBusRepository(umbCfg)
+		evts, err := umb.Connect()
+		if err != nil {
+			glog.Errorf("Failed to connect to umb: %v", err)
+		} else {
+			umbRepo = umb
+			glog.Info("Connected to UMB.")
+			go func(evts contracts.UserEvents) {
+				ok := true
+				var evt contracts.SubjectAddOrUpdateEvent
+
+				for ok {
+					select {
+					case evt, ok = <-evts.SubjectChanges:
+						glog.Infof("Subject event from UMB connection: %+v", evt)
+					case err, ok = <-evts.Errors:
+						glog.Errorf("Error from UMB connection: %v", err)
+					}
+				}
+			}(evts)
+		}
+	} else {
+		glog.Info("Skipping UMB connectivity - not enabled.")
+	}
 
 	go func() {
 		err := grpcServer.Serve(wait)
@@ -119,6 +149,10 @@ func Stop() {
 	grpcServer.Stop() //Stop accepting gRPC/adapted HTTP requests after shutting down HTTP
 
 	waitForCompletion.Wait()
+
+	if umbRepo != nil {
+		umbRepo.Disconnect()
+	}
 
 	grpcServer = nil
 	httpServer = nil

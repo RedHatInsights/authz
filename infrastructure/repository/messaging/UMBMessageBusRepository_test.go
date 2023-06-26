@@ -5,15 +5,17 @@ import (
 	"authz/domain/contracts"
 	"authz/testenv"
 	"context"
+	"testing"
+
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 var localBrokerContainer *testenv.LocalActiveMqContainer
 
 func TestUMBMessageRepository_receives_new_user_events(t *testing.T) {
 	//given
+	t.SkipNow() //Skipped pending a local test mechanism
 	sent := contracts.SubjectAddOrUpdateEvent{
 		SubjectID: "new_user",
 		OrgID:     "o1",
@@ -37,6 +39,7 @@ func TestUMBMessageRepository_receives_new_user_events(t *testing.T) {
 
 func TestUMBMessageRepository_receives_user_deactivation_events(t *testing.T) {
 	//given
+	t.SkipNow() //Skipped pending a local test mechanism
 	sent := contracts.SubjectAddOrUpdateEvent{
 		SubjectID: "u1",
 		OrgID:     "o1",
@@ -60,11 +63,12 @@ func TestUMBMessageRepository_receives_user_deactivation_events(t *testing.T) {
 
 func TestUMBMessageRepository_receives_user_reactivation_events(t *testing.T) {
 	//given
-	/*sent := contracts.SubjectAddOrUpdateEvent{
+	t.SkipNow() //Skipped pending a local test mechanism
+	sent := contracts.SubjectAddOrUpdateEvent{
 		SubjectID: "u3",
 		OrgID:     "o1",
 		Active:    true,
-	}*/
+	}
 
 	repo := createUMBRepository()
 	defer repo.Disconnect()
@@ -72,17 +76,18 @@ func TestUMBMessageRepository_receives_user_reactivation_events(t *testing.T) {
 	evts, err := repo.Connect()
 	assert.NoError(t, err)
 	//When
-	//err = localBrokerContainer.SendSubjectUpdated(sent)
+	err = localBrokerContainer.SendSubjectUpdated(sent)
 	//Then
 	assert.NoError(t, err)
 	received := <-evts.SubjectChanges
 	_ = received
-	//assert.Equal(t, sent, received)
+	assert.Equal(t, sent, received)
 	assertNoErrors(t, evts.Errors)
 }
 
 func TestUMBMessageRepository_disconnects_successfully(t *testing.T) {
 	//Given
+	t.SkipNow() //Skipped pending a local test mechanism
 	repo := createUMBRepository()
 	evts, err := repo.Connect()
 	assert.NoError(t, err)

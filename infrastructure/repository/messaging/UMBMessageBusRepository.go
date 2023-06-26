@@ -125,7 +125,7 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 				continue
 			}
 
-			glog.Infof("Message received. Unmarshalled Payload: %v", evt)
+			glog.Infof("Message received. Unmarshalled Payload: %+v", evt)
 
 			if evt.OrgID() == "" {
 				r.errs <- fmt.Errorf("Unable to extract orgID from subject event. SubjectID: %s, IsUpdate: %t", evt.SubjectID(), evt.IsActive())

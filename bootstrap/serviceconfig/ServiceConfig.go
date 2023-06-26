@@ -25,6 +25,7 @@ type ServiceConfig struct {
 	StoreConfig       StoreConfig       `mapstructure:"store"`
 	AuthConfigs       []AuthConfig      `mapstructure:"auth"`
 	UserServiceConfig UserServiceConfig `mapstructure:"userservice"`
+	UMBConfig         UMBConfig         `mapstructure:"umb"`
 	LogRequests       bool
 }
 
@@ -81,8 +82,9 @@ type UserServiceConfig struct {
 
 // UMBConfig holds the configuration to connect to the Unified Message Bus
 type UMBConfig struct {
+	Enabled           bool
 	URL               string
-	UMBClientCertFile string //TODO: are these the same as the UserService files? Should they get their own credentials section or duplicate values?
+	UMBClientCertFile string
 	UMBClientCertKey  string
 	TopicName         string
 }
