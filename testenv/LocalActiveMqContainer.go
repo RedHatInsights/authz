@@ -393,14 +393,16 @@ func (l *LocalActiveMqContainer) AmqpPort() string {
 
 // Close purges the container
 func (l *LocalActiveMqContainer) Close() {
-	if l.conn != nil {
-		err := l.conn.Close()
-		if err != nil {
-			glog.Errorf("Error disconnecting from container: %s", err)
+	if l != nil { //for errors when the container does not start at all
+		if l.conn != nil {
+			err := l.conn.Close()
+			if err != nil {
+				glog.Errorf("Error disconnecting from container: %s", err)
+			}
 		}
-	}
-	err := l.pool.Purge(l.container)
-	if err != nil {
-		glog.Error("Could not purge activeMQ Container from test. Please delete manually.")
+		err := l.pool.Purge(l.container)
+		if err != nil {
+			glog.Error("Could not purge activeMQ Container from test. Please delete manually.")
+		}
 	}
 }
