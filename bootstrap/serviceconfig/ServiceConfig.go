@@ -79,7 +79,7 @@ type UserServiceConfig struct {
 	DisableCAVerification     bool
 }
 
-// UMBConfig holds the configuration to connect to the Universal Message Bus
+// UMBConfig holds the configuration to connect to the Unified Message Bus
 type UMBConfig struct {
 	URL               string
 	UMBClientCertFile string //TODO: are these the same as the UserService files? Should they get their own credentials section or duplicate values?

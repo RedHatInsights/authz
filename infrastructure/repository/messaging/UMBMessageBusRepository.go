@@ -19,7 +19,7 @@ const (
 	UMBUserEventsTopic string = "VirtualTopic.canonical.user"
 )
 
-// UMBMessageBusRepository can send and receive events on the Universal Message Bus
+// UMBMessageBusRepository can send and receive events on the Unified Message Bus
 type UMBMessageBusRepository struct {
 	config     serviceconfig.UMBConfig
 	conn       *amqp.Conn
