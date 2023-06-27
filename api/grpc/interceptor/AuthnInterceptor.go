@@ -36,7 +36,8 @@ type ContextKey string
 
 const (
 	// RequestorContextKey Key for the Requestor value
-	RequestorContextKey ContextKey = ContextKey("Requestor")
+	RequestorContextKey           ContextKey = ContextKey("Requestor")
+	IsRequestorOrgAdminContextKey ContextKey = ContextKey("IsOrgAdmin")
 )
 
 type providerJSON struct {
@@ -153,7 +154,12 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 			return nil, status.Error(codes.Unauthenticated, "Invalid or expired identity token.")
 		}
 
-		return handler(context.WithValue(ctx, RequestorContextKey, result.SubjectID), req)
+		// Context with multiple values - derive a context from context
+		ctx = context.WithValue(ctx, RequestorContextKey, result.SubjectID)
+		isOrgAdmin := isRequestorOrgAdmin(token)
+		ctx = context.WithValue(ctx, IsRequestorOrgAdminContextKey, isOrgAdmin)
+
+		return handler(ctx, req)
 	})
 }
 
@@ -240,4 +246,14 @@ func getBearerTokenFromContext(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+func isRequestorOrgAdmin(token string) (isOrgAdmin bool) {
+	tk, _ := jwt.ParseString(token)
+	if claims := tk.PrivateClaims(); claims != nil {
+		if claims["is_org_admin"] != nil {
+			return claims["is_org_admin"].(bool)
+		}
+	}
+	return false
 }
