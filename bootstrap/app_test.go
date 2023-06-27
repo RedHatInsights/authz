@@ -156,6 +156,38 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
 }
 
+func TestEntitleOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+
+	expectedOrg := "o3"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "unAuthorizedSubject",
+		`{
+			"maxSeats": 25
+		}`))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+
+}
 func TestImportOrgImportsUsersForNewOrg(t *testing.T) {
 	//given
 	expectedSubjects := []domain.Subject{
@@ -186,6 +218,37 @@ func TestImportOrgImportsUsersForNewOrg(t *testing.T) {
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200,
 		`{"importedUsersCount":"3", "notImportedUsersCount":"0"}`)
+}
+
+func TestImportOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
+	//given
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+	expectedOrg := "newOrg"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "unAuthorizedSubject",
+		""))
+	//then
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
 }
 
 func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
@@ -602,6 +665,14 @@ func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 		log.Printf("Enabling authn middleware for tests.")
 		authKey["enabled"] = true
 	}
+
+	// Ensure the local discovery endpoint is used instead of any specified in the config
+	authKey["discoveryEndpoint"] = "http://localhost:8180/idp/.well-known/openid-configuration"
+
+	// Override any config that is there for AuthZ - allow list with test specific data
+	yml["authz"] = make(map[string]interface{}, 0)
+	authzKey := yml["authz"].(map[string]interface{})
+	authzKey["licenseImportWhitelist"] = []string{"system"}
 
 	if userService != nil {
 		userServiceKey := yml["userservice"].(map[string]interface{})

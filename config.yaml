@@ -19,6 +19,12 @@ auth:
         audience: cloud-services # Used when auth in enabled, audience of the token
         discoveryEndpoint: http://localhost:8180/idp/.well-known/openid-configuration # Used when auth in enabled, discovery endpoint of the token issuer
         requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
+
+authz: #
+    licenseImportWhitelist: # List of authorized/allowed subject IDs that can Entitle/Import Orgs
+    #    - subjectID1`
+    #    - SubjectID2
+
 cors: # (Refer to https://github.com/rs/cors for settings)
     #allowCredentials: false
     allowedOrigins:
