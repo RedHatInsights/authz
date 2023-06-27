@@ -285,6 +285,40 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	return &license, nil
 }
 
+// HasAnyLicense returns true if an org has at least one license applied, false otherwise for orgs without licenses or unknown orgs
+func (s *SpiceDbAccessRepository) HasAnyLicense(orgID string) (bool, error) {
+
+	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType: LicenseObjectType,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       OrgType,
+				OptionalSubjectId: orgID,
+			},
+		},
+		OptionalLimit: 1,
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to read License relation :%v", err.Error())
+		return false, err
+	}
+
+	_, e := resp.Recv()
+
+	//No license found
+	if errors.Is(e, io.EOF) {
+		return false, nil
+	}
+	// error
+	if e != nil {
+		return false, e
+	}
+	//any result means license found.
+	return true, nil
+}
+
 // GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
 func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{

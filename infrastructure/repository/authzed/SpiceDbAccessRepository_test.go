@@ -240,3 +240,43 @@ func TestFailAssignForDisabled(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func TestHasAnyLicenseReturnsTrueForOrgWithLicenseWithoutUsers(t *testing.T) {
+	t.Parallel()
+	repository, _, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	result, err := repository.HasAnyLicense("oNoUsers")
+	assert.NoError(t, err)
+	assert.True(t, result)
+}
+
+func TestHasAnyLicenseReturnsTrueForOrgWithLicenseWithUsers(t *testing.T) {
+	t.Parallel()
+	repository, _, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	result, err := repository.HasAnyLicense("o1")
+	assert.NoError(t, err)
+	assert.True(t, result)
+}
+
+func TestHasAnyLicenseReturnsFalseForUnknownOrgID(t *testing.T) {
+	t.Parallel()
+	repository, _, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	result, err := repository.HasAnyLicense("unknownOrgId")
+	assert.NoError(t, err)
+	assert.False(t, result)
+}
+
+func TestHasAnyLicenseReturnsFalseForOrgWithoutLicense(t *testing.T) {
+	t.Parallel()
+	repository, _, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	result, err := repository.HasAnyLicense("o2")
+	assert.NoError(t, err)
+	assert.False(t, result)
+}
