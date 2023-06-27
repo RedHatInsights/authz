@@ -155,14 +155,14 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 	return seatService.ModifySeats(evt)
 }
 
-// ProcessOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
-func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error {
+// HandleOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
+func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
 
 	err := s.seatRepo.ApplyLicense(&domain.License{
 		OrgID:     evt.OrgID,
 		ServiceID: evt.ServiceID,
 		MaxSeats:  evt.MaxSeats,
-		Version:   "",
+		Version:   "l",
 		InUse:     0,
 	})
 
@@ -176,6 +176,26 @@ func (s *LicenseAppService) ProcessOrgEntitledEvent(evt OrgEntitledEvent) error 
 		return err
 	}
 	return nil
+}
+
+// HandleSubjectAddOrUpdateEvent handles the SubjectAddOrUpdateEvent by adding the user updates to the spicedb schema
+func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectAddOrUpdateEvent) error {
+	isOrgLicensed, err := s.seatRepo.HasAnyLicense(evt.OrgID)
+	if err != nil {
+		return err
+	}
+
+	if !isOrgLicensed {
+		glog.Infof("Event not processed because org %s is not licensed.", evt.OrgID)
+		return nil
+	}
+
+	err = s.orgRepo.UpsertSubject(evt.OrgID, domain.Subject{
+		SubjectID: domain.SubjectID(evt.SubjectID),
+		Enabled:   evt.Active,
+	})
+
+	return err
 }
 
 // ImportUsersForOrg imports users for a given orgID and returns a result containing a count of imported and not imported users

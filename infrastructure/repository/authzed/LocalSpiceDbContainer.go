@@ -4,11 +4,14 @@ package authzed
 
 import (
 	"authz/bootstrap/serviceconfig"
+	"authz/domain"
 	"authz/infrastructure/grpcutil"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"path"
 	"path/filepath"
@@ -148,4 +151,37 @@ func (l *LocalSpiceDbContainer) Close() {
 	if err != nil {
 		glog.Error("Could not purge SpiceDB Container from test. Please delete manually.")
 	}
+}
+
+// CheckForSubjectRelationship returns true if the given subject has the given relationship to the given resource, otherwise false
+func CheckForSubjectRelationship(client *authzed.Client, subjectID domain.SubjectID, relationship string, resourceType string, resourceID string) bool {
+	ctx := context.TODO()
+	resp, err := client.ReadRelationships(ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:       resourceType,
+			OptionalResourceId: resourceID,
+			OptionalRelation:   relationship,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       "user",
+				OptionalSubjectId: string(subjectID),
+			},
+		},
+		OptionalLimit: 1,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, e := resp.Recv()
+
+	if errors.Is(e, io.EOF) {
+		return false
+	}
+	// error
+	if e != nil {
+		panic(e)
+	}
+	return true
 }

@@ -145,7 +145,7 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 		MaxSeats:  int(entitleOrgReq.MaxSeats),
 	}
 
-	err = s.LicenseAppService.ProcessOrgEntitledEvent(evt)
+	err = s.LicenseAppService.HandleOrgEntitledEvent(evt)
 	if err != nil {
 		return nil, err
 	}

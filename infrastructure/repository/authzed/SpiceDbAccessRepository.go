@@ -285,6 +285,40 @@ func (s *SpiceDbAccessRepository) GetLicense(orgID string, serviceID string) (*d
 	return &license, nil
 }
 
+// HasAnyLicense returns true if an org has at least one license applied, false otherwise for orgs without licenses or unknown orgs
+func (s *SpiceDbAccessRepository) HasAnyLicense(orgID string) (bool, error) {
+
+	resp, err := s.client.ReadRelationships(s.ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType: LicenseObjectType,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       OrgType,
+				OptionalSubjectId: orgID,
+			},
+		},
+		OptionalLimit: 1,
+	})
+
+	if err != nil {
+		glog.Errorf("Failed to read License relation :%v", err.Error())
+		return false, err
+	}
+
+	_, e := resp.Recv()
+
+	//No license found
+	if errors.Is(e, io.EOF) {
+		return false, nil
+	}
+	// error
+	if e != nil {
+		return false, e
+	}
+	//any result means license found.
+	return true, nil
+}
+
 // GetAssignable returns assignable seats for a given organization ID and service ID (which are not already assigned)
 func (s *SpiceDbAccessRepository) GetAssignable(orgID string, serviceID string) ([]domain.SubjectID, error) {
 	result, err := s.client.LookupSubjects(s.ctx, &v1.LookupSubjectsRequest{
@@ -420,7 +454,7 @@ func (s *SpiceDbAccessRepository) ApplyLicense(license *domain.License) error {
 	return err
 }
 
-// AddSubject stores a subject associated with an organization
+// AddSubject stores a subject associated with an organization. If a subject is already found, it returns an error.
 func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subject) error {
 	relationshipUpdates := make([]*v1.RelationshipUpdate, 0, 2)
 
@@ -476,6 +510,61 @@ func (s *SpiceDbAccessRepository) AddSubject(orgID string, subject domain.Subjec
 	if err == domain.ErrConflict {
 		err = domain.ErrSubjectAlreadyExists
 	}
+
+	return err
+}
+
+// UpsertSubject stores a subject associated with an organization. If a subject is found, it gets updated. If it is not found, it gets created.
+func (s *SpiceDbAccessRepository) UpsertSubject(orgID string, subject domain.Subject) error {
+	relationshipUpdates := make([]*v1.RelationshipUpdate, 0, 2)
+
+	orgResource := &v1.ObjectReference{
+		ObjectType: "org",
+		ObjectId:   orgID,
+	}
+	userSubject := &v1.SubjectReference{
+		Object: &v1.ObjectReference{
+			ObjectType: "user",
+			ObjectId:   string(subject.SubjectID),
+		},
+	}
+
+	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+		Operation: v1.RelationshipUpdate_OPERATION_TOUCH,
+		Relationship: &v1.Relationship{
+			Resource: orgResource,
+			Relation: "member",
+			Subject:  userSubject,
+		},
+	})
+
+	var tombstoneOperation v1.RelationshipUpdate_Operation
+
+	// Four scenarios:
+	if subject.Enabled {
+		// Scenario 1: If previously enabled, delete nonexistent tombstone (no change)
+		// Scenario 2: if previously disabled, delete tombstone, now enabled
+		tombstoneOperation = v1.RelationshipUpdate_OPERATION_DELETE
+	} else {
+		// Scenario 3: if previously disabled, touch tombstone that's already there (no change)
+		// Scenario 4: if previously enabled, add tombstone, now disabled
+		tombstoneOperation = v1.RelationshipUpdate_OPERATION_TOUCH
+	}
+
+	relationshipUpdates = append(relationshipUpdates, &v1.RelationshipUpdate{
+		Operation: tombstoneOperation,
+		Relationship: &v1.Relationship{
+			Resource: orgResource,
+			Relation: "disabled",
+			Subject:  userSubject,
+		},
+	})
+
+	_, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
+		Updates: relationshipUpdates,
+	})
+
+	err = spiceDbErrorToDomainError(err)
 
 	return err
 }

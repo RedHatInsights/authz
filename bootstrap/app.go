@@ -2,6 +2,7 @@
 package bootstrap
 
 import (
+	"authz/api/events"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
@@ -18,6 +19,7 @@ import (
 // grpcServer is used as pointer to access the current server and re-initialize it, mainly for integration testing
 var grpcServer *grpc.Server
 var httpServer *http.Server
+var eventAdapter *events.EventAdapter
 var waitForCompletion *sync.WaitGroup
 
 // getConfig loads the config based on the technical implementation "viper".
@@ -65,8 +67,6 @@ func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 	return cfg.Load()
 }
 
-var umbRepo contracts.MessageBusRepository
-
 // Run configures and runs the actual bootstrap.
 func Run(configPath string) {
 	srvCfg, err := getConfig(configPath)
@@ -85,7 +85,7 @@ func Run(configPath string) {
 		return
 	}
 
-	grpcServer, httpServer, err = initialize(srvCfg)
+	grpcServer, httpServer, eventAdapter, err = initialize(srvCfg)
 	if err != nil {
 		glog.Error("Error in service initialization: ", err)
 		return
@@ -94,31 +94,13 @@ func Run(configPath string) {
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
 
-	umbCfg := srvCfg.UMBConfig
-	if umbCfg.Enabled {
-		umb := messaging.NewUMBMessageBusRepository(umbCfg)
-		evts, err := umb.Connect()
-		if err != nil {
-			glog.Errorf("Failed to connect to umb: %v", err)
-		} else {
-			umbRepo = umb
+	if eventAdapter != nil {
+		err = eventAdapter.Start()
+		if err == nil {
 			glog.Info("Connected to UMB.")
-			go func(evts contracts.UserEvents) {
-				ok := true
-				var evt contracts.SubjectAddOrUpdateEvent
-
-				for ok {
-					select {
-					case evt, ok = <-evts.SubjectChanges:
-						glog.Infof("Subject event from UMB connection: %+v", evt)
-					case err, ok = <-evts.Errors:
-						glog.Errorf("Error from UMB connection: %v", err)
-					}
-				}
-			}(evts)
+		} else {
+			glog.Errorf("Failed to connect to UMB! Subject data may desynchronize. Err: %s", err)
 		}
-	} else {
-		glog.Info("Skipping UMB connectivity - not enabled.")
 	}
 
 	go func() {
@@ -150,8 +132,8 @@ func Stop() {
 
 	waitForCompletion.Wait()
 
-	if umbRepo != nil {
-		umbRepo.Disconnect()
+	if eventAdapter != nil {
+		eventAdapter.Stop()
 	}
 
 	grpcServer = nil
@@ -159,11 +141,11 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, error) {
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, *events.EventAdapter, error) {
 
 	ar, err := initAccessRepository(&srvCfg)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// TODO: The init and builder functions need to be tidied up for SubjectRepository and Principal repository
@@ -182,7 +164,7 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 
 	sr, err := initSeatRepository(&srvCfg)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	or := sr.(contracts.OrganizationRepository)
 
@@ -191,11 +173,20 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 
 	srv := initGrpcServer(aas, sas, &srvCfg)
 
+	umbCfg := srvCfg.UMBConfig
+	var adapter *events.EventAdapter
+	if umbCfg.Enabled {
+		umb := messaging.NewUMBMessageBusRepository(umbCfg)
+		adapter = events.NewEventAdapter(sas, umb)
+	} else {
+		glog.Info("UMB connectivity not enabled.")
+	}
+
 	webSrv := initHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
 	webSrv.SetSeatRef(srv)
 	grpcServer = srv
-	return srv, webSrv, nil
+	return srv, webSrv, adapter, nil
 }
 
 // initGrpcServer initializes a new grpc server struct
