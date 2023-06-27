@@ -3,6 +3,7 @@ package application
 import (
 	"authz/domain"
 	"authz/domain/contracts"
+	spicedb "authz/infrastructure/repository/authzed"
 	"authz/infrastructure/repository/mock"
 	"context"
 	"testing"
@@ -91,6 +92,36 @@ func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, 20, len(assignable))
+}
+
+func TestSubjectChangeEventForLicensedOrg(t *testing.T) {
+	service, client := createService(nil, nil)
+
+	subjectID := domain.SubjectID("new-subject")
+
+	err := service.HandleSubjectAddOrUpdateEvent(contracts.SubjectAddOrUpdateEvent{
+		SubjectID: string(subjectID),
+		OrgID:     "o1",
+		Active:    true,
+	})
+
+	assert.NoError(t, err)
+	assert.True(t, spicedb.CheckForSubjectRelationship(client, subjectID, "member", "org", "o1"))
+}
+
+func TestSubjectChangeEventForUnlicensedOrg(t *testing.T) {
+	service, client := createService(nil, nil)
+
+	subjectID := domain.SubjectID("new-subject")
+
+	err := service.HandleSubjectAddOrUpdateEvent(contracts.SubjectAddOrUpdateEvent{
+		SubjectID: string(subjectID),
+		OrgID:     "new-org",
+		Active:    true,
+	})
+
+	assert.NoError(t, err)
+	assert.False(t, spicedb.CheckForSubjectRelationship(client, subjectID, "member", "org", "new-org"))
 }
 
 func createService(subjectRepositoryOverride contracts.SubjectRepository, orgRepositoryOverride contracts.OrganizationRepository) (*LicenseAppService, *authzed.Client) {

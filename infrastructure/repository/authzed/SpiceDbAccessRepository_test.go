@@ -2,15 +2,9 @@ package authzed
 
 import (
 	"authz/domain"
-	"context"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"testing"
-
-	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -353,9 +347,9 @@ func TestUpsertUser(t *testing.T) {
 		assert.NoError(t, err)
 
 		//Assert relationship exists user -member-> org
-		userExists := checkForSubjectRelationship(client, tt.subject.SubjectID, "member", "org", tt.orgID)
+		userExists := CheckForSubjectRelationship(client, tt.subject.SubjectID, "member", "org", tt.orgID)
 		assert.True(t, userExists)
-		tombstoned := checkForSubjectRelationship(client, tt.subject.SubjectID, "disabled", "org", tt.orgID)
+		tombstoned := CheckForSubjectRelationship(client, tt.subject.SubjectID, "disabled", "org", tt.orgID)
 
 		if tt.subject.Enabled {
 			assert.False(t, tombstoned)
@@ -363,36 +357,4 @@ func TestUpsertUser(t *testing.T) {
 			assert.True(t, tombstoned)
 		}
 	}
-}
-
-func checkForSubjectRelationship(client *authzed.Client, subjectID domain.SubjectID, relationship string, resourceType string, resourceID string) bool {
-	ctx := context.TODO()
-	resp, err := client.ReadRelationships(ctx, &v1.ReadRelationshipsRequest{
-		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
-		RelationshipFilter: &v1.RelationshipFilter{
-			ResourceType:       resourceType,
-			OptionalResourceId: resourceID,
-			OptionalRelation:   relationship,
-			OptionalSubjectFilter: &v1.SubjectFilter{
-				SubjectType:       "user",
-				OptionalSubjectId: string(subjectID),
-			},
-		},
-		OptionalLimit: 1,
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	_, e := resp.Recv()
-
-	if errors.Is(e, io.EOF) {
-		return false
-	}
-	// error
-	if e != nil {
-		panic(e)
-	}
-	return true
 }
