@@ -162,7 +162,7 @@ func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
 		OrgID:     evt.OrgID,
 		ServiceID: evt.ServiceID,
 		MaxSeats:  evt.MaxSeats,
-		Version:   "",
+		Version:   "l",
 		InUse:     0,
 	})
 
