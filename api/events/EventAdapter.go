@@ -46,17 +46,29 @@ func (e *EventAdapter) run(evts contracts.UserEvents) {
 		case evt, ok = <-evts.SubjectChanges:
 			glog.Infof("Subject event from UMB connection: %+v", evt)
 			err = e.licenseAppService.HandleSubjectAddOrUpdateEvent(evt)
-			if err == nil {
-				//Accept message
-			} else {
-				glog.Errorf("Error processing message %+v: %v", evt, err)
-				//Release message
-			}
+			e.sendResult(evt, err)
 		case err, ok = <-evts.Errors:
 			glog.Errorf("Error from UMB connection: %v", err)
 		}
 	}
 	e.done <- struct{}{}
+}
+
+func (e *EventAdapter) sendResult(evt contracts.SubjectAddOrUpdateEvent, err error) {
+	if err == nil {
+		err = e.bus.ReportSuccess(evt)
+
+		if err != nil {
+			glog.Errorf("Error reporting success: %v", err)
+		}
+	} else {
+		glog.Errorf("Error processing message %+v: %v", evt, err)
+		err = e.bus.ReportFailure(evt)
+
+		if err != nil {
+			glog.Errorf("Error reporting failure: %v", err)
+		}
+	}
 }
 
 // Stop disconnects from the message bus, completes any message processing in progress, and then returns

@@ -23,13 +23,14 @@ const (
 
 // UMBMessageBusRepository can send and receive events on the Unified Message Bus
 type UMBMessageBusRepository struct {
-	config     serviceconfig.UMBConfig
-	conn       *amqp.Conn
-	recvCtx    context.Context
-	recvCancel context.CancelFunc
-	errs       chan error
-	workerDone chan interface{}
-	numWorkers int32
+	config      serviceconfig.UMBConfig
+	conn        *amqp.Conn
+	subjectRecv *amqp.Receiver
+	recvCtx     context.Context
+	recvCancel  context.CancelFunc
+	errs        chan error
+	workerDone  chan interface{}
+	numWorkers  int32
 }
 
 // Connect connects to the bus and starts listening for events exposed in the contracts.UserEvents return or an error
@@ -83,8 +84,9 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan contracts.SubjectAddOrUpdateEvent, error) {
 	updates := make(chan contracts.SubjectAddOrUpdateEvent)
 	ctx := context.Background()
+	var err error
 	// create a receiver
-	receiver, err := s.NewReceiver(ctx, r.config.TopicName, nil)
+	r.subjectRecv, err = s.NewReceiver(ctx, r.config.TopicName, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +95,7 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 	go func() {
 		defer func() {
 			ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-			err := receiver.Close(ctx) //TODO: close correctly? Do we need another channel?
+			err := r.subjectRecv.Close(ctx) //TODO: close correctly? Do we need another channel?
 			if err != nil {
 				glog.Errorf("Failed to close reciever: %v", err)
 			}
@@ -103,7 +105,7 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 		}()
 		for {
 			// receive next message
-			msg, err := receiver.Receive(r.recvCtx, nil)
+			msg, err := r.subjectRecv.Receive(r.recvCtx, nil)
 			if err != nil {
 				if err == context.Canceled {
 					return
@@ -121,7 +123,11 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 			err = xml.Unmarshal([]byte(body), &evt)
 			if err != nil {
 				r.errs <- err
-				//Reject message- unparseable
+
+				err = r.subjectRecv.RejectMessage(ctx, msg, nil)
+				if err != nil {
+					r.errs <- err
+				}
 				continue
 			}
 
@@ -129,17 +135,16 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 
 			if evt.OrgID() == "" {
 				r.errs <- fmt.Errorf("Unable to extract orgID from subject event. SubjectID: %s, IsUpdate: %t", evt.SubjectID(), evt.IsActive())
-				//Reject message- no orgid
+
+				err = r.subjectRecv.RejectMessage(ctx, msg, nil)
+				if err != nil {
+					r.errs <- err
+				}
 				continue
 			}
 
-			// accept message - should happen after successful processing, otherwise release message
-			if err = receiver.AcceptMessage(context.TODO(), msg); err != nil { //TODO: switch right context
-				glog.Errorf("Failure accepting message: %v", err)
-				r.errs <- err
-			}
-
 			updates <- contracts.SubjectAddOrUpdateEvent{
+				MsgRef:    msg,
 				SubjectID: evt.SubjectID(),
 				OrgID:     evt.OrgID(),
 				Active:    evt.IsActive(),
@@ -148,6 +153,28 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 	}()
 
 	return updates, nil
+}
+
+// ReportSuccess sends confirmation to the broker that the message was processed successfully. This or ReportFailure MUST be called for any event received.
+func (r *UMBMessageBusRepository) ReportSuccess(evt contracts.SubjectAddOrUpdateEvent) error {
+	msg, ok := evt.MsgRef.(*amqp.Message)
+	if ok {
+		err := r.subjectRecv.AcceptMessage(context.TODO(), msg)
+		return err
+	}
+
+	return fmt.Errorf("Internal error. MsgRef is not of expected type: %+v", evt.MsgRef)
+}
+
+// ReportFailure informs the broker that the message was -not- processed successfully. This or ReportSuccess MUST be called for any event received.
+func (r *UMBMessageBusRepository) ReportFailure(evt contracts.SubjectAddOrUpdateEvent) error {
+	msg, ok := evt.MsgRef.(*amqp.Message)
+	if ok {
+		err := r.subjectRecv.ReleaseMessage(context.TODO(), msg)
+		return err
+	}
+
+	return fmt.Errorf("Internal error. MsgRef is not of expected type: %+v", evt.MsgRef)
 }
 
 // Disconnect disconnects from the message bus and frees any resources used for communication.
