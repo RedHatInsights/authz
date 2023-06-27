@@ -2,7 +2,12 @@ package authzed
 
 import (
 	"authz/domain"
+	"context"
+	"errors"
 	"fmt"
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
+	"io"
 	"os"
 	"testing"
 
@@ -279,4 +284,114 @@ func TestHasAnyLicenseReturnsFalseForOrgWithoutLicense(t *testing.T) {
 	result, err := repository.HasAnyLicense("o2")
 	assert.NoError(t, err)
 	assert.False(t, result)
+}
+
+// Six scenarios:
+// Scenario 1: If previously enabled, delete nonexistent tombstone (no change)
+// Scenario 2: if previously disabled, delete tombstone, now enabled
+// Scenario 3: if previously disabled, touch tombstone that's already there (no change)
+// Scenario 4: if previously enabled, add tombstone, now disabled
+// Scenario 5: new enabled user -> created, no tombstone
+// Scenario 6: new disabled user -> created with tombstone
+func TestUpsertUser(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		orgID   string
+		subject domain.Subject
+	}{
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "u1", //Enabled in seed data
+				Enabled:   true,
+			},
+		},
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "u3", //Disabled in seed data
+				Enabled:   true,
+			},
+		},
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "u4", //Disabled in seed data
+				Enabled:   false,
+			},
+		},
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "u2", //Enabled in seed data
+				Enabled:   false,
+			},
+		},
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "new-enabled",
+				Enabled:   true,
+			},
+		},
+		{
+			"o1",
+			domain.Subject{
+				SubjectID: "new-disabled",
+				Enabled:   false,
+			},
+		},
+	}
+
+	repository, client, err := container.CreateClient()
+	assert.NoError(t, err)
+
+	for _, tt := range tests {
+		err = repository.UpsertSubject(tt.orgID, tt.subject)
+		assert.NoError(t, err)
+
+		//Assert relationship exists user -member-> org
+		userExists := checkForSubjectRelationship(client, tt.subject.SubjectID, "member", "org", tt.orgID)
+		assert.True(t, userExists)
+		tombstoned := checkForSubjectRelationship(client, tt.subject.SubjectID, "disabled", "org", tt.orgID)
+
+		if tt.subject.Enabled {
+			assert.False(t, tombstoned)
+		} else {
+			assert.True(t, tombstoned)
+		}
+	}
+}
+
+func checkForSubjectRelationship(client *authzed.Client, subjectID domain.SubjectID, relationship string, resourceType string, resourceID string) bool {
+	ctx := context.TODO()
+	resp, err := client.ReadRelationships(ctx, &v1.ReadRelationshipsRequest{
+		Consistency: &v1.Consistency{Requirement: &v1.Consistency_FullyConsistent{FullyConsistent: true}},
+		RelationshipFilter: &v1.RelationshipFilter{
+			ResourceType:       resourceType,
+			OptionalResourceId: resourceID,
+			OptionalRelation:   relationship,
+			OptionalSubjectFilter: &v1.SubjectFilter{
+				SubjectType:       "user",
+				OptionalSubjectId: string(subjectID),
+			},
+		},
+		OptionalLimit: 1,
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	_, e := resp.Recv()
+
+	if errors.Is(e, io.EOF) {
+		return false
+	}
+	// error
+	if e != nil {
+		panic(e)
+	}
+	return true
 }

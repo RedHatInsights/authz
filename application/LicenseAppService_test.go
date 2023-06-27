@@ -23,7 +23,7 @@ func TestOrgEnablement(t *testing.T) {
 	}
 
 	//When
-	err := service.ProcessOrgEntitledEvent(evt)
+	err := service.HandleOrgEntitledEvent(evt)
 
 	//Then
 	assert.NoError(t, err)
@@ -66,9 +66,9 @@ func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	}
 
 	//When
-	err := service.ProcessOrgEntitledEvent(evt)
+	err := service.HandleOrgEntitledEvent(evt)
 	assert.NoError(t, err)
-	err = service.ProcessOrgEntitledEvent(evt2)
+	err = service.HandleOrgEntitledEvent(evt2)
 	assert.Error(t, err)
 
 	spicedbContainer.WaitForQuantizationInterval()
@@ -134,7 +134,7 @@ func TestBatchImportedDisabledUserDoesNotOverwriteEnabledUser(t *testing.T) {
 	//When
 	doneSignal := make(chan interface{})
 	go func() {
-		err := licenseAppService.ProcessOrgEntitledEvent(OrgEntitledEvent{
+		err := licenseAppService.HandleOrgEntitledEvent(OrgEntitledEvent{
 			OrgID:     "myorg",
 			ServiceID: "myservice",
 			MaxSeats:  5,
