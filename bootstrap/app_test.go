@@ -220,6 +220,37 @@ func TestImportOrgImportsUsersForNewOrg(t *testing.T) {
 		`{"importedUsersCount":"3", "notImportedUsersCount":"0"}`)
 }
 
+func TestImportOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
+	//given
+	expectedSubjects := []domain.Subject{
+		{
+			SubjectID: "1",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "2",
+			Enabled:   true,
+		},
+		{
+			SubjectID: "3",
+			Enabled:   false,
+		},
+	}
+	expectedOrg := "newOrg"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+	//when
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "unAuthorizedSubject",
+		""))
+	//then
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+}
+
 func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
 	//given
 	expectedSubjects := []domain.Subject{
