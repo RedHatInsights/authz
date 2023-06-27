@@ -635,6 +635,9 @@ func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 		authKey["enabled"] = true
 	}
 
+	// Ensure the local discovery endpoint is used instead of any specified in the config
+	authKey["discoveryEndpoint"] = "http://localhost:8180/idp/.well-known/openid-configuration"
+
 	// Override any config that is there for AuthZ - allow list with test specific data
 	yml["authz"] = make(map[string]interface{}, 0)
 	authzKey := yml["authz"].(map[string]interface{})

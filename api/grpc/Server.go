@@ -131,7 +131,7 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 	}
 
 	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
-		glog.V(1).Infof("Received request to entitle Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", entitleOrgReq.OrgId, requestor)
+		glog.Infof("Received request to entitle Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", entitleOrgReq.OrgId, requestor)
 		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
 
@@ -163,7 +163,7 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 	}
 
 	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
-		glog.V(1).Infof("Received request to import Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", importReq.OrgId, requestor)
+		glog.Infof("Received request to import Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", importReq.OrgId, requestor)
 		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
 
