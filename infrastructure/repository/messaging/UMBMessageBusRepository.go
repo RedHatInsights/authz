@@ -1,4 +1,4 @@
-// Package messaging contains repository implementations for exchanging events in an enterprise environment
+// Package event contains repository implementations for exchanging events in an enterprise environment
 package messaging
 
 import (

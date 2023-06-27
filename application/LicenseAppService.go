@@ -180,12 +180,12 @@ func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
 
 // HandleSubjectAddOrUpdateEvent handles the SubjectAddOrUpdateEvent by adding the user updates to the spicedb schema
 func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectAddOrUpdateEvent) error {
-	licensed, err := s.seatRepo.HasAnyLicense(evt.OrgID)
+	isOrgLicensed, err := s.seatRepo.HasAnyLicense(evt.OrgID)
 	if err != nil {
 		return err
 	}
 
-	if !licensed {
+	if !isOrgLicensed {
 		glog.Infof("Event not processed because org %s is not licensed.", evt.OrgID)
 		return nil
 	}

@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
-	"github.com/authzed/authzed-go/v1"
 	"io"
 	"os"
 	"testing"
+
+	v1 "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
 
 	"github.com/stretchr/testify/assert"
 )

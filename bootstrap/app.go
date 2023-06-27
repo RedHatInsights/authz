@@ -2,6 +2,7 @@
 package bootstrap
 
 import (
+	"authz/api/event"
 	"authz/api/grpc"
 	"authz/api/http"
 	"authz/application"
@@ -97,7 +98,6 @@ func Run(configPath string) {
 	umbCfg := srvCfg.UMBConfig
 	if umbCfg.Enabled {
 		umb := messaging.NewUMBMessageBusRepository(umbCfg)
-		evts, err := umb.Connect()
 		if err != nil {
 			glog.Errorf("Failed to connect to umb: %v", err)
 		} else {
@@ -159,7 +159,7 @@ func Stop() {
 	waitForCompletion = nil
 }
 
-func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, error) {
+func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server, *event.EventAdapter, error) {
 
 	ar, err := initAccessRepository(&srvCfg)
 	if err != nil {
@@ -190,6 +190,15 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 	sas := application.NewLicenseAppService(ar, sr, pr, subr, or)
 
 	srv := initGrpcServer(aas, sas, &srvCfg)
+
+	umbCfg := srvCfg.UMBConfig
+	if umbCfg.Enabled {
+		umb := messaging.NewUMBMessageBusRepository(umbCfg)
+		adapter := event.NewEventAdapter(sas, umb)
+		adapter.Start()
+	} else {
+		glog.Info("UMB connectivity not enabled.")
+	}
 
 	webSrv := initHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
