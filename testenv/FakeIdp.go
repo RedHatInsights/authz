@@ -88,7 +88,7 @@ func HostFakeIdp() {
 	}
 }
 
-// SubjectIDToToken creates a new jwt token for a given SubjectID
+// CreateToken creates a new jwt token for a given SubjectID, orgID and isOrgAdmin values
 func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
 	if subject == "" {
 		return ""
