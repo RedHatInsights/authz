@@ -29,12 +29,11 @@ const (
 var container *authzed.LocalSpiceDbContainer
 
 func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
-	t.SkipNow() //Skip until meta-authz is in place
+	t.SkipNow() //Skip until Check meta-authz is in place
 	setupService(nil)
 	defer teardownService()
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad",
-		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "bad", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assert.Equal(t, 403, resp.StatusCode)
 }
@@ -42,8 +41,7 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckAccess(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
-		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
@@ -53,8 +51,7 @@ func TestCheckAccess(t *testing.T) {
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "",
-		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "", "", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
@@ -64,8 +61,7 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
-		`{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
@@ -75,19 +71,17 @@ func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
-		`{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 }
 
-func TestAssignLicenseReturnsSuccess(t *testing.T) {
+func TestAssignSeatReturnsSuccess(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true, `{
 			"assign": [
 			  "u7"
 			]
@@ -98,11 +92,40 @@ func TestAssignLicenseReturnsSuccess(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{}`)
 }
 
+func TestAssignSeatReturnsFailureWhenOrgIsUnauthorized(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+	// OrgID in request path and in the token are different
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system", "o2", true, `{
+			"assign": [
+			  "u7"
+			]
+		  }`))
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, 403, resp.StatusCode)
+}
+
+func TestAssignSeatReturnsFailureWhenNotAuthorizedOrgAdmin(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+	// OrgID in request path and in the token are different
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", false, `{
+			"assign": [
+			  "u7"
+			]
+		  }`))
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, 403, resp.StatusCode)
+}
+
 func TestUnassignLicenseReturnsSuccess(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true, `{
 			"unassign": [
 			  "u1"
 			]
@@ -136,21 +159,20 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	setupService(usSrv)
 	defer teardownService()
 
-	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
-		`{
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system", "o3", true, `{
 			"maxSeats": 25
 		}`))
 
 	assert.NoError(t, err)
 
-	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
 	container.WaitForQuantizationInterval()
 
 	//round trip: check users were imported and are assignable.
-	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats?filter=assignable", "system"))
+	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats?filter=assignable", "system", "o3", true))
 	assert.NoError(t, err)
 	// 3rd one is disabled, so remove from expected.
 	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
@@ -179,8 +201,7 @@ func TestEntitleOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
 	setupService(usSrv)
 	defer teardownService()
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "unAuthorizedSubject",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "unAuthorizedSubject", "o3", true, `{
 			"maxSeats": 25
 		}`))
 
@@ -212,8 +233,7 @@ func TestImportOrgImportsUsersForNewOrg(t *testing.T) {
 	defer teardownService()
 	//when
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
-		""))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system", "newOrg", true, ""))
 	//then
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200,
@@ -244,8 +264,7 @@ func TestImportOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
 	defer teardownService()
 	//when
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "unAuthorizedSubject",
-		""))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "unAuthorizedSubject", "newOrg", true, ""))
 	//then
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -274,8 +293,7 @@ func TestImportOrgImportsUsersForExistingOrg(t *testing.T) {
 	setupService(usSrv)
 	defer teardownService()
 	//when
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
-		""))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system", "o2", true, ""))
 	//then
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200,
@@ -291,8 +309,7 @@ func TestImportOrgImportsNothingWhenNoUsersAreThere(t *testing.T) {
 	setupService(usSrv)
 	defer teardownService()
 	//when
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system",
-		""))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/import", "system", "o3", true, ""))
 	//then
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200,
@@ -309,8 +326,7 @@ func TestImportOrgReturnsErrorWhenUserServiceReturnsError(t *testing.T) {
 	setupService(usSrv)
 	defer teardownService()
 	//when
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+notExistingOrg+"/import", "system",
-		""))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+notExistingOrg+"/import", "system", "o2", true, ""))
 	//then
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
@@ -319,21 +335,19 @@ func TestImportOrgReturnsErrorWhenUserServiceReturnsError(t *testing.T) {
 func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system",
-		`{
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system", "o2", true, `{
 			"maxSeats": 25
 		}`))
 
 	assert.NoError(t, err)
-	_, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system"))
+	_, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system", "o2", true))
 	assert.NoError(t, err)
-	_, err = http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/bazbar", "system",
-		`{
+	_, err = http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/bazbar", "system", "o2", true, `{
 			"maxSeats": 20
 		}`))
 
 	assert.NoError(t, err)
-	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system"))
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system", "o2", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
 }
@@ -361,20 +375,19 @@ func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *te
 	setupService(usSrv)
 	defer teardownService()
 
-	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/entitlements/foo", "system",
-		`{
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/entitlements/foo", "system", "oNoUsers", true, `{
 			"maxSeats": 25
 		}`))
 
 	assert.NoError(t, err)
 
-	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo", "system"))
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo", "system", "oNoUsers", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
 	container.WaitForQuantizationInterval()
 	//round trip: check users were imported and are assignable.
-	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo/seats?filter=assignable", "system"))
+	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo/seats?filter=assignable", "system", "oNoUsers", true))
 	assert.NoError(t, err)
 	// 3rd one is disabled, so remove from expected.
 	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
@@ -384,26 +397,24 @@ func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 
-	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
-		`{
+	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system", "o3", true, `{
 			"maxSeats": 25
 		}`))
 
 	assert.NoError(t, err)
 
-	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system", "o3", true, `{
 			"maxSeats": 24
 		}`))
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	//to make sure the license didn't get messed up we also assert that the seatcount is the expected one
-	resp4, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system"))
+	resp4, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp4, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
 }
@@ -411,8 +422,7 @@ func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
 func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system", "o1", true, `{
 			"maxSeats": -1
 		}`))
 
@@ -423,8 +433,7 @@ func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
 func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system", "o1", true, `{
 			"maxSeats":
 		}`))
 
@@ -435,8 +444,7 @@ func TestEntitleOrgFailsWithEmptyMaxSeatsValue(t *testing.T) {
 func TestEntitleOrgFailsWithEmptyBody(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system",
-		``))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/entitlements/wisdom", "system", "o1", true, ``))
 
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode) // TODO - Check and update the correct http status code: bad request or internal server error
@@ -447,14 +455,12 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 	//The user isn't licensed initially, use is denied
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
-		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
 	//Grant a license
-	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
-		`{
+	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay", "o1", true, `{
 		"assign": [
 			"u2"
 			]
@@ -464,8 +470,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	container.WaitForQuantizationInterval()
 
 	//Should be allowed now
-	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "system",
-		`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "system", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -474,17 +479,16 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 
-	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
+	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system", "o1", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"users": ["<<UNORDERED>>", {"assigned":true,"displayName":"O1 User 1","id":"u1"}, {"displayName":"O1 User 3","id":"u3","assigned":true}]}`)
 
 	//Grant a license
-	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
-		`{
+	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay", "o1", true, `{
 			"assign": [
 			  "u7"
 			]
@@ -494,15 +498,15 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	container.WaitForQuantizationInterval()
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"seatsAvailable":7, "seatsTotal": 10}`)
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system", "o1", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"users": "<<PRESENCE>>"}`)
 
-	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats?filter=assignable", "token"))
+	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats?filter=assignable", "token", "o1", true))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"users":"<<PRESENCE>>"}`)
 }
@@ -510,8 +514,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 func TestOverAssigningLicensesFails(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay",
-		`{
+	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay", "o1", true, `{
 		"assign": [
 			"user1",
 			"user2",
@@ -556,7 +559,7 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 			]
 		  }`
 
-	req := post("/v1alpha/orgs/o1/licenses/smarts", "okay", body)
+	req := post("/v1alpha/orgs/o1/licenses/smarts", "okay", "o1", true, body)
 	req.Header.Set("AllowAllOrigins", "true")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -577,12 +580,12 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 	}
 }
 
-func get(relativeURI string, subject string) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, testenv.SubjectIDToToken(subject), "")
+func get(relativeURI string, subject string, orgID string, isOrgAdmin bool) *http.Request {
+	return createRequest(http.MethodGet, relativeURI, testenv.SubjectIDToToken(subject, orgID, isOrgAdmin), "")
 }
 
-func post(relativeURI string, subject string, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, testenv.SubjectIDToToken(subject), body)
+func post(relativeURI string, subject string, orgID string, isOrgAdmin bool, body string) *http.Request {
+	return createRequest(http.MethodPost, relativeURI, testenv.SubjectIDToToken(subject, orgID, isOrgAdmin), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
@@ -618,8 +621,7 @@ func setupService(fakeUserService *testenv.FakeUserServiceAPI) {
 
 	go Run(temporaryConfigFile.Name())
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
-		return post("/v1alpha/check", "system",
-			`{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
+		return post("/v1alpha/check", "system", "o3", true, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
 	})
 
 	if err != nil {
