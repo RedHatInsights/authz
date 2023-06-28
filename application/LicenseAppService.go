@@ -121,7 +121,11 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 	}
 
 	if req.IncludeUsers {
-		return s.principalRepo.GetByIDs(resultIds)
+		if len(resultIds) > 0 {
+			return s.principalRepo.GetByIDs(resultIds)
+		}
+
+		return []domain.Principal{}, nil
 	}
 
 	principals := make([]domain.Principal, len(resultIds))
