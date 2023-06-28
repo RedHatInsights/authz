@@ -580,11 +580,11 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func get(relativeURI string, subject string, orgID string, isOrgAdmin bool) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, testenv.SubjectIDToToken(subject, orgID, isOrgAdmin), "")
+	return createRequest(http.MethodGet, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), "")
 }
 
 func post(relativeURI string, subject string, orgID string, isOrgAdmin bool, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, testenv.SubjectIDToToken(subject, orgID, isOrgAdmin), body)
+	return createRequest(http.MethodPost, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
