@@ -475,9 +475,9 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 }
 
 func TestGrantedLicenseGivesAccessToServices(t *testing.T) {
-	setupService()
+	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system",
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "o1", true,
 		`{"subject": "u1", "operation": "access", "resourcetype": "service", "resourceid": "smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
