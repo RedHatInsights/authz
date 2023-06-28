@@ -88,8 +88,8 @@ func HostFakeIdp() {
 	}
 }
 
-// SubjectIDToToken creates a new jwt token for a given SubjectID
-func SubjectIDToToken(subject string) string {
+// CreateToken creates a new jwt token for a given SubjectID, orgID and isOrgAdmin values
+func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
 	if subject == "" {
 		return ""
 	}
@@ -100,6 +100,8 @@ func SubjectIDToToken(subject string) string {
 		Audience([]string{testAudience}).
 		Subject(subject).
 		Claim("scope", testRequiredScope).
+		Claim("org_id", orgID).
+		Claim("is_org_admin", isOrgAdmin).
 		Build()
 
 	if err != nil {

@@ -37,6 +37,10 @@ type ContextKey string
 const (
 	// RequestorContextKey Key for the Requestor value
 	RequestorContextKey ContextKey = ContextKey("Requestor")
+	// RequestorOrgContextKey Key for Requestor org
+	RequestorOrgContextKey ContextKey = ContextKey("RequestorOrgContextKey")
+	// IsRequestorOrgAdminContextKey Key for asserting whether requestor is admin of the above org
+	IsRequestorOrgAdminContextKey ContextKey = ContextKey("IsOrgAdmin")
 )
 
 type providerJSON struct {
@@ -146,18 +150,23 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 			return nil, status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
 		}
 
-		result, err := authnInterceptor.validateTokenAndExtractSubject(token)
+		result, err := authnInterceptor.validateTokenAndExtractData(token)
 
 		if err != nil {
 			glog.Errorf("Error processing token: %s", err)
 			return nil, status.Error(codes.Unauthenticated, "Invalid or expired identity token.")
 		}
 
-		return handler(context.WithValue(ctx, RequestorContextKey, result.SubjectID), req)
+		// Context with multiple values - derive a context from context
+		ctx = context.WithValue(ctx, RequestorContextKey, result.SubjectID)
+		ctx = context.WithValue(ctx, RequestorOrgContextKey, result.Org)
+		ctx = context.WithValue(ctx, IsRequestorOrgAdminContextKey, result.IsOrgAdmin)
+
+		return handler(ctx, req)
 	})
 }
 
-func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token string) (result tokenIntrospectionResult, err error) {
+func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractData(token string) (result tokenIntrospectionResult, err error) {
 	jwtoken, err := jwt.ParseString(token, jwt.WithVerify(false), jwt.WithValidate(false)) //Parse without any validation to peek issuer
 
 	if err != nil {
@@ -168,7 +177,7 @@ func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token s
 
 	for _, provider := range authnInterceptor.providers {
 		if issuer == provider.issuer {
-			result, err = validateTokenAndExtractSubject(provider, token)
+			result, err = validateTokenAndExtractData(provider, token)
 
 			return
 		}
@@ -179,7 +188,7 @@ func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractSubject(token s
 	return
 }
 
-func validateTokenAndExtractSubject(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
+func validateTokenAndExtractData(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
 	//Parse with signature verification and token validation. Second parse is necessary because WithKeySet cannot be passed to jwt.Validate
 	jwtoken, err := jwt.ParseString(token, jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience))
 
@@ -193,9 +202,12 @@ func validateTokenAndExtractSubject(p *authnProvider, token string) (result toke
 	}
 
 	result.SubjectID = jwtoken.Subject()
-	if result.SubjectID == "" {
+	result.Org, result.IsOrgAdmin = requestorOrg(jwtoken)
+
+	if result.SubjectID == "" || result.Org == "" {
 		err = domain.ErrNotAuthenticated
 	}
+
 	return
 }
 
@@ -220,7 +232,9 @@ func ensureRequiredScope(requiredScope string, token jwt.Token) error {
 }
 
 type tokenIntrospectionResult struct {
-	SubjectID string
+	SubjectID  string
+	Org        string
+	IsOrgAdmin bool
 }
 
 func getBearerTokenFromContext(ctx context.Context) string {
@@ -240,4 +254,16 @@ func getBearerTokenFromContext(ctx context.Context) string {
 		}
 	}
 	return ""
+}
+
+func requestorOrg(token jwt.Token) (orgID string, isOrgAdmin bool) {
+	if claims := token.PrivateClaims(); claims != nil {
+		if claims["org_id"] != nil {
+			orgID = claims["org_id"].(string)
+		}
+		if claims["is_org_admin"] != nil {
+			isOrgAdmin = claims["is_org_admin"].(bool)
+		}
+	}
+	return orgID, isOrgAdmin
 }

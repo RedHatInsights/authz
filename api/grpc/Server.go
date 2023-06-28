@@ -35,6 +35,14 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 		return nil, err
 	}
 
+	// Validate if the requestor is the orgAdmin of the org in the req
+	requestorOrgAdmin := s.getIsOrgAdminFromGrpcContext(ctx)
+	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
+
+	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+	}
+
 	req := application.GetSeatAssignmentCountsRequest{
 		Requestor: requestor,
 		OrgID:     grpcReq.OrgId,
@@ -58,6 +66,14 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 		return nil, err
 	}
 
+	// Validate if the requestor is the orgAdmin of the org in the req
+	requestorOrgAdmin := s.getIsOrgAdminFromGrpcContext(ctx)
+	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
+
+	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+	}
+
 	req := application.ModifySeatAssignmentRequest{
 		Requestor: requestor,
 		OrgID:     grpcReq.OrgId,
@@ -79,6 +95,14 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	requestor, err := s.getRequestorIdentityFromGrpcContext(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate if the requestor is the orgAdmin of the org in the req
+	requestorOrgAdmin := s.getIsOrgAdminFromGrpcContext(ctx)
+	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
+
+	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
 
 	includeUsers := true
@@ -319,4 +343,23 @@ func convertDomainErrorToGrpc(err error) error {
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}
+}
+
+func (s *Server) getIsOrgAdminFromGrpcContext(ctx context.Context) (isOrgAdmin bool) {
+	requestor := ctx.Value(interceptor.IsRequestorOrgAdminContextKey)
+	isOrgAdmin = requestor.(bool)
+	return
+}
+
+func (s *Server) getRequestorOrgIDFromGrpcContext(ctx context.Context) (result string) {
+	requestorOrgID := ctx.Value(interceptor.RequestorOrgContextKey)
+	result = requestorOrgID.(string)
+	return
+}
+
+func isRequestorOrgAdmin(requestorOrgAdmin bool, requestorOrgID, orgIDInRequest string) bool {
+	if requestorOrgAdmin && requestorOrgID == orgIDInRequest { // Requestor should be org Admin of the org received in the request path
+		return true
+	}
+	return false
 }

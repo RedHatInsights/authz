@@ -22,7 +22,7 @@ auth:
 
 authz: #
     licenseImportWhitelist: # List of authorized/allowed subject IDs that can Entitle/Import Orgs
-    #    - subjectID1`
+    #    - subjectID1
     #    - SubjectID2
 
 cors: # (Refer to https://github.com/rs/cors for settings)
