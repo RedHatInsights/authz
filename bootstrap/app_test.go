@@ -110,7 +110,6 @@ func TestAssignSeatReturnsFailureWhenOrgIsUnauthorized(t *testing.T) {
 func TestAssignSeatReturnsFailureWhenNotAuthorizedOrgAdmin(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	// OrgID in request path and in the token are different
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", false, `{
 			"assign": [
 			  "u7"
