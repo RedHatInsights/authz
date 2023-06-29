@@ -510,6 +510,23 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"users":"<<PRESENCE>>"}`)
 }
 
+func TestOrgWithoutUsersReturnsEmptyGetSeatsResponse(t *testing.T) {
+
+	var expectedSubjects []domain.Subject
+
+	expectedOrg := "oNoUsers"
+	usSrv := testenv.HostFakeUserServiceAPI(t, expectedSubjects, expectedOrg, map[int]int{}, CertDirectory)
+	defer usSrv.Server.Close()
+
+	setupService(usSrv)
+	defer teardownService()
+
+	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/oNoUsers/licenses/smarts/seats?filter=assignable&includeUsers=true", "system", "oNoUsers", true))
+	assert.NoError(t, err)
+	assertJSONResponse(t, resp, 200, `{"users":[]}`)
+
+}
+
 func TestOverAssigningLicensesFails(t *testing.T) {
 	setupService(nil)
 	defer teardownService()

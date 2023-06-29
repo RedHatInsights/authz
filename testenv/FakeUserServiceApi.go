@@ -110,43 +110,39 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 					}
 
 					resp := make(userServiceUserDataResponse, 0)
-					for _, uid := range req.By.UserIds {
-						// find subjectID
-						for _, subject := range subjects {
-							if string(subject.SubjectID) == uid {
-								principal := struct {
-									ID                  string `json:"id"`
-									PersonalInformation struct {
-										FirstName string `json:"firstName"`
-										LastNames string `json:"lastNames"`
-									} `json:"personalInformation"`
-								}{
-									ID: uid,
-									PersonalInformation: struct {
-										FirstName string `json:"firstName"`
-										LastNames string `json:"lastNames"`
+
+					if req.By.UserIds == nil {
+						t.Log("userIds sent empty. FakeUserService API returning BadRequest.")
+						writeResponse(w, resp, http.StatusBadRequest, t)
+					} else {
+						for _, uid := range req.By.UserIds {
+							// find subjectID
+							for _, subject := range subjects {
+								if string(subject.SubjectID) == uid {
+									principal := struct {
+										ID                  string `json:"id"`
+										PersonalInformation struct {
+											FirstName string `json:"firstName"`
+											LastNames string `json:"lastNames"`
+										} `json:"personalInformation"`
 									}{
-										FirstName: "User",
-										LastNames: uid,
-									},
+										ID: uid,
+										PersonalInformation: struct {
+											FirstName string `json:"firstName"`
+											LastNames string `json:"lastNames"`
+										}{
+											FirstName: "User",
+											LastNames: uid,
+										},
+									}
+									resp = append(resp, principal)
+
+									break
 								}
-								resp = append(resp, principal)
-
-								break
 							}
+
 						}
-
-					}
-					w.WriteHeader(http.StatusOK)
-
-					bytes, err := json.Marshal(resp)
-					if err != nil {
-						t.Logf("Error marshalling response: %s", err)
-					}
-
-					_, err = w.Write(bytes)
-					if err != nil {
-						t.Logf("Error sending response: %s", err)
+						writeResponse(w, resp, http.StatusOK, t)
 					}
 				}
 
@@ -184,6 +180,19 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 		ServerRootCa: fmt.Sprintf("%sserver-ca.crt", certDir),
 	}
 	return result
+}
+
+func writeResponse(w http.ResponseWriter, resp userServiceUserDataResponse, httpStatusCode int, t *testing.T) {
+	w.WriteHeader(httpStatusCode)
+	bytes, err := json.Marshal(resp)
+	if err != nil {
+		t.Logf("Error marshalling response: %s", err)
+	}
+
+	_, err = w.Write(bytes)
+	if err != nil {
+		t.Logf("Error sending response: %s", err)
+	}
 }
 
 // ExtractPagingParameters unmarshals paging parameters from a request json.
