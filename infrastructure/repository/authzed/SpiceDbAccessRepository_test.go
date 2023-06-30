@@ -148,7 +148,7 @@ func TestUnassignBatch(t *testing.T) {
 
 	// given
 	subs := []domain.SubjectID{
-		"u1",
+		"u1", "u3",
 	}
 
 	oldLic, e1 := client.GetLicense("o1", "smarts")
