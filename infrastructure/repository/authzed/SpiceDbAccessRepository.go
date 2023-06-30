@@ -96,7 +96,7 @@ func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.Subjec
 
 	// Step 2 Add license changes
 	relationshipUpdates, preconditions = addLicenseVersionSwap(relationshipUpdates, preconditions, license, assignedCount)
-
+	glog.Infof("Trying to assign %s and unassign %s seats on license %s for org %s with %d of %d seats currently in use.", assignedSubjectIDs, removedSubjectIDs, license.ServiceID, license.OrgID, license.InUse, license.MaxSeats)
 	// Step 3 submit transaction
 	result, err := s.client.WriteRelationships(s.ctx, &v1.WriteRelationshipsRequest{
 		Updates:               relationshipUpdates,
@@ -105,12 +105,12 @@ func (s *SpiceDbAccessRepository) ModifySeats(assignedSubjectIDs []domain.Subjec
 
 	// Step 4 examine any errors
 	if err != nil {
-		glog.Errorf("Failed to write modify seats :%v", err.Error())
+		glog.Errorf("Error assigning %s / unassigning %s seats on license %s for org %s with %d of %d seats currently in use.\nInternal error: %v", assignedSubjectIDs, removedSubjectIDs, license.ServiceID, license.OrgID, license.InUse, license.MaxSeats, err.Error())
 
 		return spiceDbErrorToDomainError(err)
 	}
 
-	glog.Infof("Assigned operation :%v", result)
+	glog.Infof("Successfully assigned %s / unassigned %s seats on license %s for org %s. Current seats used: %d of %d\n Internal response: %v", assignedSubjectIDs, removedSubjectIDs, license.ServiceID, license.OrgID, assignedCount, license.MaxSeats, result)
 
 	return nil
 }
