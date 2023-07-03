@@ -1,5 +1,9 @@
 baseUri=$1
 idpDiscoveryUri=$2
+orgId=$3
+userId=$4
+maxSeats=$5
+
 token=""
 client_id=cloud-services
 scopes=openid
@@ -48,42 +52,48 @@ function assert() {
 testUserIsAssigned=0
 
 function cleanup() {
-    #always unassign u15 on exit to avoid pollution on the next run. Also ignore all output- this will fail except when the test is exiting early before the second quantization interval
+    #always unassign $userId on exit to avoid pollution on the next run. Also ignore all output- this will fail except when the test is exiting early before the second quantization interval
     if [ $testUserIsAssigned -eq 1 ]
     then
-        echo "Exiting while u15 user should be assigned. Unassigning.."
-        curl -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["u15"]}'
+        echo "Exiting while $userId user should be assigned. Unassigning.."
+        curl -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["'$userId'"]}'
     fi
 }
 
 login
 trap cleanup EXIT #always run cleanup
 
-msg='Setup: try unassign u15'
-curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["u15"]}' || info "U15 not assigned yet. continuing..."
+msg="Setup: Try unassigning $userId if assigned. should return 400 if not assigned."
+echo $msg
+curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["'$userId'"]}' || info "$userId not assigned yet. continuing..."
 
-msg='Granting license to u15 (should succeed)'
-curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"assign": ["u15"]}' || fail "Failed request: $msg"
+msg="Granting license to $userId (should succeed)"
+echo "Test: $msg"
+curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"assign": ["'$userId'"]}' || fail "Failed request: $msg"
 
 testUserIsAssigned=1 #from this point, the test user is assigned and must be unassigned on exit
 
-msg='Getting number of seats available - should be less than the license allows'
-previousAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg") | jq ".seatsAvailable"`
-assert "$previousAvailable -lt 10" "$msg"
+msg="Getting number of seats available - should be less than the license allows. License allows (param): $maxSeats"
+echo "Test: $msg"
+previousAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg") | jq ".seatsAvailable"`
+assert "$previousAvailable -lt $maxSeats" "$msg"
 
 echo "Waiting for quantization interval"
 sleep 5
 
-msg='Checking access for u15 (should succeed)'
-ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"subject": "u15", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
+msg="Checking access for $userId (should succeed)"
+echo "Test: $msg"
+ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"subject": "'$userId'", "operation": "access", "resourcetype": "license", "resourceid": "'$orgId'/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
 assert "$ret = true" "$msg"
 
-msg='Checking if u15 is included in the list of assigned users'
-ret=`( curl --silent --fail -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" $baseUri/v1alpha/orgs/o1/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "u15")'`
+msg="Checking if $userId is included in the list of assigned users"
+echo "Test: $msg"
+ret=`( curl --silent --fail -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" $baseUri/v1alpha/orgs/$orgId/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "'$userId'")'`
 assert "$ret = true" "$msg"
 
-msg='Revoking license for u15 (should succeed)'
-curl --fail -X POST $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["u15"]}' || fail "Failed request: $msg"
+msg="Revoking license for $userId (should succeed)"
+echo "Test: $msg"
+curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["'$userId'"]}' || fail "Failed request: $msg"
 
 testUserIsAssigned=0 #from this point, the test user is NOT assigned, and does not need to be unassigned on exit
 
@@ -91,11 +101,13 @@ echo "Waiting for quantization interval"
 sleep 5
 
 msg='Getting license counts again - one more should be available'
-newAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/o1/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg" ) | jq ".seatsAvailable"`
+echo "Test: $msg"
+newAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg" ) | jq ".seatsAvailable"`
 assert "$previousAvailable -lt $newAvailable" "$msg"
 
-msg="Checking access for u15 again (should return false)"
-ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"subject": "u15", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
+msg="Checking access for $userId again (should return false)"
+echo "Test: $msg"
+ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"subject": "'$userId'", "operation": "access", "resourcetype": "license", "resourceid": "'$orgId'/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
 assert "$ret = false" "$msg"
 
-echo "PASS"
+echo "PASSED ALL TESTS"
