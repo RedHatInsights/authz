@@ -63,11 +63,11 @@ function cleanup() {
 login
 trap cleanup EXIT #always run cleanup
 
-msg="Setup: Try unassigning $userId if assigned. should return 400 if not assigned."
+msg="Setup: Try unassigning $userId from seat if assigned. Should return 400 if not assigned."
 echo $msg
 curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["'$userId'"]}' || info "$userId not assigned yet. continuing..."
 
-msg="Granting license to $userId (should succeed)"
+msg="Granting seat to $userId (should succeed)"
 echo "Test: $msg"
 curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"assign": ["'$userId'"]}' || fail "Failed request: $msg"
 
@@ -91,7 +91,7 @@ echo "Test: $msg"
 ret=`( curl --silent --fail -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" $baseUri/v1alpha/orgs/$orgId/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "'$userId'")'`
 assert "$ret = true" "$msg"
 
-msg="Revoking license for $userId (should succeed)"
+msg="Revoking seat for $userId (should succeed)"
 echo "Test: $msg"
 curl --fail -X POST $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"unassign": ["'$userId'"]}' || fail "Failed request: $msg"
 
@@ -100,7 +100,7 @@ testUserIsAssigned=0 #from this point, the test user is NOT assigned, and does n
 echo "Waiting for quantization interval"
 sleep 5
 
-msg='Getting license counts again - one more should be available'
+msg='Getting license seat counts again - one more should be available'
 echo "Test: $msg"
 newAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg" ) | jq ".seatsAvailable"`
 assert "$previousAvailable -lt $newAvailable" "$msg"
