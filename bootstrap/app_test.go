@@ -41,11 +41,21 @@ func TestCheckErrorsWhenCallerNotAuthorized(t *testing.T) {
 func TestCheckAccess(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
+}
+
+func TestCheckAccessFailsWhenUnauthorized(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "unauthorized_subject", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, 403, resp.StatusCode)
 }
 
 func TestCheckErrorsWhenTokenMissing(t *testing.T) {
@@ -58,20 +68,10 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	assert.Equal(t, 401, resp.StatusCode)
 }
 
-func TestCheckReturnsTrueWhenUserAuthorized(t *testing.T) {
-	setupService(nil)
-	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
-
-	assert.NoError(t, err)
-
-	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
-}
-
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "no_particular_org", false, `{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "no_particular_org", false, `{"subject": "not_authorized", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 
 	assert.NoError(t, err)
 
@@ -454,7 +454,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 	//The user isn't licensed initially, use is denied
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "system", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
@@ -469,7 +469,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	container.WaitForQuantizationInterval()
 
 	//Should be allowed now
-	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "system", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -673,6 +673,7 @@ func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 	// Override any config that is there for AuthZ - allow list with test specific data
 	yml["authz"] = make(map[string]interface{}, 0)
 	authzKey := yml["authz"].(map[string]interface{})
+	authzKey["checkWhitelist"] = []string{"checker"}
 	authzKey["licenseImportWhitelist"] = []string{"system"}
 
 	if userService != nil {

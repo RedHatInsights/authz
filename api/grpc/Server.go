@@ -303,6 +303,11 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 		return nil, err
 	}
 
+	if !sliceContains(s.ServiceConfig.AuthzConfig.CheckWhiteList, requestor) {
+		glog.Infof("Received CheckPermission from Requestor: %s. Requestor not authorized. Request: %v", requestor, rpcReq)
+		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+	}
+
 	req := application.CheckRequest{
 		Requestor:    requestor,
 		Subject:      rpcReq.Subject,
