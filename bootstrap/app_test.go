@@ -717,9 +717,9 @@ func waitForSuccess(reqFactory func() *http.Request) error {
 
 	for {
 		req := reqFactory()
-		resp, err := http.DefaultClient.Do(req)
+		_, err := http.DefaultClient.Do(req)
 
-		if err == nil && resp.StatusCode == http.StatusOK {
+		if err == nil {
 			return nil
 		}
 
