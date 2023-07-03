@@ -74,6 +74,7 @@ type AuthConfig struct {
 
 // AuthzConfig holds the configuration for the list of authorized subjects that can Entitle/import org
 type AuthzConfig struct {
+	CheckWhiteList         []string
 	LicenseImportWhitelist []string
 }
 
