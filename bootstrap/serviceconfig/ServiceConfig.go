@@ -9,7 +9,7 @@ const (
 	// SpicedbImage is the image used for containerized spiceDB in tests
 	SpicedbImage = "authzed/spicedb"
 	// SpicedbVersion is the image version used for containerized spiceDB in tests
-	SpicedbVersion = "v1.20.0"
+	SpicedbVersion = "v1.21.0"
 )
 
 // ServiceConfig contains all server-related configuration.
