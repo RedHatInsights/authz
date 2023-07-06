@@ -42,7 +42,6 @@ function client_grant() {
   clienttoken=$(echo "$ctoken_response" | jq -r '.access_token')
 }
 
-
 function fail() {
     echo "$1"
     exit 1
@@ -73,6 +72,7 @@ function cleanup() {
 }
 
 login
+client_grant
 trap cleanup EXIT #always run cleanup
 
 msg="Setup: Try unassigning $userId from seat if assigned. Should return 400 if not assigned."

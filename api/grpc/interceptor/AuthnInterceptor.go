@@ -204,7 +204,7 @@ func validateTokenAndExtractData(p *authnProvider, token string) (result tokenIn
 	result.SubjectID = jwtoken.Subject()
 	result.Org, result.IsOrgAdmin = requestorOrg(jwtoken)
 
-	if result.SubjectID == "" || result.Org == "" {
+	if result.SubjectID == "" {
 		err = domain.ErrNotAuthenticated
 	}
 
