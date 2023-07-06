@@ -154,7 +154,7 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 		return nil, err
 	}
 
-	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
+	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportAllowlist, requestor) {
 		glog.Infof("Received request to entitle Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", entitleOrgReq.OrgId, requestor)
 		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
@@ -186,7 +186,7 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 		return nil, err
 	}
 
-	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportWhitelist, requestor) {
+	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportAllowlist, requestor) {
 		glog.Infof("Received request to import Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", importReq.OrgId, requestor)
 		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}
@@ -303,7 +303,7 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 		return nil, err
 	}
 
-	if !sliceContains(s.ServiceConfig.AuthzConfig.CheckWhiteList, requestor) {
+	if !sliceContains(s.ServiceConfig.AuthzConfig.CheckAllowList, requestor) {
 		glog.Infof("Received CheckPermission from Requestor: %s. Requestor not authorized. Request: %v", requestor, rpcReq)
 		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
 	}

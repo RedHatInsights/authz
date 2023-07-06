@@ -673,8 +673,8 @@ func writeTestEnvToYaml(token string, userService *testenv.FakeUserServiceAPI) {
 	// Override any config that is there for AuthZ - allow list with test specific data
 	yml["authz"] = make(map[string]interface{}, 0)
 	authzKey := yml["authz"].(map[string]interface{})
-	authzKey["checkWhitelist"] = []string{"checker"}
-	authzKey["licenseImportWhitelist"] = []string{"system"}
+	authzKey["checkAllowlist"] = []string{"checker"}
+	authzKey["licenseImportAllowlist"] = []string{"system"}
 
 	if userService != nil {
 		userServiceKey := yml["userservice"].(map[string]interface{})

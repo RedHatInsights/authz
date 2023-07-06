@@ -21,7 +21,7 @@ auth:
         requiredScope: openid # used when auth in enabled, the required scopes to validate for in the given token
 
 authz: #
-    licenseImportWhitelist: # List of authorized/allowed subject IDs that can Entitle/Import Orgs
+    licenseImportAllowlist: # List of authorized/allowed subject IDs that can Entitle/Import Orgs
     #    - subjectID1
     #    - SubjectID2
 
