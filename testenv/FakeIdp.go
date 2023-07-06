@@ -88,8 +88,8 @@ func HostFakeIdp() {
 	}
 }
 
-// CreateToken creates a new jwt token for a given SubjectID, orgID and isOrgAdmin values
-func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
+// CreateInteractiveToken creates a new jwt token for a given SubjectID, orgID and isOrgAdmin values representing an interactive user
+func CreateInteractiveToken(subject string, orgID string, isOrgAdmin bool) string {
 	if subject == "" {
 		return ""
 	}
@@ -102,6 +102,36 @@ func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
 		Claim("scope", testRequiredScope).
 		Claim("org_id", orgID).
 		Claim("is_org_admin", isOrgAdmin).
+		Build()
+
+	if err != nil {
+		panic(err)
+	}
+
+	token, err := jwt.Sign(data, jwt.WithKey(jwa.RS256, tokenSigningKey))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return fmt.Sprintf("bearer %s", token)
+}
+
+// CreateServiceAccountToken creates a new jwt token representing a service account
+func CreateServiceAccountToken(subject string, orgID string) string {
+	if subject == "" {
+		return ""
+	}
+
+	data, err := jwt.NewBuilder().
+		Issuer(testIssuer).
+		IssuedAt(time.Now()).
+		Audience([]string{testAudience}).
+		Subject(subject).
+		Claim("scope", "api.iam.access openid").
+		Claim("organization.id", orgID).
+		Claim("org_id", orgID).
+		Claim("is_org_admin", true).
 		Build()
 
 	if err != nil {

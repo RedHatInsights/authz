@@ -48,6 +48,16 @@ func TestCheckAccess(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
 
+func TestCheckAccessWithServiceAccount(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+	resp, err := http.DefaultClient.Do(post_withtoken("/v1alpha/check", testenv.CreateServiceAccountToken("checker", "no_particular_org"), `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
+	assert.NoError(t, err)
+
+	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
+}
+
 func TestCheckAccessFailsWhenUnauthorized(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
@@ -580,11 +590,15 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func get(relativeURI string, subject string, orgID string, isOrgAdmin bool) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), "")
+	return createRequest(http.MethodGet, relativeURI, testenv.CreateInteractiveToken(subject, orgID, isOrgAdmin), "")
+}
+
+func post_withtoken(relativeURI string, token string, body string) *http.Request {
+	return createRequest(http.MethodPost, relativeURI, token, body)
 }
 
 func post(relativeURI string, subject string, orgID string, isOrgAdmin bool, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), body)
+	return post_withtoken(relativeURI, testenv.CreateInteractiveToken(subject, orgID, isOrgAdmin), body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {
