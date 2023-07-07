@@ -96,12 +96,12 @@ sleep 5
 msg="Checking access for $userId (should succeed)"
 echo "Test: $msg"
 ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $clienttoken" -d '{"subject": "'$userId'", "operation": "access", "resourcetype": "license", "resourceid": "'$orgId'/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
-assert "$ret = true" "$msg"
+assert "\"$ret\" = \"true\"" "$msg"
 
 msg="Checking if $userId is included in the list of assigned users"
 echo "Test: $msg"
 ret=`( curl --silent --fail -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" $baseUri/v1alpha/orgs/$orgId/licenses/smarts/seats || fail "Failed request: $msg") | jq 'any(.users[]; .id == "'$userId'")'`
-assert "$ret = true" "$msg"
+assert "\"$ret\" = \"true\"" "$msg"
 
 msg="Revoking seat for $userId (should succeed)"
 echo "Test: $msg"
@@ -120,6 +120,6 @@ assert "$previousAvailable -lt $newAvailable" "$msg"
 msg="Checking access for $userId again (should return false)"
 echo "Test: $msg"
 ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $clienttoken" -d '{"subject": "'$userId'", "operation": "access", "resourcetype": "license", "resourceid": "'$orgId'/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
-assert "$ret = false" "$msg"
+assert "\"$ret\" = \"false\"" "$msg"
 
 echo "PASSED ALL TESTS"
