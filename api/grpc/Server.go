@@ -54,8 +54,8 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 	}
 
 	return &core.GetLicenseResponse{
-		SeatsTotal:     int32(limit),
-		SeatsAvailable: int32(available),
+		SeatsTotal:     int64(limit),
+		SeatsAvailable: int64(available),
 	}, nil
 }
 

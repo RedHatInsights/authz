@@ -37,8 +37,8 @@ message GetLicenseRequest {
 }
 
 message GetLicenseResponse {
-  sint32 seatsTotal = 1; // Total number of seats assignable.
-  sint32 seatsAvailable = 2; // Current number of available seats which can be assigned.
+  int64 seatsTotal = 1; // Total number of seats assignable.
+  int64 seatsAvailable = 2; // Current number of available seats which can be assigned.
 }
 
 // ModifySeatsRequest assuming we get the userId etc from the requester in the authorization header to validate if an "admin" can actually add licenses.
