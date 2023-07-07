@@ -329,12 +329,12 @@ definitions:
     type: object
     properties:
       seatsTotal:
-        type: integer
-        format: int32
+        type: string
+        format: int64
         description: Total number of seats assignable.
       seatsAvailable:
-        type: integer
-        format: int32
+        type: string
+        format: int64
         description: Current number of available seats which can be assigned.
   v1alphaGetSeatsResponse:
     type: object

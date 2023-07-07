@@ -444,13 +444,13 @@ components:
       type: object
       properties:
         seatsTotal:
-          type: integer
+          type: string
           description: Total number of seats assignable.
-          format: int32
+          format: int64
         seatsAvailable:
-          type: integer
+          type: string
           description: Current number of available seats which can be assigned.
-          format: int32
+          format: int64
     v1alphaGetSeatsResponse:
       type: object
       properties:
