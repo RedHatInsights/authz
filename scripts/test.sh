@@ -75,7 +75,7 @@ testUserIsAssigned=1 #from this point, the test user is assigned and must be una
 
 msg="Getting number of seats available - should be less than the license allows. License allows (param): $maxSeats"
 echo "Test: $msg"
-previousAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg") | jq ".seatsAvailable"`
+previousAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg") | jq ".seatsAvailable|tonumber"`
 assert "$previousAvailable -lt $maxSeats" "$msg"
 
 echo "Waiting for quantization interval"
@@ -102,7 +102,7 @@ sleep 5
 
 msg='Getting license seat counts again - one more should be available'
 echo "Test: $msg"
-newAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg" ) | jq ".seatsAvailable"`
+newAvailable=`( curl --silent --fail $baseUri/v1alpha/orgs/$orgId/licenses/smarts -H "Origin: http://smoketest.test" -H "Authorization:Bearer $token" || fail "Failed request: $msg" ) | jq ".seatsAvailable|tonumber"`
 assert "$previousAvailable -lt $newAvailable" "$msg"
 
 msg="Checking access for $userId again (should return false)"
