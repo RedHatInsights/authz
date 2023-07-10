@@ -166,7 +166,7 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 
 	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":"25", "seatsTotal": "25"}`)
 
 	container.WaitForQuantizationInterval()
 
@@ -335,20 +335,20 @@ func TestEntitleOrgSucceedstWithExistingOrgAndNewLicenses(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/foobar", "system", "o2", true, `{
-			"maxSeats": 25
+			"maxSeats": "25"
 		}`))
 
 	assert.NoError(t, err)
 	_, err = http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/foobar", "system", "o2", true))
 	assert.NoError(t, err)
 	_, err = http.DefaultClient.Do(post("/v1alpha/orgs/o2/entitlements/bazbar", "system", "o2", true, `{
-			"maxSeats": 20
+			"maxSeats": "20"
 		}`))
 
 	assert.NoError(t, err)
 	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o2/licenses/bazbar", "system", "o2", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":20, "seatsTotal": 20}`)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":"20", "seatsTotal": "20"}`)
 }
 
 func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *testing.T) {
@@ -375,14 +375,14 @@ func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *te
 	defer teardownService()
 
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/"+expectedOrg+"/entitlements/foo", "system", "oNoUsers", true, `{
-			"maxSeats": 25
+			"maxSeats": "25"
 		}`))
 
 	assert.NoError(t, err)
 
 	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo", "system", "oNoUsers", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":"25", "seatsTotal": "25"}`)
 
 	container.WaitForQuantizationInterval()
 	//round trip: check users were imported and are assignable.
@@ -397,14 +397,14 @@ func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
 	defer teardownService()
 
 	_, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system", "o3", true, `{
-			"maxSeats": 25
+			"maxSeats": "25"
 		}`))
 
 	assert.NoError(t, err)
 
 	resp2, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+	assertJSONResponse(t, resp2, 200, `{"seatsAvailable":"25", "seatsTotal": "25"}`)
 
 	resp, err := http.DefaultClient.Do(post("/v1alpha/orgs/o3/entitlements/foobar", "system", "o3", true, `{
 			"maxSeats": 24
@@ -415,7 +415,7 @@ func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
 	//to make sure the license didn't get messed up we also assert that the seatcount is the expected one
 	resp4, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar", "system", "o3", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp4, 200, `{"seatsAvailable":25, "seatsTotal": 25}`)
+	assertJSONResponse(t, resp4, 200, `{"seatsAvailable":"25", "seatsTotal": "25"}`)
 }
 
 func TestEntitleOrgFailsWithNegativeMaxSeatsValue(t *testing.T) {
@@ -480,7 +480,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":8, "seatsTotal": 10}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":"8", "seatsTotal": "10"}`)
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system", "o1", true))
 	assert.NoError(t, err)
@@ -499,7 +499,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts", "system", "o1", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"seatsAvailable":7, "seatsTotal": 10}`)
+	assertJSONResponse(t, resp, 200, `{"seatsAvailable":"7", "seatsTotal": "10"}`)
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system", "o1", true))
 	assert.NoError(t, err)
