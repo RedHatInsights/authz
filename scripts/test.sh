@@ -110,4 +110,4 @@ echo "Test: $msg"
 ret=`( curl --silent --fail -X POST $baseUri/v1alpha/check -H "Origin: http://smoketest.test" -H "Content-Type: application/json" -H "Authorization:Bearer $token" -d '{"subject": "'$userId'", "operation": "access", "resourcetype": "license", "resourceid": "'$orgId'/smarts"}' || fail "Failed request: $msg" ) | jq ".result"`
 assert "$ret = false" "$msg"
 
-echo "PASSED ALL TESTS"
+echo "PASSED ALL TESTS!"
