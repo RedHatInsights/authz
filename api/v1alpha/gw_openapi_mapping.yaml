@@ -72,4 +72,4 @@ openapiOptions:
       option:
         summary: Health check for the AuthZ service.
         description: >
-          Health check endpoint for the "authz" service, returns "HTTP 200 OK" if the service is health (up and running)          
+          Health check endpoint for the "authz" service, returns "HTTP 200 OK" if the service is healthy (up and running)          
