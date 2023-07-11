@@ -68,4 +68,8 @@ openapiOptions:
         summary: Entitle an Org access through a seat based license for a service.
         description: >
           Grants a given Org a seat based license to a given service. A maximum number of entitled seats
-          
+    - method: api.v1alpha.HealthCheckService.HealthCheck
+      option:
+        summary: Health check for the AuthZ service.
+        description: >
+          Health check endpoint for the "authz" service, returns "HTTP 200 OK" if the service is health (up and running)          

@@ -144,6 +144,9 @@ func getProviderData(discoveryEndpoint string) (data providerJSON, err error) {
 func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 
+		if info.FullMethod == "/api.v1alpha.HealthCheckService/HealthCheck" {
+			return handler(ctx, req)
+		}
 		token := getBearerTokenFromContext(ctx)
 
 		if token == "" {

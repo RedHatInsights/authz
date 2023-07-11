@@ -207,6 +207,11 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 	}, nil
 }
 
+// HealthCheck - heathcheck implementation returns 200 OK
+func (s *Server) HealthCheck(_ context.Context, _ *core.Empty) (*core.Empty, error) {
+	return &core.Empty{}, nil
+}
+
 func sliceContains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
@@ -264,6 +269,7 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
 	}
 
+	core.RegisterHealthCheckServiceServer(s.srv, s)
 	core.RegisterCheckPermissionServer(s.srv, s)
 	core.RegisterLicenseServiceServer(s.srv, s)
 	core.RegisterImportServiceServer(s.srv, s)

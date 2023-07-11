@@ -14,6 +14,7 @@ tags:
 - name: CheckPermission
 - name: LicenseService
 - name: ImportService
+- name: HealthCheckService
 - name: AuthZ
   description: Everything about your AuthZ
   externalDocs:
@@ -73,6 +74,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/rpcStatus'
       x-codegen-request-body-name: body
+  /v1alpha/healthcheck:
+    get:
+      tags:
+      - HealthCheckService
+      summary: Health check for the AuthZ service.
+      description: "Health check endpoint for the \"authz\" service, returns \"HTTP\
+        \ 200 OK\" if the service is health (up and running)          \n"
+      operationId: HealthCheckService_HealthCheck
+      responses:
+        "200":
+          description: A successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1alphaEmpty'
+        "401":
+          description: Returned when no valid identity information provided to a protected
+            endpoint.
+          content:
+            application/json:
+              schema:
+                type: object
+        "403":
+          description: Returned when the user does not have permission to access the
+            resource.
+          content:
+            application/json:
+              schema:
+                type: object
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rpcStatus'
   /v1alpha/orgs/{orgId}/entitlements/{serviceId}:
     post:
       tags:
@@ -437,6 +479,8 @@ components:
           type: boolean
         description:
           type: string
+    v1alphaEmpty:
+      type: object
     v1alphaEntitleOrgResponse:
       title: EntitleOrgResponse is the response when entitling an org
       type: object
