@@ -567,6 +567,29 @@ func TestCors_AllowAllOrigins(t *testing.T) {
 	assertJSONResponse(t, resp, 200, `{}`)
 }
 
+func TestHealthCheck_NoTokenInReq(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+
+	req := createRequest(http.MethodGet, "/v1alpha/healthcheck", "", "")
+
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.StatusCode, 200)
+}
+
+func TestHealthCheck_TokenInReq(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+
+	req := get("/v1alpha/healthcheck", "okay", "o1", true)
+
+	resp, err := http.DefaultClient.Do(req)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.StatusCode, 200)
+}
+
+// Test helper methods start
 func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
 	if assert.NotNil(t, resp) {
 		assert.Equal(t, statusCode, resp.StatusCode)

@@ -20,3 +20,5 @@ http:
     - selector: api.v1alpha.ImportService.ImportOrg
       post: /v1alpha/orgs/{orgId}/import
       body: "*"
+    - selector: api.v1alpha.HealthCheckService.HealthCheck
+      get: /v1alpha/healthcheck

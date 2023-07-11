@@ -13,6 +13,9 @@
     },
     {
       "name": "ImportService"
+    },
+    {
+      "name": "HealthCheckService"
     }
   ],
   "consumes": [
@@ -51,6 +54,28 @@
         ],
         "tags": [
           "CheckPermission"
+        ]
+      }
+    },
+    "/v1alpha/healthcheck": {
+      "get": {
+        "operationId": "HealthCheckService_HealthCheck",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alphaEmpty"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "HealthCheckService"
         ]
       }
     },
@@ -360,6 +385,9 @@
           "type": "string"
         }
       }
+    },
+    "v1alphaEmpty": {
+      "type": "object"
     },
     "v1alphaEntitleOrgResponse": {
       "type": "object",

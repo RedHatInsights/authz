@@ -13,6 +13,8 @@
     "name" : "LicenseService"
   }, {
     "name" : "ImportService"
+  }, {
+    "name" : "HealthCheckService"
   } ],
   "paths" : {
     "/v1alpha/check" : {
@@ -52,6 +54,34 @@
           }
         },
         "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/healthcheck" : {
+      "get" : {
+        "tags" : [ "HealthCheckService" ],
+        "operationId" : "HealthCheckService_HealthCheck",
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaEmpty"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1alpha/orgs/{orgId}/entitlements/{serviceId}" : {
@@ -401,6 +431,9 @@
             "type" : "string"
           }
         }
+      },
+      "v1alphaEmpty" : {
+        "type" : "object"
       },
       "v1alphaEntitleOrgResponse" : {
         "title" : "EntitleOrgResponse is the response when entitling an org",

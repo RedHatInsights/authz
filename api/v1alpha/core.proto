@@ -99,3 +99,21 @@ message ImportOrgResponse {
   uint64 importedUsersCount = 1; // Count of how many users were imported
   uint64 notImportedUsersCount = 2; // Count of how many users were not imported, e.g. because they already exist
 }
+
+// A generic empty message that you can re-use to avoid defining duplicated
+// empty messages in your APIs. A typical example is to use it as the request
+// or the response type of an API method. For instance:
+//
+//     service Foo {
+//       rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+//     }
+//
+
+message Empty {
+
+}
+
+// Health check - No token required , no request or response params, just returns 200 OK if service is running
+service HealthCheckService {
+  rpc HealthCheck (Empty) returns (Empty) {}
+}

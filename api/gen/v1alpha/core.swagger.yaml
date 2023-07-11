@@ -12,6 +12,7 @@ tags:
   - name: CheckPermission
   - name: LicenseService
   - name: ImportService
+  - name: HealthCheckService
   - name: AuthZ
     description: Everything about your AuthZ
     externalDocs:
@@ -62,6 +63,31 @@ paths:
             $ref: '#/definitions/v1alphaCheckPermissionRequest'
       tags:
         - CheckPermission
+  /v1alpha/healthcheck:
+    get:
+      summary: Health check for the AuthZ service.
+      description: "Health check endpoint for the \"authz\" service, returns \"HTTP 200 OK\" if the service is health (up and running)          \n"
+      operationId: HealthCheckService_HealthCheck
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1alphaEmpty'
+        "401":
+          description: Returned when no valid identity information provided to a protected endpoint.
+          schema: {}
+        "403":
+          description: Returned when the user does not have permission to access the resource.
+          schema: {}
+        "500":
+          description: Returned when an unexpected error occurs during request processing.
+          schema: {}
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - HealthCheckService
   /v1alpha/orgs/{orgId}/entitlements/{serviceId}:
     post:
       summary: Entitle an Org access through a seat based license for a service.
@@ -322,6 +348,8 @@ definitions:
         type: boolean
       description:
         type: string
+  v1alphaEmpty:
+    type: object
   v1alphaEntitleOrgResponse:
     type: object
     title: EntitleOrgResponse is the response when entitling an org
