@@ -9,20 +9,29 @@
 # the `language` matrix defined below to confirm you have the correct set of
 # supported CodeQL languages.
 #
-name: "CodeQL"
+name: "CodeQL analysis"
 
 on:
   push:
-    branches: [ "main","cql_test" ]
+    branches: [ "main"]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+    # do not run on md- or txt-only file changes
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ "main" ]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+    # do not run on md- or txt-only file changes
   schedule:
-    - cron: '0/10 * * * *'
+    - cron: '0 0 * * *'
+  # ^ also scan every 24h at 12am because even if the code didn't change, the database may have changed.
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze code via CodeQL
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
