@@ -643,7 +643,7 @@ func setupService(fakeUserService *testenv.FakeUserServiceAPI) {
 
 	go Run(temporaryConfigFile.Name())
 	err = waitForSuccess(func() *http.Request { //Repeat a check permission request until it succeeds or a timeout is reached
-		return post("/v1alpha/check", "system", "o3", true, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`)
+		return get("/v1alpha/healthcheck", "system", "o3", true)
 	})
 
 	if err != nil {
@@ -741,9 +741,9 @@ func waitForSuccess(reqFactory func() *http.Request) error {
 
 	for {
 		req := reqFactory()
-		_, err := http.DefaultClient.Do(req)
+		resp, err := http.DefaultClient.Do(req)
 
-		if err == nil {
+		if err == nil && resp.StatusCode == http.StatusOK {
 			return nil
 		}
 
