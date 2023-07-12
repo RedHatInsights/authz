@@ -29,6 +29,11 @@ on:
     - cron: '0 0 * * *'
   # ^ also scan every 24h at 12am because even if the code didn't change, the database may have changed.
 
+concurrency:
+  # Cancel in-progress runs on PR update
+  group: ci-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze code via CodeQL
