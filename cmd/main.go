@@ -18,6 +18,8 @@ import (
 // main bootstrapping the current composition of the service
 func main() {
 
+	//TEST PR
+
 	// Always log to stderr by default
 	if err := flag.Set("logtostderr", "true"); err != nil {
 		glog.Warningf("Unable to log to stderr by default. Using stdout.")
