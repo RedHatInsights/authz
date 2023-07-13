@@ -7,11 +7,10 @@ import (
 	"authz/api/http"
 	"authz/application"
 	"authz/bootstrap/serviceconfig"
+	"authz/domain"
 	"authz/domain/contracts"
 	"authz/infrastructure/repository/messaging"
 	"sync"
-
-	"github.com/go-playground/validator/v10"
 
 	"github.com/golang/glog"
 )
@@ -74,12 +73,15 @@ func Run(configPath string) {
 		glog.Errorf("Unable to load configuration: %v", err)
 		return
 	}
-	vl := validator.New()
-	err = vl.Struct(srvCfg)
+
+	err = application.ValidateStruct(srvCfg)
 
 	if err != nil {
-		for _, e := range err.(validator.ValidationErrors) {
-			glog.Errorf("Error in configuration: %v", e)
+		inputErr, ok := err.(domain.ErrInvalidRequest)
+		if ok {
+			glog.Errorf("Error(s) in configuration: %s", inputErr.Reason)
+		} else {
+			glog.Error("Error validating configuration: %+v", err)
 		}
 		glog.Error("Can not start service with invalid configuration.")
 		return

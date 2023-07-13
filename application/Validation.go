@@ -9,8 +9,8 @@ import (
 
 var validatorInstance = initializeValidator()
 
-// ValidateEvent performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
-func ValidateEvent(evt interface{}) error {
+// ValidateStruct performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
+func ValidateStruct(evt interface{}) error {
 	err := validatorInstance.Struct(evt)
 
 	if err != nil {

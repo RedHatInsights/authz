@@ -77,7 +77,7 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 
 // GetSeatAssignmentCounts gets the seat limit and current allocation for a license
 func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (limit int, available int, err error) {
-	err = ValidateEvent(req)
+	err = ValidateStruct(req)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -104,7 +104,7 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 
 // GetSeatAssignments gets the subjects assigned to seats in a license
 func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]domain.Principal, error) {
-	err := ValidateEvent(req)
+	err := ValidateStruct(req)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 // ModifySeats Assign and/or unassign a number of users for a given org and service
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
-	err := ValidateEvent(req)
+	err := ValidateStruct(req)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 
 // HandleOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
 func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
-	err := ValidateEvent(evt)
+	err := ValidateStruct(evt)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
 
 // HandleSubjectAddOrUpdateEvent handles the SubjectAddOrUpdateEvent by adding the user updates to the spicedb schema
 func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectAddOrUpdateEvent) error {
-	err := ValidateEvent(evt)
+	err := ValidateStruct(evt)
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectA
 
 // ImportUsersForOrg imports users for a given orgID and returns a result containing a count of imported and not imported users
 func (s *LicenseAppService) ImportUsersForOrg(evt ImportOrgEvent) (*ImportUsersResult, error) {
-	err := ValidateEvent(evt)
+	err := ValidateStruct(evt)
 	if err != nil {
 		return nil, err
 	}

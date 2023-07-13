@@ -35,7 +35,7 @@ func NewAccessAppService(accessRepo *contracts.AccessRepository, principalRepo c
 
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
 func (p *AccessAppService) Check(req CheckRequest) (domain.AccessDecision, error) {
-	err := ValidateEvent(req)
+	err := ValidateStruct(req)
 	if err != nil {
 		return false, err
 	}
