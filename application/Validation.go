@@ -8,14 +8,10 @@ import (
 	"github.com/golang/glog"
 )
 
-var validatorInstance *validator.Validate
+var validatorInstance = initializeValidator()
 
 // ValidateEvent performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
 func ValidateEvent(evt interface{}) (bool, error) {
-	if validatorInstance == nil {
-		initializeValidator() //TODO: move to startup?
-	}
-
 	err := validatorInstance.Struct(evt)
 
 	if err != nil {
@@ -31,12 +27,13 @@ func ValidateEvent(evt interface{}) (bool, error) {
 	return true, nil
 }
 
-func initializeValidator() {
-	validatorInstance = validator.New()
-	err := validatorInstance.RegisterValidation("spicedb", validateSpiceDbID)
+func initializeValidator() *validator.Validate {
+	vl := validator.New()
+	err := vl.RegisterValidation("spicedb", validateSpiceDbID)
 	if err != nil {
-		glog.Errorf("Failed to register SpiceDB ID validator! Err: %+v", err) //TODO: panic?
+		panic(err)
 	}
+	return vl
 }
 
 var spiceDbIDPattern = regexp.MustCompile(`^(([a-zA-Z0-9/_|\-=+]{1,})|\*)$`)
