@@ -22,39 +22,39 @@ type LicenseAppService struct {
 
 // GetSeatAssignmentRequest represents a request to get the users assigned seats on a license
 type GetSeatAssignmentRequest struct {
-	Requestor    string
-	OrgID        string
-	ServiceID    string
+	Requestor    string `validate:"required,spicedb"`
+	OrgID        string `validate:"required,spicedb"`
+	ServiceID    string `validate:"required,spicedb"`
 	IncludeUsers bool
 	Assigned     bool
 }
 
 // ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
 type ModifySeatAssignmentRequest struct {
-	Requestor string
-	OrgID     string
-	ServiceID string
-	Assign    []string
-	Unassign  []string
+	Requestor string   `validate:"required,spicedb"`
+	OrgID     string   `validate:"required,spicedb"`
+	ServiceID string   `validate:"required,spicedb"`
+	Assign    []string `validate:"dive,required,spicedb"`
+	Unassign  []string `validate:"dive,required,spicedb"`
 }
 
 // GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
 type GetSeatAssignmentCountsRequest struct {
-	Requestor string
-	OrgID     string
-	ServiceID string
+	Requestor string `validate:"required,spicedb"`
+	OrgID     string `validate:"required,spicedb"`
+	ServiceID string `validate:"required,spicedb"`
 }
 
 // OrgEntitledEvent represents an event where an organization has been entitled with a new license
 type OrgEntitledEvent struct {
-	OrgID     string
-	ServiceID string
-	MaxSeats  int
+	OrgID     string `validate:"required,spicedb"`
+	ServiceID string `validate:"required,spicedb"`
+	MaxSeats  int    `validate:"required,gt=0"`
 }
 
 // ImportOrgEvent triggers new user import for an org
 type ImportOrgEvent struct {
-	OrgID string
+	OrgID string `validate:"required,spicedb"`
 }
 
 // ImportUsersResult contains counters for imported and not imported users.
@@ -77,6 +77,11 @@ func NewLicenseAppService(accessRepo contracts.AccessRepository, seatRepo contra
 
 // GetSeatAssignmentCounts gets the seat limit and current allocation for a license
 func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsRequest) (limit int, available int, err error) {
+	ok, err := ValidateEvent(req)
+	if !ok {
+		return 0, 0, err
+	}
+
 	evt := domain.GetLicenseEvent{
 		OrgID:     req.OrgID,
 		ServiceID: req.ServiceID,
@@ -99,6 +104,11 @@ func (s *LicenseAppService) GetSeatAssignmentCounts(req GetSeatAssignmentCountsR
 
 // GetSeatAssignments gets the subjects assigned to seats in a license
 func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]domain.Principal, error) {
+	ok, err := ValidateEvent(req)
+	if !ok {
+		return nil, err
+	}
+
 	evt := domain.GetLicenseEvent{
 		OrgID:     req.OrgID,
 		ServiceID: req.ServiceID,
@@ -109,7 +119,6 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 	seatService := services.NewSeatLicenseService(s.seatRepo, s.accessRepo)
 
 	var resultIds []domain.SubjectID
-	var err error
 	if req.Assigned {
 		resultIds, err = seatService.GetAssignedSeats(evt)
 	} else {
@@ -137,6 +146,11 @@ func (s *LicenseAppService) GetSeatAssignments(req GetSeatAssignmentRequest) ([]
 
 // ModifySeats Assign and/or unassign a number of users for a given org and service
 func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
+	ok, err := ValidateEvent(req)
+	if !ok {
+		return err
+	}
+
 	evt := domain.ModifySeatAssignmentEvent{
 		Org:     domain.Organization{ID: req.OrgID},
 		Service: domain.Service{ID: req.ServiceID},
@@ -161,8 +175,12 @@ func (s *LicenseAppService) ModifySeats(req ModifySeatAssignmentRequest) error {
 
 // HandleOrgEntitledEvent handles the OrgEntitledEvent by storing the license and importing users
 func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
+	ok, err := ValidateEvent(evt)
+	if !ok {
+		return err
+	}
 
-	err := s.seatRepo.ApplyLicense(&domain.License{
+	err = s.seatRepo.ApplyLicense(&domain.License{
 		OrgID:     evt.OrgID,
 		ServiceID: evt.ServiceID,
 		MaxSeats:  evt.MaxSeats,
@@ -184,6 +202,11 @@ func (s *LicenseAppService) HandleOrgEntitledEvent(evt OrgEntitledEvent) error {
 
 // HandleSubjectAddOrUpdateEvent handles the SubjectAddOrUpdateEvent by adding the user updates to the spicedb schema
 func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectAddOrUpdateEvent) error {
+	ok, err := ValidateEvent(evt)
+	if !ok {
+		return err
+	}
+
 	isOrgLicensed, err := s.seatRepo.HasAnyLicense(evt.OrgID)
 	if err != nil {
 		return err
@@ -204,6 +227,11 @@ func (s *LicenseAppService) HandleSubjectAddOrUpdateEvent(evt contracts.SubjectA
 
 // ImportUsersForOrg imports users for a given orgID and returns a result containing a count of imported and not imported users
 func (s *LicenseAppService) ImportUsersForOrg(evt ImportOrgEvent) (*ImportUsersResult, error) {
+	ok, err := ValidateEvent(evt)
+	if !ok {
+		return nil, err
+	}
+
 	// always run import.
 	result, err := s.importUsers(evt.OrgID)
 	if err != nil {

@@ -51,6 +51,33 @@ func TestOrgEnablement(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
+func TestOrgEnablementWithNegativeSeats(t *testing.T) {
+	service, _ := createService(nil, nil)
+	evt := OrgEntitledEvent{
+		OrgID:     "o1",
+		ServiceID: "smarts",
+		MaxSeats:  -1,
+	}
+
+	err := service.HandleOrgEntitledEvent(evt)
+
+	var validationErr domain.ErrInvalidRequest
+
+	assert.ErrorAs(t, err, &validationErr)
+}
+
+func TestOrgImportWithImproperOrgID(t *testing.T) {
+	service, _ := createService(nil, nil)
+	evt := ImportOrgEvent{
+		OrgID: "!!!",
+	}
+
+	_, err := service.ImportUsersForOrg(evt)
+	var validationErr domain.ErrInvalidRequest
+	assert.ErrorAs(t, err, &validationErr)
+
+}
+
 func TestSameOrgAndServiceAddedTwiceNotPossible(t *testing.T) {
 	//Given
 	service, _ := createService(nil, nil)

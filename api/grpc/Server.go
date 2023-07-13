@@ -342,6 +342,8 @@ func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (strin
 }
 
 func convertDomainErrorToGrpc(err error) error {
+	var validationErr domain.ErrInvalidRequest
+
 	switch {
 	case errors.Is(err, domain.ErrNotAuthenticated):
 		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
@@ -351,6 +353,8 @@ func convertDomainErrorToGrpc(err error) error {
 		return status.Error(codes.FailedPrecondition, "License limits exceeded.")
 	case errors.Is(err, domain.ErrConflict):
 		return status.Error(codes.FailedPrecondition, "Conflict")
+	case errors.As(err, &validationErr):
+		return status.Error(codes.InvalidArgument, validationErr.Reason)
 	default:
 		return status.Error(codes.Unknown, "Internal server error.")
 	}

@@ -9,7 +9,18 @@ var ErrNotAuthorized = errors.New("NotAuthorized")
 var ErrNotAuthenticated = errors.New("NotAuthenticated")
 
 // ErrInvalidRequest is returned when some part of the request is incompatible with another part.
-var ErrInvalidRequest = errors.New("InvalidRequest")
+type ErrInvalidRequest struct {
+	error
+	Reason string
+}
+
+// NewErrInvalidRequest creates a new InvalidRequest error for the given reason
+func NewErrInvalidRequest(reason string) ErrInvalidRequest {
+	return ErrInvalidRequest{
+		error:  errors.New("InvalidRequest"),
+		Reason: reason,
+	}
+}
 
 // ErrLicenseLimitExceeded is returned when an operation attempts to allocate more licenses than are available
 var ErrLicenseLimitExceeded = errors.New("LicenseLimitExceeded")

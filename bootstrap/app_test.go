@@ -589,6 +589,17 @@ func TestHealthCheck_TokenInReq(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, 200)
 }
 
+func TestInvalidRequest(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "no_particular_org", false, `{"subject": "!!!", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
+	assert.NoError(t, err)
+
+	assertJSONResponse(t, resp, 400, `{"code":3,"message":"Key: 'CheckRequest.Subject' Error:Field validation for 'Subject' failed on the 'spicedb' tag","details":[]}`)
+}
+
 // Test helper methods start
 func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, template string, args ...interface{}) {
 	if assert.NotNil(t, resp) {
