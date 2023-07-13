@@ -5,26 +5,24 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang/glog"
 )
 
 var validatorInstance = initializeValidator()
 
 // ValidateEvent performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
-func ValidateEvent(evt interface{}) (bool, error) {
+func ValidateEvent(evt interface{}) error {
 	err := validatorInstance.Struct(evt)
 
 	if err != nil {
 		errors, ok := err.(validator.ValidationErrors)
 		if !ok {
-			glog.Errorf("Failed to validate message %+v. Error: %+v", evt, err)
-			return false, nil
+			return err
 		}
 
-		return false, domain.NewErrInvalidRequest(errors.Error())
+		return domain.NewErrInvalidRequest(errors.Error())
 	}
 
-	return true, nil
+	return nil
 }
 
 func initializeValidator() *validator.Validate {
