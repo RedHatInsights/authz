@@ -34,8 +34,8 @@ type ModifySeatAssignmentRequest struct {
 	Requestor string   `validate:"required,spicedb"`
 	OrgID     string   `validate:"required,spicedb"`
 	ServiceID string   `validate:"required,spicedb"`
-	Assign    []string `validate:"dive,required,spicedb"`
-	Unassign  []string `validate:"dive,required,spicedb"`
+	Assign    []string `validate:"unique,dive,required,spicedb"`
+	Unassign  []string `validate:"unique,dive,required,spicedb"`
 }
 
 // GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
