@@ -22,39 +22,39 @@ type LicenseAppService struct {
 
 // GetSeatAssignmentRequest represents a request to get the users assigned seats on a license
 type GetSeatAssignmentRequest struct {
-	Requestor    string `validate:"required,spicedb"`
-	OrgID        string `validate:"required,spicedb"`
-	ServiceID    string `validate:"required,spicedb"`
+	Requestor    string `validate:"required,spicedb-id"`
+	OrgID        string `validate:"required,spicedb-id"`
+	ServiceID    string `validate:"required,spicedb-id"`
 	IncludeUsers bool
 	Assigned     bool
 }
 
 // ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
 type ModifySeatAssignmentRequest struct {
-	Requestor string   `validate:"required,spicedb"`
-	OrgID     string   `validate:"required,spicedb"`
-	ServiceID string   `validate:"required,spicedb"`
-	Assign    []string `validate:"unique,dive,required,spicedb"`
-	Unassign  []string `validate:"unique,dive,required,spicedb"`
+	Requestor string   `validate:"required,spicedb-id"`
+	OrgID     string   `validate:"required,spicedb-id"`
+	ServiceID string   `validate:"required,spicedb-id"`
+	Assign    []string `validate:"unique,dive,required,spicedb-id"`
+	Unassign  []string `validate:"unique,dive,required,spicedb-id"`
 }
 
 // GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
 type GetSeatAssignmentCountsRequest struct {
-	Requestor string `validate:"required,spicedb"`
-	OrgID     string `validate:"required,spicedb"`
-	ServiceID string `validate:"required,spicedb"`
+	Requestor string `validate:"required,spicedb-id"`
+	OrgID     string `validate:"required,spicedb-id"`
+	ServiceID string `validate:"required,spicedb-id"`
 }
 
 // OrgEntitledEvent represents an event where an organization has been entitled with a new license
 type OrgEntitledEvent struct {
-	OrgID     string `validate:"required,spicedb"`
-	ServiceID string `validate:"required,spicedb"`
+	OrgID     string `validate:"required,spicedb-id"`
+	ServiceID string `validate:"required,spicedb-id"`
 	MaxSeats  int    `validate:"required,gt=0"`
 }
 
 // ImportOrgEvent triggers new user import for an org
 type ImportOrgEvent struct {
-	OrgID string `validate:"required,spicedb"`
+	OrgID string `validate:"required,spicedb-id"`
 }
 
 // ImportUsersResult contains counters for imported and not imported users.
