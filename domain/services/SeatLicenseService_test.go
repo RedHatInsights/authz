@@ -256,6 +256,7 @@ func assertLicenseCountIsCorrect(t *testing.T, lic *SeatLicenseService) {
 	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
 }
 
+// Added in place of an input validation rule that at least one of the slices has content
 func TestModifySeatsRequestWithNoSubjectsIsNoOp(t *testing.T) {
 	store := spicedbSeatLicenseRepository()
 	service := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
@@ -282,6 +283,7 @@ func TestModifySeatsRequestWithNoSubjectsIsNoOp(t *testing.T) {
 	assert.ElementsMatch(t, seatsBefore, seatsAfter)
 }
 
+// Added in place of an input validation rule that the slices do not overlap
 func TestModifySeatsRequestWithSwappingSameUser(t *testing.T) {
 	store := spicedbSeatLicenseRepository()
 	service := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
