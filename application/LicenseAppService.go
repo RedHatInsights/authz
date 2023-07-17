@@ -22,7 +22,7 @@ type LicenseAppService struct {
 
 // GetSeatAssignmentRequest represents a request to get the users assigned seats on a license
 type GetSeatAssignmentRequest struct {
-	Requestor    string `validate:"required,spicedb-id"`
+	Requestor    string `validate:"required"`
 	OrgID        string `validate:"required,spicedb-id"`
 	ServiceID    string `validate:"required,spicedb-id"`
 	IncludeUsers bool
@@ -31,7 +31,7 @@ type GetSeatAssignmentRequest struct {
 
 // ModifySeatAssignmentRequest represents a request to assign and/or unassign seat licenses
 type ModifySeatAssignmentRequest struct {
-	Requestor string   `validate:"required,spicedb-id"`
+	Requestor string   `validate:"required"`
 	OrgID     string   `validate:"required,spicedb-id"`
 	ServiceID string   `validate:"required,spicedb-id"`
 	Assign    []string `validate:"unique,dive,required,spicedb-id"`
@@ -40,7 +40,7 @@ type ModifySeatAssignmentRequest struct {
 
 // GetSeatAssignmentCountsRequest represents a request to get the seats limit and current allocation for a license
 type GetSeatAssignmentCountsRequest struct {
-	Requestor string `validate:"required,spicedb-id"`
+	Requestor string `validate:"required"`
 	OrgID     string `validate:"required,spicedb-id"`
 	ServiceID string `validate:"required,spicedb-id"`
 }
