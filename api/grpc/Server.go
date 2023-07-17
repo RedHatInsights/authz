@@ -354,8 +354,10 @@ func convertDomainErrorToGrpc(err error) error {
 	case errors.Is(err, domain.ErrConflict):
 		return status.Error(codes.FailedPrecondition, "Conflict")
 	case errors.As(err, &validationErr):
+		glog.Errorf("Validation error: %s", validationErr.Reason)
 		return status.Error(codes.InvalidArgument, validationErr.Reason)
 	default:
+		glog.Errorf("Unhandled error: %+v", err)
 		return status.Error(codes.Unknown, "Internal server error.")
 	}
 }
