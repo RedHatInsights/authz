@@ -141,8 +141,8 @@ func getProviderData(discoveryEndpoint string) (data providerJSON, err error) {
 }
 
 // Unary impl of the Unary interceptor
-func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
-	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (authnInterceptor *AuthnInterceptor) Unary() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 
 		if info.FullMethod == "/api.v1alpha.HealthCheckService/HealthCheck" {
 			return handler(ctx, req)
@@ -166,7 +166,7 @@ func (authnInterceptor *AuthnInterceptor) Unary() grpc.ServerOption {
 		ctx = context.WithValue(ctx, IsRequestorOrgAdminContextKey, result.IsOrgAdmin)
 
 		return handler(ctx, req)
-	})
+	}
 }
 
 func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractData(token string) (result tokenIntrospectionResult, err error) {

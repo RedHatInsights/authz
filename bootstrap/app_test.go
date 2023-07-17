@@ -597,7 +597,7 @@ func TestInvalidRequest(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assertJSONResponse(t, resp, 400, `{"code":3,"message":"Key: 'CheckRequest.Subject' Error:Field validation for 'Subject' failed on the 'spicedb' tag","details":[]}`)
+	assertJSONResponse(t, resp, 400, `{"code":3,"message":"Key: 'CheckRequest.Subject' Error:Field validation for 'Subject' failed on the 'spicedb-id' tag","details":[]}`)
 }
 
 // Test helper methods start

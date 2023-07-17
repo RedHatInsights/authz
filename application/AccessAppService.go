@@ -17,11 +17,11 @@ type AccessAppService struct {
 
 // CheckRequest is an actual request to check for permissions.
 type CheckRequest struct {
-	Requestor    string `validate:"required,spicedb"`
-	Subject      string `validate:"required,spicedb"`
-	ResourceType string `validate:"required,spicedb"`
-	ResourceID   string `validate:"required,spicedb"`
-	Operation    string `validate:"required"` //How to constrain further? List of values?
+	Requestor    string `validate:"required,spicedb-id"`
+	Subject      string `validate:"required,spicedb-id"`
+	ResourceType string `validate:"required,spicedb-type"`
+	ResourceID   string `validate:"required,spicedb-id"`
+	Operation    string `validate:"required,spicedb-permission"` //How to constrain further? List of values?
 }
 
 // NewAccessAppService returns a new instance of the permissionhandler.
@@ -35,8 +35,8 @@ func NewAccessAppService(accessRepo *contracts.AccessRepository, principalRepo c
 
 // Check calls the domainservice using a CheckEvent and can be used with every server impl if wanted.
 func (p *AccessAppService) Check(req CheckRequest) (domain.AccessDecision, error) {
-	ok, err := ValidateEvent(req)
-	if !ok {
+	err := ValidateStruct(req)
+	if err != nil {
 		return false, err
 	}
 

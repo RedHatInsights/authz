@@ -5,42 +5,59 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/golang/glog"
 )
 
-var validatorInstance *validator.Validate
+var validatorInstance = initializeValidator()
 
-// ValidateEvent performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
-func ValidateEvent(evt interface{}) (bool, error) {
-	if validatorInstance == nil {
-		initializeValidator() //TODO: move to startup?
-	}
-
+// ValidateStruct performs validation on the provided event struct and returns true if the struct is valid, else it returns false and an error message object
+func ValidateStruct(evt interface{}) error {
 	err := validatorInstance.Struct(evt)
 
 	if err != nil {
 		errors, ok := err.(validator.ValidationErrors)
 		if !ok {
-			glog.Errorf("Failed to validate message %+v. Error: %+v", evt, err)
-			return false, nil
+			return err
 		}
 
-		return false, domain.NewErrInvalidRequest(errors.Error())
+		return domain.NewErrInvalidRequest(errors.Error())
 	}
 
-	return true, nil
+	return nil
 }
 
-func initializeValidator() {
-	validatorInstance = validator.New()
-	err := validatorInstance.RegisterValidation("spicedb", validateSpiceDbID)
+func initializeValidator() *validator.Validate {
+	vl := validator.New()
+
+	err := vl.RegisterValidation("spicedb-id", validateSpiceDbID)
 	if err != nil {
-		glog.Errorf("Failed to register SpiceDB ID validator! Err: %+v", err) //TODO: panic?
+		panic(err)
 	}
+
+	err = vl.RegisterValidation("spicedb-permission", validateSpiceDbPermission)
+	if err != nil {
+		panic(err)
+	}
+
+	err = vl.RegisterValidation("spicedb-type", validateSpiceDbType)
+	if err != nil {
+		panic(err)
+	}
+
+	return vl
 }
 
 var spiceDbIDPattern = regexp.MustCompile(`^(([a-zA-Z0-9/_|\-=+]{1,})|\*)$`)
+var spiceDbPermissionPattern = regexp.MustCompile(`^([a-z][a-z0-9_]{1,62}[a-z0-9])?$`)
+var spiceDbTypePattern = regexp.MustCompile(`^([a-z][a-z0-9_]{1,61}[a-z0-9]/)?[a-z][a-z0-9_]{1,62}[a-z0-9]$`)
 
 func validateSpiceDbID(fl validator.FieldLevel) bool {
 	return spiceDbIDPattern.MatchString(fl.Field().String())
+}
+
+func validateSpiceDbPermission(fl validator.FieldLevel) bool {
+	return spiceDbPermissionPattern.MatchString(fl.Field().String())
+}
+
+func validateSpiceDbType(fl validator.FieldLevel) bool {
+	return spiceDbTypePattern.MatchString(fl.Field().String())
 }

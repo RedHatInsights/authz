@@ -15,9 +15,9 @@ func NewPassthroughAuthnInterceptor() *PassthroughAuthnInterceptor {
 }
 
 // Unary impl of the Unary passthrough interceptor, returning a static value in the context..
-func (authnInterceptor *PassthroughAuthnInterceptor) Unary() grpc.ServerOption {
-	return grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func (authnInterceptor *PassthroughAuthnInterceptor) Unary() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 
 		return handler(context.WithValue(ctx, RequestorContextKey, "static-subject"), req)
-	})
+	}
 }

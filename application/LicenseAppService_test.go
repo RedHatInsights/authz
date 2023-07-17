@@ -51,6 +51,41 @@ func TestOrgEnablement(t *testing.T) {
 	assert.Equal(t, 20, len(assignable))
 }
 
+func TestModifySeatsRequestElementsAreValidated(t *testing.T) {
+	err := ValidateStruct(ModifySeatAssignmentRequest{
+		Requestor: "system",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+		Assign:    []string{"!!!"},
+		Unassign:  []string{},
+	})
+
+	var validationErr domain.ErrInvalidRequest
+	assert.ErrorAs(t, err, &validationErr)
+}
+
+func TestModifySeatsRequestRequiresUniqueElements(t *testing.T) {
+	var validationErr domain.ErrInvalidRequest
+
+	err := ValidateStruct(ModifySeatAssignmentRequest{
+		Requestor: "system",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+		Assign:    []string{"u1", "u1"},
+		Unassign:  []string{},
+	})
+	assert.ErrorAs(t, err, &validationErr)
+
+	err = ValidateStruct(ModifySeatAssignmentRequest{
+		Requestor: "system",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+		Assign:    []string{},
+		Unassign:  []string{"u1", "u1"},
+	})
+	assert.ErrorAs(t, err, &validationErr)
+}
+
 func TestOrgEnablementWithNegativeSeats(t *testing.T) {
 	service, _ := createService(nil, nil)
 	evt := OrgEntitledEvent{

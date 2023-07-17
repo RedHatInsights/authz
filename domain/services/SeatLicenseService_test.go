@@ -256,6 +256,60 @@ func assertLicenseCountIsCorrect(t *testing.T, lic *SeatLicenseService) {
 	assert.Equal(t, license.InUse, len(seats), "Expected is the number of seats allocated on the license, actual is the number of seats actually assigned.") //Ensure license count is accurate
 }
 
+// Added in place of an input validation rule that at least one of the slices has content
+func TestModifySeatsRequestWithNoSubjectsIsNoOp(t *testing.T) {
+	store := spicedbSeatLicenseRepository()
+	service := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	getevt := domain.GetLicenseEvent{
+		Requestor: "system",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	licBefore, err := service.GetLicense(getevt)
+	assert.NoError(t, err)
+	seatsBefore, err := service.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+
+	err = service.ModifySeats(modifyLicRequestFromVars("system", "o1", []string{}, []string{}))
+	assert.NoError(t, err)
+
+	licAfter, err := service.GetLicense(getevt)
+	assert.NoError(t, err)
+	seatsAfter, err := service.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+
+	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+	assert.ElementsMatch(t, seatsBefore, seatsAfter)
+}
+
+// Added in place of an input validation rule that the slices do not overlap
+func TestModifySeatsRequestWithSwappingSameUser(t *testing.T) {
+	store := spicedbSeatLicenseRepository()
+	service := NewSeatLicenseService(store.(contracts.SeatLicenseRepository), store)
+
+	getevt := domain.GetLicenseEvent{
+		Requestor: "system",
+		OrgID:     "o1",
+		ServiceID: "smarts",
+	}
+	licBefore, err := service.GetLicense(getevt)
+	assert.NoError(t, err)
+	seatsBefore, err := service.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+
+	err = service.ModifySeats(modifyLicRequestFromVars("system", "o1", []string{"noone_in_particular"}, []string{"noone_in_particular"}))
+	assert.Error(t, err) //Should fail on contradicting updates: rpc error: code = InvalidArgument desc = found more than one update with relationship `license_seats:o1/smarts#assigned@user:noone_in_particular` in this request; a relationship can only be specified in an update once per overall WriteRelationships request
+
+	licAfter, err := service.GetLicense(getevt)
+	assert.NoError(t, err)
+	seatsAfter, err := service.GetAssignedSeats(getevt)
+	assert.NoError(t, err)
+
+	assert.Equal(t, licBefore.InUse, licAfter.InUse)
+	assert.ElementsMatch(t, seatsBefore, seatsAfter)
+}
+
 func TestCanSwapWhenLicenseFull(t *testing.T) {
 	//given
 	store := spicedbSeatLicenseRepository()

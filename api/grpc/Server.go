@@ -15,9 +15,7 @@ import (
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 )
 
 // Server represents a Server host service
@@ -40,7 +38,7 @@ func (s *Server) GetLicense(ctx context.Context, grpcReq *core.GetLicenseRequest
 	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
 
 	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	req := application.GetSeatAssignmentCountsRequest{
@@ -71,7 +69,7 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
 
 	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	req := application.ModifySeatAssignmentRequest{
@@ -85,7 +83,7 @@ func (s *Server) ModifySeats(ctx context.Context, grpcReq *core.ModifySeatsReque
 	err = s.LicenseAppService.ModifySeats(req)
 
 	if err != nil {
-		return nil, convertDomainErrorToGrpc(err)
+		return nil, err
 	}
 	return &core.ModifySeatsResponse{}, nil
 }
@@ -102,7 +100,7 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	requestorOrgID := s.getRequestorOrgIDFromGrpcContext(ctx)
 
 	if !isRequestorOrgAdmin(requestorOrgAdmin, requestorOrgID, grpcReq.OrgId) {
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	includeUsers := true
@@ -156,7 +154,7 @@ func (s *Server) EntitleOrg(ctx context.Context, entitleOrgReq *core.EntitleOrgR
 
 	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportAllowlist, requestor) {
 		glog.Infof("Received request to entitle Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", entitleOrgReq.OrgId, requestor)
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	if entitleOrgReq.MaxSeats < 1 {
@@ -188,7 +186,7 @@ func (s *Server) ImportOrg(ctx context.Context, importReq *core.ImportOrgRequest
 
 	if !sliceContains(s.ServiceConfig.AuthzConfig.LicenseImportAllowlist, requestor) {
 		glog.Infof("Received request to import Org: %s from Requestor: %s. Requestor. Requestor not authorized. ", importReq.OrgId, requestor)
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	glog.Infof("Received request to import users for Org: %s from Requestor: %s", importReq.OrgId, requestor)
@@ -255,19 +253,22 @@ func (s *Server) Serve(wait *sync.WaitGroup) error {
 			s.ServiceConfig.GrpcPortStr)
 	}
 
+	var authnhandler grpc.UnaryServerInterceptor
 	// TODO: Evaluate better way to init. This impl is ugly, but `...ServerOptions` (2nd param in NewServer call) is an interface
 	if anyEnabled(s.ServiceConfig.AuthConfigs) {
 		authMiddleware, err := interceptor.NewAuthnInterceptor(s.ServiceConfig.AuthConfigs)
 		if err != nil {
 			glog.Fatalf("Error: Not able to reach discovery endpoint to initialize authentication middleware.")
 		}
-		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+		authnhandler = authMiddleware.Unary()
 	} else {
 		// local dev: no authconfig given, so we enable a passthrough middleware to get the requestor from authorization header.
 		authMiddleware := interceptor.NewPassthroughAuthnInterceptor()
 		glog.Warning("Client authorization disabled. Do not use in production use cases!")
-		s.srv = grpc.NewServer(grpc.Creds(creds), authMiddleware.Unary())
+		authnhandler = authMiddleware.Unary()
 	}
+	errorHandler := interceptor.NewErrorConvertingInterceptor().Unary()
+	s.srv = grpc.NewServer(grpc.Creds(creds), grpc.ChainUnaryInterceptor(authnhandler, errorHandler))
 
 	core.RegisterHealthCheckServiceServer(s.srv, s)
 	core.RegisterCheckPermissionServer(s.srv, s)
@@ -311,7 +312,7 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 
 	if !sliceContains(s.ServiceConfig.AuthzConfig.CheckAllowList, requestor) {
 		glog.Infof("Received CheckPermission from Requestor: %s. Requestor not authorized. Request: %v", requestor, rpcReq)
-		return nil, convertDomainErrorToGrpc(domain.ErrNotAuthorized)
+		return nil, domain.ErrNotAuthorized
 	}
 
 	req := application.CheckRequest{
@@ -325,7 +326,7 @@ func (s *Server) CheckPermission(ctx context.Context, rpcReq *core.CheckPermissi
 	result, err := s.AccessAppService.Check(req)
 
 	if err != nil {
-		return nil, convertDomainErrorToGrpc(err)
+		return nil, err
 	}
 
 	return &core.CheckPermissionResponse{Result: bool(result)}, nil
@@ -335,29 +336,10 @@ func (s *Server) getRequestorIdentityFromGrpcContext(ctx context.Context) (strin
 	requestor := ctx.Value(interceptor.RequestorContextKey)
 	reqStr := requestor.(string)
 	if reqStr == "" {
-		return "", convertDomainErrorToGrpc(domain.ErrNotAuthenticated)
+		return "", domain.ErrNotAuthenticated
 	}
 
 	return reqStr, nil
-}
-
-func convertDomainErrorToGrpc(err error) error {
-	var validationErr domain.ErrInvalidRequest
-
-	switch {
-	case errors.Is(err, domain.ErrNotAuthenticated):
-		return status.Error(codes.Unauthenticated, "Anonymous access is not allowed.")
-	case errors.Is(err, domain.ErrNotAuthorized):
-		return status.Error(codes.PermissionDenied, "Access denied.")
-	case errors.Is(err, domain.ErrLicenseLimitExceeded):
-		return status.Error(codes.FailedPrecondition, "License limits exceeded.")
-	case errors.Is(err, domain.ErrConflict):
-		return status.Error(codes.FailedPrecondition, "Conflict")
-	case errors.As(err, &validationErr):
-		return status.Error(codes.InvalidArgument, validationErr.Reason)
-	default:
-		return status.Error(codes.Unknown, "Internal server error.")
-	}
 }
 
 func (s *Server) getIsOrgAdminFromGrpcContext(ctx context.Context) (isOrgAdmin bool) {
