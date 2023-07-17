@@ -17,7 +17,7 @@ type AccessAppService struct {
 
 // CheckRequest is an actual request to check for permissions.
 type CheckRequest struct {
-	Requestor    string `validate:"required,spicedb-id"`
+	Requestor    string `validate:"required"`
 	Subject      string `validate:"required,spicedb-id"`
 	ResourceType string `validate:"required,spicedb-type"`
 	ResourceID   string `validate:"required,spicedb-id"`
