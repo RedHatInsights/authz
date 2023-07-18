@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -81,6 +82,11 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 	}, nil
 }
 
+func (r *UMBMessageBusRepository) reconnect() {
+	r.Disconnect()
+	r.Connect()
+}
+
 func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan contracts.SubjectAddOrUpdateEvent, error) {
 	updates := make(chan contracts.SubjectAddOrUpdateEvent)
 	ctx := context.Background()
@@ -110,8 +116,14 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 				if err == context.Canceled {
 					return
 				}
-				glog.Errorf("Reading message from AMQP:", err)
+
+				glog.Errorf("Reading message from AMQP: %+v", err)
 				r.errs <- err
+
+				if isConnectivityError(err) {
+					go r.reconnect()
+					return
+				}
 			}
 
 			var evt SubjectEventMessage
@@ -175,6 +187,13 @@ func (r *UMBMessageBusRepository) ReportFailure(evt contracts.SubjectAddOrUpdate
 	}
 
 	return fmt.Errorf("Internal error. MsgRef is not of expected type: %+v", evt.MsgRef)
+}
+
+func isConnectivityError(err error) bool {
+	var connErr *amqp.ConnError
+	var linkErr *amqp.LinkError
+
+	return errors.As(err, &connErr) || errors.As(err, &linkErr)
 }
 
 // Disconnect disconnects from the message bus and frees any resources used for communication.
