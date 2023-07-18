@@ -432,6 +432,15 @@
         },
         "assigned": {
           "type": "boolean"
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
         }
       },
       "description": "we may return more userinfo, this is a starting point."

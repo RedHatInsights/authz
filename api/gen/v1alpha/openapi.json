@@ -1,0 +1,551 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "v1alpha/core.proto",
+    "version" : "version not set"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "tags" : [ {
+    "name" : "CheckPermission"
+  }, {
+    "name" : "LicenseService"
+  }, {
+    "name" : "ImportService"
+  }, {
+    "name" : "HealthCheckService"
+  } ],
+  "paths" : {
+    "/v1alpha/check" : {
+      "post" : {
+        "tags" : [ "CheckPermission" ],
+        "operationId" : "CheckPermission_CheckPermission",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/v1alphaCheckPermissionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaCheckPermissionResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/healthcheck" : {
+      "get" : {
+        "tags" : [ "HealthCheckService" ],
+        "operationId" : "HealthCheckService_HealthCheck",
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaEmpty"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1alpha/orgs/{orgId}/entitlements/{serviceId}" : {
+      "post" : {
+        "tags" : [ "LicenseService" ],
+        "operationId" : "LicenseService_EntitleOrg",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "the ID of an org to entitle",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "serviceId",
+          "in" : "path",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EntitleOrgRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaEntitleOrgResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/orgs/{orgId}/import" : {
+      "post" : {
+        "tags" : [ "ImportService" ],
+        "operationId" : "ImportService_ImportOrg",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "the ID of an org to import",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "title" : "ImportOrgRequest to trigger an import for an orgs users into spicedb",
+                "type" : "object"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaImportOrgResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/orgs/{orgId}/licenses/{serviceId}" : {
+      "get" : {
+        "tags" : [ "LicenseService" ],
+        "operationId" : "LicenseService_GetLicense",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "The id of an license-able organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "serviceId",
+          "in" : "path",
+          "description" : "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaGetLicenseResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "LicenseService" ],
+        "operationId" : "LicenseService_ModifySeats",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "The id of an license-able organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "serviceId",
+          "in" : "path",
+          "description" : "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/licenses_serviceId_body"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaModifySeatsResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        },
+        "x-codegen-request-body-name" : "body"
+      }
+    },
+    "/v1alpha/orgs/{orgId}/licenses/{serviceId}/seats" : {
+      "get" : {
+        "tags" : [ "LicenseService" ],
+        "operationId" : "LicenseService_GetSeats",
+        "parameters" : [ {
+          "name" : "orgId",
+          "in" : "path",
+          "description" : "The id of an license-able organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "serviceId",
+          "in" : "path",
+          "description" : "A \"serviceId\" is an arbitrary identifier for a service with limited access that may be granted to an organization.",
+          "required" : true,
+          "style" : "simple",
+          "explode" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "includeUsers",
+          "in" : "query",
+          "description" : "true: include enriched user representation. false: do not include (only IDs). Default: true.",
+          "required" : false,
+          "style" : "form",
+          "explode" : true,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "name" : "filter",
+          "in" : "query",
+          "description" : "filter, either assigned or assignable users returned. Default: assigned.",
+          "required" : false,
+          "style" : "form",
+          "explode" : true,
+          "schema" : {
+            "type" : "string",
+            "default" : "assigned",
+            "enum" : [ "assigned", "assignable" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "A successful response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/v1alphaGetSeatsResponse"
+                }
+              }
+            }
+          },
+          "default" : {
+            "description" : "An unexpected error response.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/rpcStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "protobufAny" : {
+        "type" : "object",
+        "properties" : {
+          "@type" : {
+            "type" : "string"
+          }
+        },
+        "additionalProperties" : {
+          "type" : "object"
+        }
+      },
+      "rpcStatus" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "details" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/protobufAny"
+            }
+          }
+        }
+      },
+      "v1alphaCheckPermissionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "subject" : {
+            "type" : "string"
+          },
+          "operation" : {
+            "type" : "string"
+          },
+          "resourcetype" : {
+            "type" : "string"
+          },
+          "resourceid" : {
+            "type" : "string"
+          }
+        }
+      },
+      "v1alphaCheckPermissionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "result" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "v1alphaEmpty" : {
+        "type" : "object"
+      },
+      "v1alphaEntitleOrgResponse" : {
+        "title" : "EntitleOrgResponse is the response when entitling an org",
+        "type" : "object"
+      },
+      "v1alphaGetLicenseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "seatsTotal" : {
+            "type" : "string",
+            "description" : "Total number of seats assignable.",
+            "format" : "int64"
+          },
+          "seatsAvailable" : {
+            "type" : "string",
+            "description" : "Current number of available seats which can be assigned.",
+            "format" : "int64"
+          }
+        }
+      },
+      "v1alphaGetSeatsResponse" : {
+        "type" : "object",
+        "properties" : {
+          "users" : {
+            "type" : "array",
+            "description" : "Just user IDs, unless \"includeUsers\" = true.",
+            "items" : {
+              "$ref" : "#/components/schemas/v1alphaGetSeatsUserRepresentation"
+            }
+          }
+        }
+      },
+      "v1alphaGetSeatsUserRepresentation" : {
+        "type" : "object",
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "assigned" : {
+            "type" : "boolean"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "description" : "we may return more userinfo, this is a starting point."
+      },
+      "v1alphaImportOrgResponse" : {
+        "title" : "ImportOrgResponse",
+        "type" : "object",
+        "properties" : {
+          "importedUsersCount" : {
+            "title" : "Count of how many users were imported",
+            "type" : "string",
+            "format" : "uint64"
+          },
+          "notImportedUsersCount" : {
+            "title" : "Count of how many users were not imported, e.g. because they already exist",
+            "type" : "string",
+            "format" : "uint64"
+          }
+        }
+      },
+      "v1alphaModifySeatsResponse" : {
+        "type" : "object"
+      },
+      "v1alphaSeatFilterType" : {
+        "type" : "string",
+        "default" : "assigned",
+        "enum" : [ "assigned", "assignable" ]
+      },
+      "EntitleOrgRequest" : {
+        "title" : "EntitleOrgRequest",
+        "type" : "object",
+        "properties" : {
+          "maxSeats" : {
+            "type" : "string",
+            "description" : "the amount of seats that are granted for this org.",
+            "format" : "int64"
+          }
+        }
+      },
+      "licenses_serviceId_body" : {
+        "type" : "object",
+        "properties" : {
+          "assign" : {
+            "type" : "array",
+            "description" : "User IDs to assign to the license.",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "unassign" : {
+            "type" : "array",
+            "description" : "User IDs to remove from the license.",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "description" : "ModifySeatsRequest assuming we get the userId etc from the requester in the authorization header to validate if an \"admin\" can actually add licenses."
+      }
+    }
+  },
+  "x-original-swagger-version" : "2.0"
+}

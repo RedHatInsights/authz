@@ -44,7 +44,11 @@ type userServiceUserDataRequest struct {
 }
 
 type userServiceUserDataResponse []struct {
-	ID                  string `json:"id"`
+	ID              string `json:"id"`
+	Authentications []struct {
+		Principal    string `json:"principal"`
+		ProviderName string `json:"providerName"`
+	} `json:"authentications"`
 	PersonalInformation struct {
 		FirstName string `json:"firstName"`
 		LastNames string `json:"lastNames"`
@@ -115,13 +119,24 @@ func HostFakeUserServiceAPI(t *testing.T, subjects []domain.Subject, org string,
 						for _, subject := range subjects {
 							if string(subject.SubjectID) == uid {
 								principal := struct {
-									ID                  string `json:"id"`
+									ID              string `json:"id"`
+									Authentications []struct {
+										Principal    string `json:"principal"`
+										ProviderName string `json:"providerName"`
+									} `json:"authentications"`
 									PersonalInformation struct {
 										FirstName string `json:"firstName"`
 										LastNames string `json:"lastNames"`
 									} `json:"personalInformation"`
 								}{
 									ID: uid,
+									Authentications: []struct {
+										Principal    string `json:"principal"`
+										ProviderName string `json:"providerName"`
+									}{
+										{fmt.Sprintf("user_%s", subject.SubjectID),
+											"Identity Provider"},
+									},
 									PersonalInformation: struct {
 										FirstName string `json:"firstName"`
 										LastNames string `json:"lastNames"`

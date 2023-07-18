@@ -185,7 +185,7 @@ func TestEntitleOrgSucceedsWithNewOrgAndNewServiceLicense(t *testing.T) {
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/o3/licenses/foobar/seats?filter=assignable", "system", "o3", true))
 	assert.NoError(t, err)
 	// 3rd one is disabled, so remove from expected.
-	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
+	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","firstName":"User","lastName":"1","username":"user_1","id":"1"}, {"displayName":"User 2","id":"2","firstName":"User","lastName":"2","username":"user_2","assigned":false}]}`)
 }
 
 func TestEntitleOrgFailsWithUnAuthorizedRequestor(t *testing.T) {
@@ -400,7 +400,7 @@ func TestEntitleOrgTriggersUserImportWhenOrgExistsButHasNoUsersImportedYet(t *te
 	resp3, err := http.DefaultClient.Do(get("/v1alpha/orgs/"+expectedOrg+"/licenses/foo/seats?filter=assignable", "system", "oNoUsers", true))
 	assert.NoError(t, err)
 	// 3rd one is disabled, so remove from expected.
-	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1"}, {"displayName":"User 2","id":"2","assigned":false}]}`)
+	assertJSONResponse(t, resp3, 200, `{"users": ["<<UNORDERED>>", {"assigned":false,"displayName":"User 1","id":"1","firstName":"User","id":"1","lastName":"1","username":"user_1"}, {"displayName":"User 2","id":"2","assigned":false,"firstName":"User","id":"2","lastName":"2","username":"user_2"}]}`)
 }
 
 func TestEntitleOrgTwiceForSameLicenseFailsWithBadRequest(t *testing.T) {
@@ -495,7 +495,7 @@ func TestGrantedLicenseAffectsCountsAndDetails(t *testing.T) {
 
 	resp, err = http.DefaultClient.Do(get("/v1alpha/orgs/o1/licenses/smarts/seats", "system", "o1", true))
 	assert.NoError(t, err)
-	assertJSONResponse(t, resp, 200, `{"users": ["<<UNORDERED>>", {"assigned":true,"displayName":"O1 User 1","id":"u1"}, {"displayName":"O1 User 3","id":"u3","assigned":true}]}`)
+	assertJSONResponse(t, resp, 200, `{"users": ["<<UNORDERED>>", {"assigned":true,"displayName":"O1 User 1","id":"u1","firstName":"O1","id":"u1","lastName":"User 1","username":"user_1"}, {"displayName":"O1 User 3","id":"u3","assigned":true,"firstName":"O1","id":"u3","lastName":"User 3","username":"user_3"}]}`)
 
 	//Grant a license
 	resp, err = http.DefaultClient.Do(post("/v1alpha/orgs/o1/licenses/smarts", "okay", "o1", true, `{
