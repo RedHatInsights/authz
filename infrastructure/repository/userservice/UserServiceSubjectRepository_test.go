@@ -7,6 +7,7 @@ import (
 	"authz/testenv"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -321,4 +322,45 @@ func TestCreateResponseJSON(t *testing.T) {
 	ja := jsonassert.New(t)
 
 	ja.Assertf(json, `[{"id":"1","status":"disabled"}, {"id":"2","status":"enabled"}]`)
+}
+
+func TestSubjectsUserDataResponseParsing(t *testing.T) {
+	exampleJSON := []byte(`[
+		{
+			"id": "52042335",
+			"authentications": [
+				{
+					"principal": "wshakesp@redhat.com",
+					"providerName": "Red Hat"
+				}
+			],
+			"personalInformation": {
+				"firstName": "Will-E-Um",
+				"middleNames": "Url",
+				"lastNames": "Shake-spear",
+				"prefix": "Mr."
+			},
+			"status": "enabled"
+		}
+	]`) //Example response with additional includes cut out
+
+	var resp userServiceUserDataResponse
+
+	err := json.Unmarshal(exampleJSON, &resp)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, len(resp))
+	first := resp[0]
+
+	assert.Equal(t, "52042335", first.ID)
+	assert.Equal(t, "enabled", first.Status)
+	assert.Equal(t, "Will-E-Um", first.PersonalInformation.FirstName)
+	assert.Equal(t, "Url", first.PersonalInformation.MiddleNames)
+	assert.Equal(t, "Shake-spear", first.PersonalInformation.LastNames)
+	assert.Equal(t, "Mr.", first.PersonalInformation.Prefix)
+	assert.Equal(t, 1, len(first.Authentications))
+
+	firstAuthn := first.Authentications[0]
+	assert.Equal(t, "Red Hat", firstAuthn.ProviderName)
+	assert.Equal(t, "wshakesp@redhat.com", firstAuthn.Principal)
 }

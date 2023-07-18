@@ -73,6 +73,9 @@ message GetSeatsUserRepresentation {
   string displayName = 1;
   string id = 2;
   bool assigned = 3;
+  string firstName = 4;
+  string lastName = 5;
+  string username = 6;
 }
 
 // EntitleOrgRequest

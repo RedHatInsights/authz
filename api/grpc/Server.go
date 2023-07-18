@@ -135,9 +135,12 @@ func (s *Server) GetSeats(ctx context.Context, grpcReq *core.GetSeatsRequest) (*
 	resp := &core.GetSeatsResponse{Users: make([]*core.GetSeatsUserRepresentation, len(principals))}
 	for i, p := range principals {
 		resp.Users[i] = &core.GetSeatsUserRepresentation{
-			DisplayName: p.DisplayName,
+			DisplayName: p.DisplayName(),
 			Id:          string(p.ID),
 			Assigned:    assigned,
+			Username:    p.Username,
+			FirstName:   p.FirstName,
+			LastName:    p.LastName,
 		}
 	}
 

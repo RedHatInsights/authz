@@ -117,12 +117,14 @@ type userServiceUserDataRequest struct {
 	} `json:"include"`
 }
 
+type authenticationData struct {
+	Principal    string `json:"principal"`
+	ProviderName string `json:"providerName"`
+}
+
 type userServiceUserDataResponse []struct {
-	ID              string `json:"id"`
-	Authentications []struct {
-		Principal    string `json:"principal"`
-		ProviderName string `json:"providerName"`
-	} `json:"authentications"`
+	ID                  string               `json:"id"`
+	Authentications     []authenticationData `json:"authentications"`
 	PersonalInformation struct {
 		FirstName   string `json:"firstName"`
 		MiddleNames string `json:"middleNames"`
@@ -192,10 +194,20 @@ func (u *SubjectRepository) GetByIDs(ids []domain.SubjectID) (principals []domai
 		var principal domain.Principal
 		principal.ID = domain.SubjectID(userData.ID)
 		// TODO - For now display name is constructed as firstname  Lastname - Check with the proper API spec and revisit it
-		principal.DisplayName = userData.PersonalInformation.FirstName + " " + userData.PersonalInformation.LastNames
+		principal.FirstName = userData.PersonalInformation.FirstName
+		principal.LastName = userData.PersonalInformation.LastNames
+		principal.Username = getUsername(userData.Authentications)
 		principals = append(principals, principal)
 	}
 	return
+}
+
+func getUsername(authns []authenticationData) string {
+	if len(authns) > 0 {
+		return authns[0].Principal //Look for specific provider?
+	}
+
+	return ""
 }
 
 func (u *SubjectRepository) validateConfigAndOrg(_ string) bool {
