@@ -2,7 +2,7 @@ baseUri=$1
 idpDiscoveryUri=$2
 token=""
 client_id=cloud-services
-scopes=openid
+scopes=api.iam.access
 port=8000
 
 
