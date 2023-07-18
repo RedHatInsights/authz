@@ -68,6 +68,17 @@ func TestCheckErrorsWhenTokenMissing(t *testing.T) {
 	assert.Equal(t, 401, resp.StatusCode)
 }
 
+func TestCheckErrorsWhenSubjectEmpty(t *testing.T) {
+	setupService(nil)
+	defer teardownService()
+
+	resp, err := http.DefaultClient.Do(createRequest(http.MethodPost, "/v1alpha/check", testenv.CreateToken("", "", false), `{"subject": "u1", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, 401, resp.StatusCode)
+}
+
 func TestCheckReturnsFalseWhenUserNotAuthorized(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
@@ -614,11 +625,25 @@ func assertJSONResponse(t *testing.T, resp *http.Response, statusCode int, templ
 }
 
 func get(relativeURI string, subject string, orgID string, isOrgAdmin bool) *http.Request {
-	return createRequest(http.MethodGet, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), "")
+	var token string
+	if subject == "" {
+		token = ""
+	} else {
+		token = testenv.CreateToken(subject, orgID, isOrgAdmin)
+	}
+
+	return createRequest(http.MethodGet, relativeURI, token, "")
 }
 
 func post(relativeURI string, subject string, orgID string, isOrgAdmin bool, body string) *http.Request {
-	return createRequest(http.MethodPost, relativeURI, testenv.CreateToken(subject, orgID, isOrgAdmin), body)
+	var token string
+	if subject == "" {
+		token = ""
+	} else {
+		token = testenv.CreateToken(subject, orgID, isOrgAdmin)
+	}
+
+	return createRequest(http.MethodPost, relativeURI, token, body)
 }
 
 func createRequest(method string, relativeURI string, authToken string, body string) *http.Request {

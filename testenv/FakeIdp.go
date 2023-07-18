@@ -90,10 +90,6 @@ func HostFakeIdp() {
 
 // CreateToken creates a new jwt token for a given SubjectID, orgID and isOrgAdmin values
 func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
-	if subject == "" {
-		return ""
-	}
-
 	data, err := jwt.NewBuilder().
 		Issuer(testIssuer).
 		IssuedAt(time.Now()).

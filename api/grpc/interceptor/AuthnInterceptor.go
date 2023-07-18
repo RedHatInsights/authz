@@ -209,7 +209,7 @@ func validateTokenAndExtractData(p *authnProvider, token string) (result tokenIn
 	result.Org, result.IsOrgAdmin = requestorOrg(jwtoken)
 
 	if result.SubjectID == "" {
-		err = domain.ErrNotAuthenticated
+		err = fmt.Errorf("%w: no sub claim found", domain.ErrNotAuthenticated)
 	}
 
 	return
@@ -218,12 +218,12 @@ func validateTokenAndExtractData(p *authnProvider, token string) (result tokenIn
 func ensureRequiredScope(requiredScope string, token jwt.Token) error {
 	scopesClaim, ok := token.Get("scope")
 	if !ok {
-		return domain.ErrNotAuthenticated //No scopes present
+		return fmt.Errorf("%w: no scopes present", domain.ErrNotAuthenticated) //No scopes present
 	}
 
 	scopesString, ok := scopesClaim.(string)
 	if !ok {
-		return domain.ErrNotAuthenticated //Scope(s) present but not a string??
+		return fmt.Errorf("%w: unable to decode scopes", domain.ErrNotAuthenticated) //Scope(s) present but not a string??
 	}
 
 	for _, scope := range strings.Split(scopesString, " ") {
@@ -232,7 +232,7 @@ func ensureRequiredScope(requiredScope string, token jwt.Token) error {
 		}
 	}
 
-	return domain.ErrNotAuthenticated //Scope not present
+	return fmt.Errorf("%w: required scope %s not present", domain.ErrNotAuthenticated, requiredScope) //Scope not present
 }
 
 type tokenIntrospectionResult struct {

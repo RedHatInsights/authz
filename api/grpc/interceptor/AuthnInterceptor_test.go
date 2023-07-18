@@ -148,7 +148,7 @@ func TestAuthnProviderHoldsValuesFromDiscoveryEndpoint(t *testing.T) {
 func TestInvalidTokenMissingSubject(t *testing.T) {
 	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
-	builder := jwt.NewBuilder().Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1)
+	builder := jwt.NewBuilder().Claim("scope", minimumScope).Audience([]string{validAudience1}).IssuedAt(time.Now()).Issuer(validIssuer1)
 	_, err := interceptor.validateTokenAndExtractData(createToken(builder, tokenSigningKey1))
 
 	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
@@ -205,7 +205,7 @@ func TestInvalidTokenMissingScope(t *testing.T) {
 
 	_, err := interceptor.validateTokenAndExtractData(createToken(builder, tokenSigningKey1))
 
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrNotAuthenticated)
 }
 
 func TestInvalidTokenWrongSigningKey(t *testing.T) {
