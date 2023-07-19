@@ -30,6 +30,7 @@ type UMBMessageBusRepository struct {
 	recvCtx     context.Context
 	recvCancel  context.CancelFunc
 	errs        chan error
+	changes     chan contracts.SubjectAddOrUpdateEvent
 	workerDone  chan interface{}
 	numWorkers  int32
 }
@@ -53,12 +54,17 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 		Certificates: []tls.Certificate{cert},
 	}
 
-	r.conn, err = amqp.Dial(ctx, r.config.URL, &amqp.ConnOptions{
-		TLSConfig: tlsConf,
-	})
+	for {
+		r.conn, err = amqp.Dial(ctx, r.config.URL, &amqp.ConnOptions{
+			TLSConfig: tlsConf,
+		})
 
-	if err != nil {
-		return
+		if err == nil {
+			break
+		}
+
+		glog.Errorf("Error connecting to UMB: %s. Data may desynchronize! Retrying...", err)
+		time.Sleep(time.Second * 30)
 	}
 
 	// open a session
@@ -69,26 +75,28 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 	}
 
 	r.recvCtx, r.recvCancel = context.WithCancel(context.Background())
-	r.errs = make(chan error)
-	r.workerDone = make(chan interface{})
-	u, err := r.receiveSubjectChanges(session)
+	r.changes, err = r.receiveSubjectChanges(session)
 	if err != nil {
 		return
 	}
 
 	return contracts.UserEvents{
-		SubjectChanges: u,
+		SubjectChanges: r.changes,
 		Errors:         r.errs,
 	}, nil
 }
 
 func (r *UMBMessageBusRepository) reconnect() {
-	r.Disconnect()
-	r.Connect()
+	glog.Info("UMB attempting to reconnect.")
+	r.repeatableDisconnect()
+	_, err := r.Connect()
+	if err != nil {
+		glog.Errorf("UMB reconnect failed permanently: %s - data may desynchronize.", err)
+	}
+	glog.Info("UMB successfully reconnected!")
 }
 
 func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan contracts.SubjectAddOrUpdateEvent, error) {
-	updates := make(chan contracts.SubjectAddOrUpdateEvent)
 	ctx := context.Background()
 	var err error
 	// create a receiver
@@ -106,7 +114,6 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 				glog.Errorf("Failed to close reciever: %v", err)
 			}
 			cancel()
-			close(updates)
 			r.workerDone <- struct{}{}
 		}()
 		for {
@@ -155,7 +162,7 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 				continue
 			}
 
-			updates <- contracts.SubjectAddOrUpdateEvent{
+			r.changes <- contracts.SubjectAddOrUpdateEvent{
 				MsgRef:    msg,
 				SubjectID: evt.SubjectID(),
 				OrgID:     evt.OrgID(),
@@ -164,7 +171,7 @@ func (r *UMBMessageBusRepository) receiveSubjectChanges(s *amqp.Session) (chan c
 		}
 	}()
 
-	return updates, nil
+	return r.changes, nil
 }
 
 // ReportSuccess sends confirmation to the broker that the message was processed successfully. This or ReportFailure MUST be called for any event received.
@@ -198,6 +205,13 @@ func isConnectivityError(err error) bool {
 
 // Disconnect disconnects from the message bus and frees any resources used for communication.
 func (r *UMBMessageBusRepository) Disconnect() {
+	r.repeatableDisconnect()
+
+	close(r.errs)
+	close(r.changes)
+}
+
+func (r *UMBMessageBusRepository) repeatableDisconnect() {
 	r.recvCancel()
 	for r.numWorkers > 0 {
 		<-r.workerDone
@@ -208,11 +222,14 @@ func (r *UMBMessageBusRepository) Disconnect() {
 	if err != nil {
 		glog.Errorf("Error disconnecting from AMQP broker: %s", err)
 	}
-
-	close(r.errs)
 }
 
 // NewUMBMessageBusRepository constructs a new UMBMessageBusRepository with the given configuration
 func NewUMBMessageBusRepository(config serviceconfig.UMBConfig) *UMBMessageBusRepository {
-	return &UMBMessageBusRepository{config: config}
+	return &UMBMessageBusRepository{
+		config:     config,
+		workerDone: make(chan interface{}),
+		errs:       make(chan error),
+		changes:    make(chan contracts.SubjectAddOrUpdateEvent),
+	}
 }

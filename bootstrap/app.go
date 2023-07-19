@@ -96,14 +96,16 @@ func Run(configPath string) {
 	wait := &sync.WaitGroup{}
 	wait.Add(2)
 
-	if eventAdapter != nil {
-		err = eventAdapter.Start()
-		if err == nil {
-			glog.Info("Connected to UMB.")
-		} else {
-			glog.Errorf("Failed to connect to UMB! Subject data may desynchronize. Err: %s", err)
+	go func() {
+		if eventAdapter != nil {
+			err = eventAdapter.Start()
+			if err == nil {
+				glog.Info("Connected to UMB.")
+			} else {
+				glog.Errorf("Failed to connect to UMB! Subject data may desynchronize. Err: %s", err)
+			}
 		}
-	}
+	}()
 
 	go func() {
 		err := grpcServer.Serve(wait)
