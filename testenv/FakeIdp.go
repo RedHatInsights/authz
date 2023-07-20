@@ -20,7 +20,8 @@ const (
 	testKID    = "test-kid"
 	testIssuer = "http://localhost:8180/idp"
 
-	testAudience1     = "cloud-services"
+	testAudience1 = "cloud-services"
+	//TestAudience2 referenced in other tests
 	TestAudience2     = "its.us"
 	testRequiredScope = "openid"
 )
