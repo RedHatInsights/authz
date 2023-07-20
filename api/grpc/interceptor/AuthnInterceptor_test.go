@@ -177,8 +177,6 @@ func TestInvalidTokenFromTheFuture(t *testing.T) {
 }
 
 func TestInvalidAudience(t *testing.T) {
-	// TODO: reintroduce when audience is in right shape to test it
-	t.SkipNow()
 	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
 	builder := createDefaultTokenBuilder1().

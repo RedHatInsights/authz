@@ -67,7 +67,7 @@ type CorsConfig struct {
 // AuthConfig holds the configuration for the client authz middleware
 type AuthConfig struct {
 	DiscoveryEndpoint string
-	Audience          string //currently not validated, see CIAM-6318
+	Audience          string
 	RequiredScope     string
 	Enabled           bool
 }
