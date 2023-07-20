@@ -192,10 +192,9 @@ func (authnInterceptor *AuthnInterceptor) validateTokenAndExtractData(token stri
 }
 
 func validateTokenAndExtractData(p *authnProvider, token string) (result tokenIntrospectionResult, err error) {
-	// TODO: Re-introduce jwt.ParseString(token, jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience)) again when audience is in right shape. See CIAM-6318
 	//Parse with signature verification and token validation. Second parse is necessary because WithKeySet cannot be passed to jwt.Validate
-	jwtoken, err := jwt.ParseString(token, jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer))
-
+	jwtoken, err := jwt.ParseString(token, jwt.WithKeySet(p.verificationKeys), jwt.WithIssuer(p.issuer), jwt.WithAudience(p.audience))
+	fmt.Errorf("TOKEN PARSING!")
 	if err != nil {
 		return
 	}

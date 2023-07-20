@@ -20,7 +20,8 @@ const (
 	testKID    = "test-kid"
 	testIssuer = "http://localhost:8180/idp"
 
-	testAudience      = "cloud-services"
+	testAudience1     = "cloud-services"
+	TestAudience2     = "its.us"
 	testRequiredScope = "openid"
 )
 
@@ -93,7 +94,7 @@ func CreateToken(subject string, orgID string, isOrgAdmin bool) string {
 	data, err := jwt.NewBuilder().
 		Issuer(testIssuer).
 		IssuedAt(time.Now()).
-		Audience([]string{testAudience}).
+		Audience([]string{testAudience1, TestAudience2}).
 		Subject(subject).
 		Claim("scope", testRequiredScope).
 		Claim("org_id", orgID).
