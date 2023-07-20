@@ -186,6 +186,26 @@ func TestInvalidAudience(t *testing.T) {
 	assert.ErrorIs(t, err, jwt.ErrInvalidAudience())
 }
 
+func TestValidMultipleAudience(t *testing.T) {
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
+
+	builder := createDefaultTokenBuilder1().
+		Audience([]string{"invalid-audience", validAudience1})
+	_, err := interceptor.validateTokenAndExtractData(createToken(builder, tokenSigningKey1))
+
+	assert.NoError(t, err)
+}
+
+func TestInvalidMultipleAudience(t *testing.T) {
+	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
+
+	builder := createDefaultTokenBuilder1().
+		Audience([]string{"invalid-audience", "invalid2"})
+	_, err := interceptor.validateTokenAndExtractData(createToken(builder, tokenSigningKey1))
+
+	assert.ErrorIs(t, err, jwt.ErrInvalidAudience())
+}
+
 func TestInvalidIssuer(t *testing.T) {
 	interceptor := AuthnInterceptor{[]*authnProvider{createAuthnProvider1()}}
 
