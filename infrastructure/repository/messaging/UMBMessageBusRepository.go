@@ -202,8 +202,11 @@ func (r *UMBMessageBusRepository) ReportFailure(evt contracts.SubjectAddOrUpdate
 func isConnectivityError(err error) bool {
 	var connErr *amqp.ConnError
 	var linkErr *amqp.LinkError
+	var sessionErr *amqp.SessionError
 
-	return errors.As(err, &connErr) || errors.As(err, &linkErr)
+	return errors.As(err, &connErr) ||
+		errors.As(err, &linkErr) ||
+		errors.As(err, &sessionErr)
 }
 
 // Disconnect disconnects from the message bus and frees any resources used for communication.
