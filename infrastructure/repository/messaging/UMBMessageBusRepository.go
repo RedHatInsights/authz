@@ -55,15 +55,18 @@ func (r *UMBMessageBusRepository) Connect() (evts contracts.UserEvents, err erro
 	}
 
 	for {
-		r.conn, err = amqp.Dial(ctx, r.config.URL, &amqp.ConnOptions{
+		subCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+		r.conn, err = amqp.Dial(subCtx, r.config.URL, &amqp.ConnOptions{
 			TLSConfig: tlsConf,
 		})
+
+		cancel()
 
 		if err == nil {
 			break
 		}
 
-		glog.Errorf("Error connecting to UMB: %s. Data may desynchronize! Retrying...", err)
+		glog.Errorf("Error connecting to UMB: %+v. Data may desynchronize! Retrying...", err)
 		time.Sleep(time.Second * 30)
 	}
 
