@@ -44,11 +44,15 @@ func (e *EventAdapter) run(evts contracts.UserEvents) {
 	for ok {
 		select {
 		case evt, ok = <-evts.SubjectChanges:
-			glog.Infof("Subject event from UMB connection: %+v", evt)
-			err = e.licenseAppService.HandleSubjectAddOrUpdateEvent(evt)
-			e.sendResult(evt, err)
+			if ok {
+				glog.Infof("Subject event from UMB connection: %+v", evt)
+				err = e.licenseAppService.HandleSubjectAddOrUpdateEvent(evt)
+				e.sendResult(evt, err)
+			}
 		case err, ok = <-evts.Errors:
-			glog.Errorf("Error from UMB connection: %v", err)
+			if ok {
+				glog.Errorf("Error from UMB connection: %v", err)
+			}
 		}
 	}
 	e.done <- struct{}{}
