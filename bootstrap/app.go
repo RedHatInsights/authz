@@ -56,6 +56,10 @@ func getConfig(configPath string) (serviceconfig.ServiceConfig, error) {
 				KeyFile:  "/etc/tls/tls.key ",
 			},
 			LogRequests: false,
+			UMBConfig: serviceconfig.UMBConfig{
+				RetryBackoffSeconds:   30,
+				ConnectTimeoutSeconds: 30,
+			},
 		}).
 		Build()
 

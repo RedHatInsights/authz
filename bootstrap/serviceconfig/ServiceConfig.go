@@ -89,9 +89,11 @@ type UserServiceConfig struct {
 
 // UMBConfig holds the configuration to connect to the Unified Message Bus
 type UMBConfig struct {
-	Enabled           bool
-	URL               string
-	UMBClientCertFile string
-	UMBClientCertKey  string
-	TopicName         string
+	Enabled               bool
+	URL                   string
+	UMBClientCertFile     string
+	UMBClientCertKey      string
+	TopicName             string
+	ConnectTimeoutSeconds int
+	RetryBackoffSeconds   int
 }
