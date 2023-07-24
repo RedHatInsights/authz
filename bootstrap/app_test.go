@@ -465,7 +465,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	setupService(nil)
 	defer teardownService()
 	//The user isn't licensed initially, use is denied
-	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err := http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, false)
 
@@ -480,7 +480,7 @@ func TestGrantedLicenseAllowsUse(t *testing.T) {
 	container.WaitForQuantizationInterval()
 
 	//Should be allowed now
-	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "assigned", "resourcetype": "license_seats", "resourceid": "o1/smarts"}`))
+	resp, err = http.DefaultClient.Do(post("/v1alpha/check", "checker", "o1", false, `{"subject": "u2", "operation": "access", "resourcetype": "license", "resourceid": "o1/smarts"}`))
 	assert.NoError(t, err)
 	assertJSONResponse(t, resp, 200, `{"result": %t, "description": ""}`, true)
 }
@@ -608,7 +608,7 @@ func TestInvalidRequest(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assertJSONResponse(t, resp, 400, `{"code":3,"message":"Key: 'CheckRequest.Subject' Error:Field validation for 'Subject' failed on the 'spicedb-id' tag","details":[]}`)
+	assertJSONResponse(t, resp, 400, `{"code":3,"message":"Key: 'CheckRequest.Subject' Error:Field validation for 'Subject' failed on the 'identifier' tag","details":[]}`)
 }
 
 // Test helper methods start

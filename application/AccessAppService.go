@@ -18,10 +18,10 @@ type AccessAppService struct {
 // CheckRequest is an actual request to check for permissions.
 type CheckRequest struct {
 	Requestor    string `validate:"required"`
-	Subject      string `validate:"required,spicedb-id"`
-	ResourceType string `validate:"required,spicedb-type"`
+	Subject      string `validate:"required,identifier"`
+	ResourceType string `validate:"required,in=license"`
 	ResourceID   string `validate:"required,spicedb-id"`
-	Operation    string `validate:"required,spicedb-permission"` //How to constrain further? List of values?
+	Operation    string `validate:"required,in=access"`
 }
 
 // NewAccessAppService returns a new instance of the permissionhandler.
