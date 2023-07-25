@@ -3,6 +3,7 @@ package application
 import (
 	"authz/domain"
 	"regexp"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -43,6 +44,14 @@ func initializeValidator() *validator.Validate {
 		panic(err)
 	}
 
+	err = vl.RegisterValidation("in", validateIn)
+	if err != nil {
+		panic(err)
+	}
+
+	vl.RegisterAlias("service", `spicedb-id,max=36`)
+	vl.RegisterAlias("identifier", `spicedb-id,max=36`) //identifiers must be valid SpiceDB identifiers /and/ either UUIDs or positive integers or a test value
+
 	return vl
 }
 
@@ -51,13 +60,51 @@ var spiceDbPermissionPattern = regexp.MustCompile(`^([a-z][a-z0-9_]{1,62}[a-z0-9
 var spiceDbTypePattern = regexp.MustCompile(`^([a-z][a-z0-9_]{1,61}[a-z0-9]/)?[a-z][a-z0-9_]{1,62}[a-z0-9]$`)
 
 func validateSpiceDbID(fl validator.FieldLevel) bool {
-	return spiceDbIDPattern.MatchString(fl.Field().String())
+	val := fl.Field().String()
+	if val == "" {
+		return true
+	}
+
+	return spiceDbIDPattern.MatchString(val)
 }
 
 func validateSpiceDbPermission(fl validator.FieldLevel) bool {
+	val := fl.Field().String()
+	if val == "" {
+		return true
+	}
+
 	return spiceDbPermissionPattern.MatchString(fl.Field().String())
 }
 
 func validateSpiceDbType(fl validator.FieldLevel) bool {
+	val := fl.Field().String()
+	if val == "" {
+		return true
+	}
+
 	return spiceDbTypePattern.MatchString(fl.Field().String())
+}
+
+var inConfigCache = make(map[string]map[string]bool) //Map string -> idiomatic Set<string>
+func validateIn(fl validator.FieldLevel) bool {
+	param := fl.Param()
+
+	config, ok := inConfigCache[param]
+	if !ok {
+		config = make(map[string]bool)
+
+		for _, val := range strings.Split(param, "+") {
+			config[val] = true
+		}
+
+		inConfigCache[param] = config
+	}
+
+	val := fl.Field().String()
+	if val == "" {
+		return true
+	}
+
+	return config[fl.Field().String()]
 }
