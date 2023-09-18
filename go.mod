@@ -3,7 +3,7 @@ module authz
 go 1.20
 
 require (
-	github.com/Azure/go-amqp v1.0.1
+	github.com/Azure/go-amqp v1.0.2
 	github.com/authzed/authzed-go v0.9.0
 	github.com/bradhe/stopwatch v0.0.0-20190618212248-a58cccc508ea // test only
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // grpcutil
