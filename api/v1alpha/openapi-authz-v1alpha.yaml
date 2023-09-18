@@ -80,7 +80,7 @@ paths:
       - HealthCheckService
       summary: Health check for the AuthZ service.
       description: "Health check endpoint for the \"authz\" service, returns \"HTTP\
-        \ 200 OK\" if the service is health (up and running)          \n"
+        \ 200 OK\" if the service is healthy (up and running)          \n"
       operationId: HealthCheckService_HealthCheck
       responses:
         "200":
@@ -512,6 +512,12 @@ components:
           type: string
         assigned:
           type: boolean
+        firstName:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
       description: "we may return more userinfo, this is a starting point."
     v1alphaImportOrgResponse:
       title: ImportOrgResponse
