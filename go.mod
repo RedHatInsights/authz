@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.3.1 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/kinbiko/jsonassert v1.1.1
-	github.com/lestrrat-go/jwx/v2 v2.0.12
+	github.com/lestrrat-go/jwx/v2 v2.0.13
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
 	github.com/ory/dockertest v3.3.5+incompatible // test only
 	github.com/rs/cors v1.9.0
@@ -49,7 +49,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jzelinskie/stringz v0.0.1 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
+	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
