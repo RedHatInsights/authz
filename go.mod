@@ -3,8 +3,8 @@ module authz
 go 1.20
 
 require (
-	github.com/Azure/go-amqp v1.0.1
-	github.com/authzed/authzed-go v0.9.0
+	github.com/Azure/go-amqp v1.0.2
+	github.com/authzed/authzed-go v0.10.0
 	github.com/bradhe/stopwatch v0.0.0-20190618212248-a58cccc508ea // test only
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // grpcutil
 	github.com/go-playground/validator/v10 v10.15.4
@@ -12,16 +12,16 @@ require (
 	github.com/google/uuid v1.3.1 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/kinbiko/jsonassert v1.1.1
-	github.com/lestrrat-go/jwx/v2 v2.0.12
+	github.com/lestrrat-go/jwx/v2 v2.0.13
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
 	github.com/ory/dockertest v3.3.5+incompatible // test only
-	github.com/rs/cors v1.9.0
+	github.com/rs/cors v1.10.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // errdetails
-	google.golang.org/grpc v1.58.0
+	google.golang.org/grpc v1.58.3
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1 // test only
@@ -49,7 +49,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jzelinskie/stringz v0.0.1 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
+	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
