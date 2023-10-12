@@ -4,8 +4,8 @@ USER root
 RUN microdnf install -y tar gzip make which
 
 # install platform specific go version
-RUN curl -O -J  https://dl.google.com/go/go1.20.5.linux-${TARGETARCH}.tar.gz
-RUN tar -C /usr/local -xzf go1.20.5.linux-${TARGETARCH}.tar.gz
+RUN curl -O -J  https://dl.google.com/go/go1.20.10.linux-${TARGETARCH}.tar.gz
+RUN tar -C /usr/local -xzf go1.20.10.linux-${TARGETARCH}.tar.gz
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 WORKDIR /workspace
