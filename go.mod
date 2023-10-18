@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Azure/go-amqp v1.0.2
-	github.com/authzed/authzed-go v0.10.0
+	github.com/authzed/authzed-go v0.10.1
 	github.com/bradhe/stopwatch v0.0.0-20190618212248-a58cccc508ea // test only
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // grpcutil
 	github.com/go-playground/validator/v10 v10.15.5
@@ -20,7 +20,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // errdetails
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // errdetails
 	google.golang.org/grpc v1.58.3
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
@@ -47,7 +47,7 @@ require (
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/jzelinskie/stringz v0.0.1 // indirect
+	github.com/jzelinskie/stringz v0.0.2 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
@@ -80,8 +80,8 @@ require (
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
-	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect
+	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )
