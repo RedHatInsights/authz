@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.3.1 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/kinbiko/jsonassert v1.1.1
-	github.com/lestrrat-go/jwx/v2 v2.0.14
+	github.com/lestrrat-go/jwx/v2 v2.0.15
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
 	github.com/ory/dockertest v3.3.5+incompatible // test only
 	github.com/rs/cors v1.10.1
