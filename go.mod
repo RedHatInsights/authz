@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.3.1 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/kinbiko/jsonassert v1.1.1
-	github.com/lestrrat-go/jwx/v2 v2.0.14
+	github.com/lestrrat-go/jwx/v2 v2.0.15
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
 	github.com/ory/dockertest v3.3.5+incompatible // test only
 	github.com/rs/cors v1.10.1
@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // errdetails
-	google.golang.org/grpc v1.58.3
+	google.golang.org/grpc v1.59.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1 // test only
