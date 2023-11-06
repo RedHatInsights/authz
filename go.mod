@@ -16,7 +16,7 @@ require (
 	github.com/mendsley/gojwk v0.0.0-20141217222730-4d5ec6e58103 // test only
 	github.com/ory/dockertest v3.3.5+incompatible // test only
 	github.com/rs/cors v1.10.1
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
