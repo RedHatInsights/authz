@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2 AS builder
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3 AS builder
 ARG TARGETARCH
 USER root
 RUN microdnf install -y tar gzip make which
@@ -15,7 +15,7 @@ COPY . ./
 RUN go mod vendor 
 RUN make binary
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3
 
 COPY --from=builder /workspace/bin/authz /usr/local/bin/
 RUN mkdir -p /schema
