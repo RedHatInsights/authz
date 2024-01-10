@@ -2,7 +2,6 @@
 package events
 
 import (
-	"authz/application"
 	"authz/domain/contracts"
 
 	"github.com/golang/glog"
@@ -10,17 +9,15 @@ import (
 
 // EventAdapter is used as a struct containing the services needed to process events
 type EventAdapter struct {
-	licenseAppService *application.LicenseAppService
-	bus               contracts.MessageBusRepository
-	done              chan interface{}
+	bus  contracts.MessageBusRepository
+	done chan interface{}
 }
 
 // NewEventAdapter constructs a new event adapter object from the given dependencies
-func NewEventAdapter(licenseAppService *application.LicenseAppService, bus contracts.MessageBusRepository) *EventAdapter {
+func NewEventAdapter(bus contracts.MessageBusRepository) *EventAdapter {
 	return &EventAdapter{
-		licenseAppService: licenseAppService,
-		bus:               bus,
-		done:              make(chan interface{}),
+		bus:  bus,
+		done: make(chan interface{}),
 	}
 }
 
@@ -46,7 +43,6 @@ func (e *EventAdapter) run(evts contracts.UserEvents) {
 		case evt, ok = <-evts.SubjectChanges:
 			if ok {
 				glog.Infof("Subject event from UMB connection: %+v", evt)
-				err = e.licenseAppService.HandleSubjectAddOrUpdateEvent(evt)
 				e.sendResult(evt, err)
 			}
 		case err, ok = <-evts.Errors:

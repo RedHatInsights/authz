@@ -21,10 +21,9 @@ import (
 
 // Server serves an HTTP api based on the generated grpc gateway code
 type Server struct {
-	srv                *http.Server
-	ServiceConfig      *serviceconfig.ServiceConfig
-	GrpcCheckService   core.CheckPermissionServer
-	GrpcLicenseService core.LicenseServiceServer
+	srv              *http.Server
+	ServiceConfig    *serviceconfig.ServiceConfig
+	GrpcCheckService core.CheckPermissionServer
 }
 
 // Serve starts serving
@@ -72,11 +71,6 @@ func (s *Server) SetCheckRef(h core.CheckPermissionServer) {
 	s.GrpcCheckService = h
 }
 
-// SetSeatRef sets the reference to the grp SeatsServerService
-func (s *Server) SetSeatRef(ss core.LicenseServiceServer) {
-	s.GrpcLicenseService = ss
-}
-
 // NewServer creates a new Server object to use.
 func NewServer(c serviceconfig.ServiceConfig) *Server {
 	return &Server{
@@ -117,14 +111,6 @@ func createMultiplexer(cnf *serviceconfig.ServiceConfig) (http.Handler, error) {
 	}
 
 	if err := core.RegisterCheckPermissionHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
-		return nil, err
-	}
-
-	if err := core.RegisterLicenseServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
-		return nil, err
-	}
-
-	if err := core.RegisterImportServiceHandlerFromEndpoint(context.Background(), mux, "localhost:"+cnf.GrpcPortStr, opts); err != nil {
 		return nil, err
 	}
 

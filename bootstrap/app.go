@@ -170,38 +170,29 @@ func initialize(srvCfg serviceconfig.ServiceConfig) (*grpc.Server, *http.Server,
 		pr = subr.(contracts.PrincipalRepository)
 	}
 
-	sr, err := initSeatRepository(&srvCfg)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	or := sr.(contracts.OrganizationRepository)
-
 	aas := application.NewAccessAppService(&ar, pr)
-	sas := application.NewLicenseAppService(ar, sr, pr, subr, or)
 
-	srv := initGrpcServer(aas, sas, &srvCfg)
+	srv := initGrpcServer(aas, &srvCfg)
 
 	umbCfg := srvCfg.UMBConfig
 	var adapter *events.EventAdapter
 	if umbCfg.Enabled {
 		umb := messaging.NewUMBMessageBusRepository(umbCfg)
-		adapter = events.NewEventAdapter(sas, umb)
+		adapter = events.NewEventAdapter(umb)
 	} else {
 		glog.Info("UMB connectivity not enabled.")
 	}
 
 	webSrv := initHTTPServer(&srvCfg)
 	webSrv.SetCheckRef(srv)
-	webSrv.SetSeatRef(srv)
 	grpcServer = srv
 	return srv, webSrv, adapter, nil
 }
 
 // initGrpcServer initializes a new grpc server struct
-func initGrpcServer(aas *application.AccessAppService, sas *application.LicenseAppService, serviceConfig *serviceconfig.ServiceConfig) *grpc.Server {
+func initGrpcServer(aas *application.AccessAppService, serviceConfig *serviceconfig.ServiceConfig) *grpc.Server {
 	srv, err := NewServerBuilder().
 		WithAccessAppService(aas).
-		WithLicenseAppService(sas).
 		WithServiceConfig(serviceConfig).
 		BuildGrpc()
 
@@ -221,12 +212,6 @@ func initHTTPServer(serviceConfig *serviceconfig.ServiceConfig) *http.Server {
 		glog.Fatal("Could not initialize http server: ", err)
 	}
 	return srv
-}
-
-func initSeatRepository(config *serviceconfig.ServiceConfig) (contracts.SeatLicenseRepository, error) {
-	b := NewSeatLicenseRepositoryBuilder()
-
-	return b.WithConfig(config).Build()
 }
 
 func initAccessRepository(config *serviceconfig.ServiceConfig) (contracts.AccessRepository, error) {

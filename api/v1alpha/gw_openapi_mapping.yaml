@@ -44,32 +44,8 @@ openapiOptions:
           "200":
             examples:
               "application/json": '{"result": true, "description": ""}'
-    - method: api.v1alpha.LicenseService.ModifySeats
-      option:
-        summary: Assign or unassign users to/from the license.
-        description: >
-          Assign or unassign users to or from the license. 
-          Users assigned may access the service identified by serviceId
-          as contracted with an organization (identified by orgId).
-          Assigned users consume a limited number of seats in a license.
-    - method: api.v1alpha.LicenseService.GetSeats
-      option:
-        summary: Gets user details with filters.
-        description: Get details of users who are assigned to the license or available to be assigned.
-    - method: api.v1alpha.LicenseService.GetLicense
-      option:
-        summary: Summarize a license.
-        description: > 
-          Returns information about the license, 
-          including the number of entitled seats (maximum assignable)
-          and the current number of available seats.
-    - method: api.v1alpha.LicenseService.EntitleOrg
-      option:
-        summary: Entitle an Org access through a seat based license for a service.
-        description: >
-          Grants a given Org a seat based license to a given service. A maximum number of entitled seats
     - method: api.v1alpha.HealthCheckService.HealthCheck
       option:
         summary: Health check for the AuthZ service.
         description: >
-          Health check endpoint for the "authz" service, returns "HTTP 200 OK" if the service is healthy (up and running)          
+          Health check endpoint for the "authz" service, returns "HTTP 200 OK" if the service is healthy (up and running)

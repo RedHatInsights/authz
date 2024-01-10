@@ -14,7 +14,7 @@ else
 GOBIN=$(shell $(GO) env GOBIN)
 endif
 
-DOCKER ?= docker
+DOCKER ?= podman
 DOCKER_CONFIG="${PWD}/.docker"
 SHELL = bash
 
@@ -108,10 +108,10 @@ apidocs-stop:
 apigen-v3:
 	@echo "generating v3 openapi.yaml from grpc-gateway v2 yaml..."
 	$(DOCKER) run --rm --name swagger_codegen \
-		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.yaml -l openapi-yaml -o .
+		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:latest generate -i ./core.swagger.yaml -l openapi-yaml -o .
 	@echo "generating v3 openapi.json from grpc-gateway v2 json..."
 	$(DOCKER) run --rm --name swagger_codegen \
-		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:3.0.41 generate -i ./core.swagger.json -l openapi -o .
+		  -v $(PWD)/api/gen/v1alpha/:/opt/mnt:Z -w /opt/mnt swaggerapi/swagger-codegen-cli-v3:latest generate -i ./core.swagger.json -l openapi -o .
 	@echo "Remove unnecessary generated artifacts"
 	@make apigen-v2-delete
 	@echo "move and rename files to v1alpha directory"

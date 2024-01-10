@@ -7,18 +7,5 @@ http:
     - selector: api.v1alpha.CheckPermission.CheckPermission
       post: /v1alpha/check
       body: "*"
-    - selector: api.v1alpha.LicenseService.GetLicense
-      get: /v1alpha/orgs/{orgId}/licenses/{serviceId}
-    - selector: api.v1alpha.LicenseService.EntitleOrg
-      post: /v1alpha/orgs/{orgId}/entitlements/{serviceId}
-      body: "*"
-    - selector: api.v1alpha.LicenseService.ModifySeats
-      post: /v1alpha/orgs/{orgId}/licenses/{serviceId}
-      body: "*"
-    - selector: api.v1alpha.LicenseService.GetSeats
-      get: /v1alpha/orgs/{orgId}/licenses/{serviceId}/seats
-    - selector: api.v1alpha.ImportService.ImportOrg
-      post: /v1alpha/orgs/{orgId}/import
-      body: "*"
     - selector: api.v1alpha.HealthCheckService.HealthCheck
       get: /v1alpha/healthcheck
