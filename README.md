@@ -1,3 +1,4 @@
+> :warning: **This repository is Archived**. Superceded by [link](https://github.com/RedHatInsights/insights-rebac) 
 # Authz service
 
 # Start up
