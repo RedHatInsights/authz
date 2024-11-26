@@ -9,7 +9,7 @@ require (
 	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // grpcutil
 	github.com/go-playground/validator/v10 v10.15.5
 	github.com/golang/glog v1.1.2
-	github.com/google/uuid v1.3.1 // test only
+	github.com/google/uuid v1.6.0 // test only
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/kinbiko/jsonassert v1.1.1
 	github.com/lestrrat-go/jwx/v2 v2.0.15
